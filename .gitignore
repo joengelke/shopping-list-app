@@ -1,0 +1,41 @@
+# Android Studio / Kotlin
+*.iml
+.gradle/
+.local/
+.idea/
+out/
+captures/
+*.log
+*.keystore
+*.jks
+
+# Android build files
+app/build/
+**/build/
+**/out/
+**/.cxx/
+
+# Kotlin/Java dependencies
+*.class
+*.jar
+*.war
+*.ear
+
+# Node.js (falls du React im Frontend nutzt)
+frontend/node_modules/
+frontend/.next/
+frontend/.parcel-cache/
+frontend/build/
+
+# Java/Maven/Gradle
+backend/target/
+backend/.mvn/
+backend/build/
+*.log
+
+# IntelliJ IDEA / JetBrains
+.idea/
+*.iml
+
+# Environment variables
+.env
