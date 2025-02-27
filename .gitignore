@@ -21,7 +21,7 @@ app/build/
 *.war
 *.ear
 
-# Node.js (falls du React im Frontend nutzt)
+# Node.js (if you use React in the frontend)
 frontend/node_modules/
 frontend/.next/
 frontend/.parcel-cache/
@@ -39,3 +39,28 @@ backend/build/
 
 # Environment variables
 .env
+
+# Additional Spring Boot specific exclusions
+backend/*.properties
+backend/*.yml
+backend/*.bak
+backend/*.swp
+backend/*.swo
+backend/*.db
+
+# Ignore sensitive Android configuration files
+*.keystore
+*.jks
+
+# Ignore system files
+.DS_Store
+Thumbs.db
+
+# Ignore Maven wrapper
+.mvn/
+mvnw
+mvnw.cmd
+
+# Ignore Gradle wrapper (if applicable)
+gradlew
+gradlew.bat
