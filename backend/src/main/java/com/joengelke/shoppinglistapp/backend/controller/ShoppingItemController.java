@@ -5,6 +5,8 @@ import com.joengelke.shoppinglistapp.backend.service.ShoppingItemService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.Map;
+
 @RestController
 @RequestMapping("/api/shoppingitem")
 public class ShoppingItemController {
@@ -18,7 +20,7 @@ public class ShoppingItemController {
     @PutMapping
     public ResponseEntity<?> updateShoppingItem(@RequestBody ShoppingItem shoppingItem) {
         ShoppingItem updatedItem = shoppingItemService.updateItem(shoppingItem);
-        return ResponseEntity.ok("Item updated");
+        return ResponseEntity.ok(Map.of("name", updatedItem.getName()));
     }
 
     @PatchMapping("/{id}/checked")

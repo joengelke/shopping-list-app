@@ -1,67 +1,51 @@
 package com.joengelke.shoppinglistapp.backend.security;
 
-import io.jsonwebtoken.Jwts;
-import io.jsonwebtoken.SignatureAlgorithm;
-import io.jsonwebtoken.security.Keys;
+import com.joengelke.shoppinglistapp.backend.service.UserService;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.AuthenticationException;
-import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
-import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import org.springframework.security.web.authentication.WebAuthenticationDetailsSource;
+import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
-import java.util.Date;
-import java.util.List;
 
-// authentication for every login
-public class JwtAuthenticationFilter extends UsernamePasswordAuthenticationFilter {
+public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
-    private final AuthenticationManager authenticationManager;
-    private final SecurityConstants securityConstants;
+    @Autowired
+    private JwtTokenProvider jwtTokenProvider;
+    @Autowired
+    private UserService userService;
 
+    // checks every http request for correct token, extract user details to identify user
+    @Override
+    protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
+            throws ServletException, IOException {
+        String token = extractJwtFromRequest(request);
 
-    public JwtAuthenticationFilter(AuthenticationManager authenticationManager, SecurityConstants securityConstants) {
-        this.authenticationManager = authenticationManager;
-        this.securityConstants = securityConstants;
+        if (token != null && jwtTokenProvider.validateToken(token)) {
+            String username = jwtTokenProvider.getUsernameFromToken(token);
+            // include authorities here later ?
 
-        setFilterProcessesUrl(securityConstants.getAuthLoginUrl()); // Define login URL
+            UserDetails userDetails = userService.loadUserByUsername(username);
+
+            UsernamePasswordAuthenticationToken authenticationToken =
+                    new UsernamePasswordAuthenticationToken(userDetails, null, userDetails.getAuthorities());
+            authenticationToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
+            SecurityContextHolder.getContext().setAuthentication(authenticationToken);
+        }
+        filterChain.doFilter(request, response);
     }
 
-    @Override
-    public Authentication attemptAuthentication(HttpServletRequest request, HttpServletResponse response) throws AuthenticationException {
-        final String username = request.getParameter("username");
-        final String password = request.getParameter("password");
-        final UsernamePasswordAuthenticationToken authenticationToken = new UsernamePasswordAuthenticationToken(username, password);
-
-        return authenticationManager.authenticate(authenticationToken);
-    }
-
-    @Override
-    protected void successfulAuthentication(HttpServletRequest request, HttpServletResponse response, FilterChain chain, Authentication authentication) throws IOException, ServletException {
-        final UserDetails user = (UserDetails) authentication.getPrincipal();
-
-        final List<String> roles = user.getAuthorities()
-                .stream()
-                .map(GrantedAuthority::getAuthority)
-                .toList();
-
-        final byte[] signingKey = securityConstants.getJwtSecret().getBytes();
-
-        // generate token
-        final String token = Jwts.builder()
-                .setSubject(user.getUsername())
-                .setIssuedAt(new Date())
-                .setExpiration(new Date(System.currentTimeMillis() + securityConstants.getExpirationTime()))
-                .signWith(Keys.hmacShaKeyFor(signingKey), SignatureAlgorithm.HS512)
-                .claim("role", roles)
-                .compact();
-
-        response.addHeader(securityConstants.getTokenHeader(), securityConstants.getTokenPrefix() + token);
+    private String extractJwtFromRequest(HttpServletRequest request) {
+        String bearerToken = request.getHeader("Authorization");
+        if (bearerToken != null && bearerToken.startsWith("Bearer")) {
+            return bearerToken.substring(7);
+        }
+        return null;
     }
 }

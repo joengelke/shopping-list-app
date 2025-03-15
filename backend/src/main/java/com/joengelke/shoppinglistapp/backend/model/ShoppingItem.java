@@ -21,8 +21,9 @@ public class ShoppingItem {
     private boolean checked;
     private String note;
     private Date editedAt;
+    private String createdBy;
 
-    public ShoppingItem(String id, String name, String category, Double amount, String unit, String note) {
+    public ShoppingItem(String id, String name, String category, Double amount, String unit, String note, String createdBy) {
         this.id = id;
         this.name = name;
         this.category = category;
@@ -31,5 +32,6 @@ public class ShoppingItem {
         this.checked = false;
         this.note = note;
         this.editedAt = new Date();
+        this.createdBy = createdBy;
     }
 }

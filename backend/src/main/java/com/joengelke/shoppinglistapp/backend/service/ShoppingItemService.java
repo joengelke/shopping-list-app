@@ -2,10 +2,12 @@ package com.joengelke.shoppinglistapp.backend.service;
 
 import com.joengelke.shoppinglistapp.backend.model.ShoppingItem;
 import com.joengelke.shoppinglistapp.backend.repository.ShoppingItemRepository;
+import org.springframework.stereotype.Service;
 
 import java.util.Date;
 import java.util.NoSuchElementException;
 
+@Service
 public class ShoppingItemService {
 
     private final ShoppingItemRepository shoppingItemRepository;

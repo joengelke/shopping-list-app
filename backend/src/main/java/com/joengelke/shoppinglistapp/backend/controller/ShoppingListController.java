@@ -7,6 +7,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/shoppinglist")
@@ -21,7 +22,7 @@ public class ShoppingListController {
     @PostMapping
     public ResponseEntity<?> createShoppingList(@RequestBody ShoppingList shoppingList) {
         ShoppingList savedShoppingList = shoppingListService.createShoppingList(shoppingList);
-        return ResponseEntity.ok("Shopping list " + savedShoppingList.getName() + "successfully created at" + savedShoppingList.getCreatedAt());
+        return ResponseEntity.ok(Map.of("name", savedShoppingList.getName(), "createdAt", savedShoppingList.getCreatedAt()));
     }
 
     @GetMapping("s")
@@ -39,18 +40,18 @@ public class ShoppingListController {
     @PutMapping
     public ResponseEntity<?> updateShoppingList(@RequestBody ShoppingList shoppingList) {
         ShoppingList updatedList = shoppingListService.updateShoppingList(shoppingList);
-        return ResponseEntity.ok("Shopping list updated");
+        return ResponseEntity.ok(Map.of("name", updatedList.getName()));
     }
 
     @DeleteMapping("/{id}")
     public ResponseEntity<?> deleteShoppingList(@PathVariable String id) {
         shoppingListService.deleteShoppingList(id);
-        return ResponseEntity.ok("Shopping list deleted");
+        return ResponseEntity.ok(Map.of("message","Shopping list deleted successfully"));
     }
 
 
     // ItemList changes
-    @GetMapping("{id}/itemIds")
+    @GetMapping("/{id}/itemIds")
     public ResponseEntity<?> getItemsByShoppingList(@PathVariable String id) {
         List<ShoppingItem> itemList = shoppingListService.getItemsByShoppingList(id);
         return ResponseEntity.ok(itemList);
@@ -59,13 +60,14 @@ public class ShoppingListController {
     @PutMapping("/{id}/item")
     public ResponseEntity<?> addItemToShoppingList(@PathVariable String id, @RequestBody ShoppingItem shoppingItem) {
         ShoppingItem newItem = shoppingListService.addItemToShoppingList(id, shoppingItem);
+        //TODO add username of creator maybe from token?!
         return ResponseEntity.ok(newItem);
     }
 
     @DeleteMapping("/{listId}/item/{itemId}")
     public ResponseEntity<?> deleteItem(@PathVariable String listId, @PathVariable String itemId) {
         shoppingListService.deleteItemById(listId, itemId);
-        return ResponseEntity.ok("Item deleted");
+        return ResponseEntity.ok(Map.of("message","Item deleted successfully"));
     }
 
 }
