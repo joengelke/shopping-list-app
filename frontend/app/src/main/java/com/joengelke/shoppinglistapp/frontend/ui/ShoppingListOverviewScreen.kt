@@ -19,9 +19,9 @@ import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
 import com.joengelke.shoppinglistapp.frontend.models.ShoppingList
+import com.joengelke.shoppinglistapp.frontend.navigation.Routes
 import com.joengelke.shoppinglistapp.frontend.viewmodel.AuthViewModel
 import com.joengelke.shoppinglistapp.frontend.viewmodel.ShoppingListViewModel
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -42,15 +42,14 @@ fun ShoppingListOverviewScreen(
     val onRefresh: () -> Unit = {
         refreshing = true
         coroutineScope.launch {
-            shoppingListViewModel.loadShoppingLists()
-            delay(1000)
-            refreshing = false
+            shoppingListViewModel.loadShoppingLists(
+                onSuccess = { refreshing = false }
+            )
         }
-
     }
 
     LaunchedEffect(Unit) {
-        shoppingListViewModel.loadShoppingLists()
+        shoppingListViewModel.loadShoppingLists(onSuccess = {})
     }
 
     Scaffold(
@@ -147,12 +146,7 @@ fun ShoppingListContainer(
             .fillMaxWidth()
             .padding(16.dp)
             .clickable {
-                // navigate to shopping items overview with shoppingList Id included
-                navController.currentBackStackEntry?.savedStateHandle?.set(
-                    "shoppingListId",
-                    shoppingList.id
-                )
-                navController.navigate("shoppingItemsOverview") // forward to items overview
+                navController.navigate(Routes.ShoppingItemsOverview.createRoute(shoppingList.id)) // forward to items overview
             }
     ) {
         Row(
@@ -178,8 +172,8 @@ fun ShoppingListContainer(
                     onDismissRequest = { isMenuExpanded = false },
                     modifier = Modifier.align(Alignment.End)
                 ) {
-                    DropdownMenuItem(text = { Text("Edit") }, onClick = { onEdit() }) //TODO
-                    DropdownMenuItem(text = { Text("Delete") }, onClick = { onDelete() }) //TODO
+                    DropdownMenuItem(text = { Text("Edit (TODO)") }, onClick = { onEdit() }) //TODO
+                    DropdownMenuItem(text = { Text("Delete (TODO)") }, onClick = { onDelete() }) //TODO
                 }
             }
 

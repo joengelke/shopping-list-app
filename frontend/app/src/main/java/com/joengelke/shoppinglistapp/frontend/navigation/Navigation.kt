@@ -30,6 +30,7 @@ fun Navigation(authViewModel: AuthViewModel) {
         return
     }
 
+    // checked for valid token to skip login, TODO: check if backend exists/is online
     val startDestination = if (isLoggedIn) Routes.ShoppingListOverview.route else Routes.Login.route
 
     NavHost(navController, startDestination = startDestination) {
@@ -51,8 +52,13 @@ fun Navigation(authViewModel: AuthViewModel) {
         composable(Routes.ShoppingListCreate.route) {
             ShoppingListCreateScreen(navController)
         }
-        composable(Routes.ShoppingItemsOverview.route) {
-            ShoppingItemsOverviewScreen(navController)
+        composable(Routes.ShoppingItemsOverview.route) { backStackEntry ->
+            val shoppingListId = backStackEntry.arguments?.getString("shoppingListId")?:""
+            ShoppingItemsOverviewScreen(navController, shoppingListId)
+        }
+        composable(Routes.ShoppingItemsCreate.route) { backStackEntry ->
+            val shoppingListId = backStackEntry.arguments?.getString("shoppingListId")?:""
+            ShoppingItemsCreateScreen(navController, shoppingListId)
         }
 
     }

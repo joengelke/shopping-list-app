@@ -21,10 +21,15 @@ class ShoppingListViewModel @Inject constructor(private val shoppingListReposito
     private val _errorMessage = MutableStateFlow<String?>(null)
     val errorMessage: StateFlow<String?> = _errorMessage
 
-    fun loadShoppingLists() {
+    fun loadShoppingLists(
+        onSuccess: () -> Unit
+    ) {
         viewModelScope.launch {
             val result = shoppingListRepository.getShoppingLists()
-            result.onSuccess { lists -> _shoppingLists.value = lists }
+            result.onSuccess { lists ->
+                _shoppingLists.value = lists
+                onSuccess()
+            }
                 .onFailure { error ->
                     _errorMessage.value = error.message
                 }
@@ -39,8 +44,7 @@ class ShoppingListViewModel @Inject constructor(private val shoppingListReposito
         viewModelScope.launch {
             val result = shoppingListRepository.createShoppingList(name)
             result.onSuccess {
-                loadShoppingLists()
-                onSuccess()
+                loadShoppingLists(onSuccess)
             }.onFailure { error ->
                 _errorMessage.value = error.message
                 onError()

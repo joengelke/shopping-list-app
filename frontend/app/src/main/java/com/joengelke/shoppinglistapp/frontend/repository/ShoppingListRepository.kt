@@ -1,9 +1,9 @@
 package com.joengelke.shoppinglistapp.frontend.repository
 
 import com.joengelke.shoppinglistapp.frontend.models.ShoppingList
+import com.joengelke.shoppinglistapp.frontend.models.ShoppingListCreateRequest
+import com.joengelke.shoppinglistapp.frontend.models.ShoppingListResponse
 import com.joengelke.shoppinglistapp.frontend.network.ShoppingListApi
-import com.joengelke.shoppinglistapp.frontend.network.ShoppingListCreateRequest
-import com.joengelke.shoppinglistapp.frontend.network.ShoppingListResponse
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
 import javax.inject.Inject
@@ -54,5 +54,4 @@ class ShoppingListRepository @Inject constructor(
         }
 
     }
-
 }
