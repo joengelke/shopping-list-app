@@ -6,6 +6,7 @@ import com.joengelke.shoppinglistapp.backend.repository.ShoppingListRepository;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
 import java.util.NoSuchElementException;
 
@@ -23,6 +24,15 @@ public class ShoppingListService {
     }
 
     public ShoppingList createShoppingList(ShoppingList shoppingList) {
+        if (shoppingList.getName() == null) {
+            shoppingList.setName("");
+        }
+        if (shoppingList.getCreatedAt() == null) {
+            shoppingList.setCreatedAt(new Date());
+        }
+        if (shoppingList.getItemIds() == null) {
+            shoppingList.setItemIds(new ArrayList<>());
+        }
         return shoppingListRepository.save(shoppingList);
     }
 
@@ -41,8 +51,9 @@ public class ShoppingListService {
                 .orElseThrow(() -> new NoSuchElementException("Shopping list not found"));
 
         // update ShoppingList attributes
-        shoppingList.setName(newShoppingList.getName());
-
+        if (newShoppingList.getName() != null) {
+            shoppingList.setName(newShoppingList.getName());
+        }
         return shoppingListRepository.save(shoppingList);
     }
 

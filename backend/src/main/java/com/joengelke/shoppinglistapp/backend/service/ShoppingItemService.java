@@ -17,6 +17,27 @@ public class ShoppingItemService {
     }
 
     public ShoppingItem createItem(ShoppingItem shoppingItem) {
+        if (shoppingItem.getName() == null) {
+            shoppingItem.setName("");
+        }
+        if (shoppingItem.getCategory() == null) {
+            shoppingItem.setCategory("");
+        }
+        if (shoppingItem.getAmount() == null) {
+            shoppingItem.setAmount(1.0);
+        }
+        if (shoppingItem.getUnit() == null) {
+            shoppingItem.setUnit("");
+        }
+        if (shoppingItem.getNote() == null) {
+            shoppingItem.setNote("");
+        }
+        if (shoppingItem.getEditedAt() == null) {
+            shoppingItem.setEditedAt(new Date());
+        }
+        if (shoppingItem.getCreatedBy() == null) {
+            shoppingItem.setCreatedBy("");
+        }
         return shoppingItemRepository.save(shoppingItem);
     }
 
@@ -29,14 +50,25 @@ public class ShoppingItemService {
         ShoppingItem shoppingItem = shoppingItemRepository.findById(newShoppingItem.getId())
                 .orElseThrow(() -> new NoSuchElementException("Item not found with itemId: " + newShoppingItem.getId()));
 
-        shoppingItem.setName(newShoppingItem.getName());
-        shoppingItem.setCategory(newShoppingItem.getCategory());
-        shoppingItem.setAmount(newShoppingItem.getAmount());
-        shoppingItem.setUnit(newShoppingItem.getUnit());
-        shoppingItem.setChecked(newShoppingItem.isChecked());
-        shoppingItem.setNote(newShoppingItem.getNote());
-        shoppingItem.setEditedAt(new Date());
-
+        // checked status and createdBy cant be updated
+        if (newShoppingItem.getName() != null) {
+            shoppingItem.setName(newShoppingItem.getName());
+        }
+        if (newShoppingItem.getCategory() != null) {
+            shoppingItem.setCategory(newShoppingItem.getCategory());
+        }
+        if (newShoppingItem.getAmount() != null) {
+            shoppingItem.setAmount(newShoppingItem.getAmount());
+        }
+        if (newShoppingItem.getUnit() != null) {
+            shoppingItem.setUnit(newShoppingItem.getUnit());
+        }
+        if (newShoppingItem.getNote() != null) {
+            shoppingItem.setNote(newShoppingItem.getNote());
+        }
+        if (newShoppingItem.getEditedAt() != null) {
+            shoppingItem.setEditedAt(new Date());
+        }
         return shoppingItemRepository.save(shoppingItem);
     }
 

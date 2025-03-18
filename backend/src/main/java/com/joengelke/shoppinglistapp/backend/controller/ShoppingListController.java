@@ -25,7 +25,7 @@ public class ShoppingListController {
         return ResponseEntity.ok(Map.of("name", savedShoppingList.getName(), "createdAt", savedShoppingList.getCreatedAt()));
     }
 
-    @GetMapping("s")
+    @GetMapping
     public ResponseEntity<?> getAllShoppingLists() {
         List<ShoppingList> shoppingLists = shoppingListService.getAllShoppingLists();
         return ResponseEntity.ok(shoppingLists);
@@ -51,15 +51,15 @@ public class ShoppingListController {
 
 
     // ItemList changes
-    @GetMapping("/{id}/itemIds")
-    public ResponseEntity<?> getItemsByShoppingList(@PathVariable String id) {
-        List<ShoppingItem> itemList = shoppingListService.getItemsByShoppingList(id);
+    @GetMapping("/{shoppingListId}/items")
+    public ResponseEntity<?> getItemsByShoppingList(@PathVariable String shoppingListId) {
+        List<ShoppingItem> itemList = shoppingListService.getItemsByShoppingList(shoppingListId);
         return ResponseEntity.ok(itemList);
     }
 
-    @PutMapping("/{id}/item")
-    public ResponseEntity<?> addItemToShoppingList(@PathVariable String id, @RequestBody ShoppingItem shoppingItem) {
-        ShoppingItem newItem = shoppingListService.addItemToShoppingList(id, shoppingItem);
+    @PutMapping("/{shoppingListId}/item")
+    public ResponseEntity<?> addItemToShoppingList(@PathVariable String shoppingListId, @RequestBody ShoppingItem shoppingItem) {
+        ShoppingItem newItem = shoppingListService.addItemToShoppingList(shoppingListId, shoppingItem);
         //TODO add username of creator maybe from token?!
         return ResponseEntity.ok(newItem);
     }
