@@ -16,7 +16,8 @@ public class ShoppingItemService {
         this.shoppingItemRepository = shoppingItemRepository;
     }
 
-    public ShoppingItem createItem(ShoppingItem shoppingItem) {
+    public ShoppingItem addOneItem(ShoppingItem shoppingItem) {
+        // TODO add item amount if item already exists
         if (shoppingItem.getName() == null) {
             shoppingItem.setName("");
         }
@@ -35,9 +36,20 @@ public class ShoppingItemService {
         if (shoppingItem.getEditedAt() == null) {
             shoppingItem.setEditedAt(new Date());
         }
+
+        shoppingItem.setEditedAt(new Date());
+
         if (shoppingItem.getCreatedBy() == null) {
             shoppingItem.setCreatedBy("");
         }
+
+        ShoppingItem existingItem = shoppingItemRepository.findByName(shoppingItem.getName());
+        if (existingItem != null) {
+            existingItem.setAmount(existingItem.getAmount()+1);
+            existingItem.setEditedAt(new Date());
+            return shoppingItemRepository.save(existingItem);
+        }
+
         return shoppingItemRepository.save(shoppingItem);
     }
 
@@ -80,8 +92,22 @@ public class ShoppingItemService {
         return shoppingItemRepository.save(shoppingItem);
     }
 
+    public ShoppingItem removeOneItem(String itemId) {
+        // return null if item was deleted or the item if amount was updated
+        ShoppingItem shoppingItem = shoppingItemRepository.findById(itemId)
+                .orElseThrow(() -> new NoSuchElementException("Item not found with itemId: " + itemId));
+        if (shoppingItem.getAmount() > 1) {
+            shoppingItem.setAmount(shoppingItem.getAmount()-1);
+        } else {
+            shoppingItemRepository.deleteById(shoppingItem.getId());
+            return null;
+        }
+        return shoppingItemRepository.save(shoppingItem);
+    }
+
     public void deleteItemById(String id) {
         shoppingItemRepository.deleteById(id);
     }
+
 
 }

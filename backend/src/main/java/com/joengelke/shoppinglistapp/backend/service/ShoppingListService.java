@@ -82,17 +82,29 @@ public class ShoppingListService {
     }
 
     // save item in item repo and update item list in shopping list
-    public ShoppingItem addItemToShoppingList(String listId, ShoppingItem shoppingItem) {
-        ShoppingItem createdItem = shoppingItemService.createItem(shoppingItem);
+    public ShoppingItem addOneItemToShoppingList(String listId, ShoppingItem shoppingItem) {
+        ShoppingItem createdOrUpdatedItem = shoppingItemService.addOneItem(shoppingItem);
         ShoppingList shoppingList = shoppingListRepository.findById(listId)
                 .orElseThrow(() -> new NoSuchElementException("Shopping list not found"));
 
-        // add item listId to shopping list's item list
-        shoppingList.getItemIds().add(createdItem.getId());
 
-        //save updated shopping list and return created item
-        shoppingListRepository.save(shoppingList);
-        return createdItem;
+        // Check if the item is newly created (it doesn't exist in the shopping list yet)
+        if(!shoppingList.getItemIds().contains(createdOrUpdatedItem.getId())) {
+            shoppingList.getItemIds().add(createdOrUpdatedItem.getId());
+            shoppingListRepository.save(shoppingList);
+        }
+        return createdOrUpdatedItem;
+    }
+
+    public ShoppingItem removeOneItemById(String listId, String itemId) {
+        ShoppingItem updatedItem = shoppingItemService.removeOneItem(itemId);
+        if (updatedItem == null) {
+            ShoppingList shoppingList = shoppingListRepository.findById(listId)
+                    .orElseThrow(() -> new NoSuchElementException("Shopping list not found"));
+            shoppingList.getItemIds().remove(itemId);
+            shoppingListRepository.save(shoppingList);
+        }
+        return updatedItem;
     }
 
     public void deleteItemById(String listId, String itemId) {
@@ -102,4 +114,7 @@ public class ShoppingListService {
         shoppingList.getItemIds().remove(itemId);
         shoppingListRepository.save(shoppingList);
     }
+
+
+
 }

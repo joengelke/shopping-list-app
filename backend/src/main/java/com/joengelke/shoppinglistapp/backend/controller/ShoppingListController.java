@@ -58,14 +58,23 @@ public class ShoppingListController {
     }
 
     @PutMapping("/{shoppingListId}/item")
-    public ResponseEntity<?> addItemToShoppingList(@PathVariable String shoppingListId, @RequestBody ShoppingItem shoppingItem) {
-        ShoppingItem newItem = shoppingListService.addItemToShoppingList(shoppingListId, shoppingItem);
+    public ResponseEntity<?> addOneItemToShoppingList(@PathVariable String shoppingListId, @RequestBody ShoppingItem shoppingItem) {
+        ShoppingItem newItem = shoppingListService.addOneItemToShoppingList(shoppingListId, shoppingItem);
         //TODO add username of creator maybe from token?!
         return ResponseEntity.ok(newItem);
     }
 
+    @PatchMapping("/{listId}/item/{itemId}")
+    public ResponseEntity<?> removeOneItemById(@PathVariable String listId, @PathVariable String itemId) {
+        ShoppingItem updatedItem = shoppingListService.removeOneItemById(listId, itemId);
+        if(updatedItem == null) {
+            ResponseEntity.noContent().build();
+        }
+        return ResponseEntity.ok(updatedItem);
+    }
+
     @DeleteMapping("/{listId}/item/{itemId}")
-    public ResponseEntity<?> deleteItem(@PathVariable String listId, @PathVariable String itemId) {
+    public ResponseEntity<?> deleteItemById(@PathVariable String listId, @PathVariable String itemId) {
         shoppingListService.deleteItemById(listId, itemId);
         return ResponseEntity.ok(Map.of("message","Item deleted successfully"));
     }
