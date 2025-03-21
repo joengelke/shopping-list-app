@@ -1,10 +1,11 @@
 package com.joengelke.shoppinglistapp.frontend.repository
 
 import com.joengelke.shoppinglistapp.frontend.models.ShoppingItem
-import com.joengelke.shoppinglistapp.frontend.models.ShoppingItemCreateRequest
+import com.joengelke.shoppinglistapp.frontend.models.ShoppingItemRequest
 import com.joengelke.shoppinglistapp.frontend.network.ShoppingItemApi
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
+import java.io.EOFException
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -35,16 +36,20 @@ class ShoppingItemRepository @Inject constructor(
         }
     }
 
-    suspend fun addItemToShoppingList(
+    suspend fun addOneItemToShoppingList(
         shoppingListId: String,
-        shoppingItem: ShoppingItemCreateRequest
+        shoppingItem: ShoppingItemRequest
     ): Result<ShoppingItem> {
         return try {
             val token =
                 authRepository.getToken() ?: return Result.failure(Exception("No token found"))
 
             val response =
-                shoppingItemApi.addItemToShoppingList("Bearer $token", shoppingListId, shoppingItem)
+                shoppingItemApi.addOneItemToShoppingList(
+                    "Bearer $token",
+                    shoppingListId,
+                    shoppingItem
+                )
             if (response.isSuccessful) {
                 response.body()?.let { Result.success(it) }
                     ?: Result.failure(Exception("Unexpected empty response"))
@@ -55,6 +60,37 @@ class ShoppingItemRepository @Inject constructor(
             Result.failure(Exception("Network error: ${e.message}"))
         }
     }
+
+    suspend fun removeOneItemOfShoppingList(
+        shoppingListId: String,
+        shoppingItemId: String
+    ): Result<ShoppingItem?> {
+        try {
+            val token =
+                authRepository.getToken() ?: return Result.failure(Exception("No token found"))
+
+            val response =
+                shoppingItemApi.removeOneItemFromShoppingList(
+                    "Bearer $token",
+                    shoppingListId,
+                    shoppingItemId
+                )
+
+            return if (response.isSuccessful) {
+                response.body()?.let { Result.success(it) }
+                    ?: Result.success(null)
+            } else {
+                Result.failure(Exception("Failed to remove one item"))
+            }
+
+        } catch (e: EOFException) {
+            // catches if response is null (item deleted) and thus returns an EOFException
+            return Result.success(null)
+        } catch (e: Exception) {
+            return Result.failure(Exception("Network error: ${e.message}"))
+        }
+    }
+
 
     suspend fun updateCheckedStatus(itemId: String, checked: Boolean): Result<ShoppingItem> {
         return try {
@@ -72,6 +108,5 @@ class ShoppingItemRepository @Inject constructor(
         } catch (e: Exception) {
             Result.failure(Exception("Network error: ${e.message}"))
         }
-
     }
 }

@@ -14,6 +14,6 @@ data class ShoppingItem(
     val createdBy: String
 )
 
-data class ShoppingItemCreateRequest(
+data class ShoppingItemRequest(
     val name: String
 )

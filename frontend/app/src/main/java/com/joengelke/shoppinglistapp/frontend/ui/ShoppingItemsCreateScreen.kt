@@ -10,6 +10,7 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Clear
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -18,15 +19,19 @@ import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
-import com.joengelke.shoppinglistapp.frontend.models.ShoppingItemCreateRequest
+import com.joengelke.shoppinglistapp.frontend.models.ShoppingItem
+import com.joengelke.shoppinglistapp.frontend.models.ShoppingItemRequest
 import com.joengelke.shoppinglistapp.frontend.viewmodel.ShoppingItemsViewModel
 import kotlinx.coroutines.delay
+import java.util.Date
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -37,28 +42,127 @@ fun ShoppingItemsCreateScreen(
 ) {
 
     var name by remember { mutableStateOf("") }
-    var amount by remember { mutableStateOf("") }
+
+    val newShoppingItem = listOf(ShoppingItem(
+        id = "",
+        name = name,
+        category = "",
+        amount = 0.0,
+        unit = "",
+        checked = false,
+        note = "",
+        editedAt = Date(),
+        createdBy = ""
+    ))
+
+    val shoppingItems by shoppingItemsViewModel.shoppingItems.collectAsState()
 
     //TODO get all Possible Items from Backend once its Screen is loaded
-    val allPossibleItems = listOf(
-        "Apple",
-        "Banana",
-        "Bread",
-        "Butter",
-        "Carrot",
-        "Cheese",
-        "Chicken"
-    ) // Example suggestions
-    val otherSuggestions = allPossibleItems.filter { it.startsWith(name, ignoreCase = true) }
 
-    // typed in itemName always first item, then all suggestions are added
-    val ownItemAndSuggestions =
-        if (name.isNotEmpty()) listOf(name) + otherSuggestions else emptyList()
+    val tmpOwnSuggestionsList = listOf(
+        ShoppingItem(
+            id = "",
+            name = "Apple",
+            category = "",
+            amount = 0.0,
+            unit = "",
+            checked = false,
+            note = "",
+            editedAt = Date(),
+            createdBy = ""
+        ),
+        ShoppingItem(
+            id = "",
+            name = "Banana",
+            category = "",
+            amount = 0.0,
+            unit = "",
+            checked = false,
+            note = "",
+            editedAt = Date(),
+            createdBy = ""
+        ),
+        ShoppingItem(
+            id = "",
+            name = "Bread",
+            category = "",
+            amount = 0.0,
+            unit = "",
+            checked = false,
+            note = "",
+            editedAt = Date(),
+            createdBy = ""
+        ),
+        ShoppingItem(
+            id = "",
+            name = "Butter",
+            category = "",
+            amount = 0.0,
+            unit = "",
+            checked = false,
+            note = "",
+            editedAt = Date(),
+            createdBy = ""
+        ),
+        ShoppingItem(
+            id = "",
+            name = "Carrot",
+            category = "",
+            amount = 0.0,
+            unit = "",
+            checked = false,
+            note = "",
+            editedAt = Date(),
+            createdBy = ""
+        ),
+        ShoppingItem(
+            id = "",
+            name = "Cheese",
+            category = "",
+            amount = 0.0,
+            unit = "",
+            checked = false,
+            note = "",
+            editedAt = Date(),
+            createdBy = ""
+        ),
+        ShoppingItem(
+            id = "",
+            name = "Chicken",
+            category = "",
+            amount = 0.0,
+            unit = "",
+            checked = false,
+            note = "",
+            editedAt = Date(),
+            createdBy = ""
+        )
+    )
+    val ownSuggestionsList = tmpOwnSuggestionsList.filter{it.name !in shoppingItems.map{it.name}.toSet()}
+
+    // Filter items that start with the entered name
+    val filteredShoppingItems = shoppingItems.filter { it.name.startsWith(name, ignoreCase = true) }
+    val filteredOwnSuggestions =
+        ownSuggestionsList.filter { it.name.startsWith(name, ignoreCase = true) }
+
+    // own item name always first item (if it doesn't exists), then all suggestions are added
+    val allItems =
+        if (name.isNotEmpty()) {
+            if (!(filteredShoppingItems+filteredOwnSuggestions).any{it.name == name}) {
+                newShoppingItem + filteredShoppingItems + filteredOwnSuggestions
+            } else {
+                filteredShoppingItems + filteredOwnSuggestions
+            }
+        } else {
+            emptyList()
+        }
 
     val focusRequester = remember { FocusRequester() }
     val keyboardController = LocalSoftwareKeyboardController.current
 
+
     LaunchedEffect(Unit) {
+        shoppingItemsViewModel.loadShoppingItems(shoppingListId, onSuccess = {})
         delay(300)
         focusRequester.requestFocus()
         keyboardController?.show()
@@ -101,14 +205,22 @@ fun ShoppingItemsCreateScreen(
                     .padding(paddingValues)
             ) {
 
-                items(ownItemAndSuggestions) { itemName ->
-                    OwnAndSuggestionItemContainer(itemName, onAddItem = {
-                        val newItem = ShoppingItemCreateRequest(itemName)
-                        shoppingItemsViewModel.addShoppingItem(
-                            shoppingListId,
-                            newItem
-                        )
-                    })
+                items(allItems) { item ->
+                    OwnAndSuggestionItemContainer(item.name, item.amount,
+                        addOneItem = {
+                            val newItem = ShoppingItemRequest(item.name)
+                            shoppingItemsViewModel.addOneShoppingItem(
+                                shoppingListId,
+                                newItem
+                            )
+                        },
+                        removeOneItem = {
+                            shoppingItemsViewModel.removeOneShoppingItem(
+                                shoppingListId,
+                                item.id
+                            )
+                        }
+                    )
                 }
             }
         }
@@ -117,15 +229,18 @@ fun ShoppingItemsCreateScreen(
 
 @Composable
 fun OwnAndSuggestionItemContainer(
-    itemName: String,
-    onAddItem: (String) -> Unit
+    name: String,
+    amount: Double,
+    addOneItem: (String) -> Unit,
+    removeOneItem: (String) -> Unit
 ) {
     var isAdded by remember { mutableStateOf(false) }
+
     Card(
         modifier = Modifier
             .fillMaxWidth()
             .padding(2.dp),
-        colors = CardDefaults.cardColors(if (isAdded) Color.Green.copy(alpha = 0.3f) else Color.White)
+        colors = CardDefaults.cardColors(if (amount >= 1) Color.Green.copy(alpha = 0.3f) else Color.White)
     ) {
         Row(
             modifier = Modifier
@@ -135,17 +250,40 @@ fun OwnAndSuggestionItemContainer(
         ) {
             IconButton(
                 onClick = {
-                    onAddItem(itemName)
+                    //amount += 1
+                    addOneItem(name)
                     isAdded = true
                 }
             ) {
                 Icon(Icons.Default.Add, contentDescription = "Add Item")
             }
             Text(
-                text = itemName,
+                text = name,
                 modifier = Modifier
                     .padding(start = 8.dp)
+                    .weight(1f)
             )
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                if (amount > 0) {
+                    Text(
+                        text = amount.let {
+                            if (it % 1 == 0.0) it.toInt().toString() else it.toString()
+                        },
+                        fontSize = 18.sp,
+                        fontWeight = FontWeight.Bold,
+                        modifier = Modifier.padding(end = 10.dp)
+                    )
+                    IconButton(
+                        onClick = {
+                            //amount -= 1
+                            removeOneItem(name)
+                        }
+                    ) {
+                        Icon(Icons.Default.Clear, contentDescription = "Add Item")
+                    }
+                }
+            }
+
         }
     }
 }

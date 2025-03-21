@@ -1,12 +1,13 @@
 package com.joengelke.shoppinglistapp.frontend.ui
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.MoreVert
+import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
@@ -15,6 +16,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -36,7 +38,6 @@ fun ShoppingItemsOverviewScreen(
 
     var refreshing by remember { mutableStateOf(false) }
     val state = rememberPullToRefreshState()
-    val coroutineScope = rememberCoroutineScope()
     val onRefresh: () -> Unit = {
         refreshing = true
         shoppingItemsViewModel.loadShoppingItems(
@@ -50,7 +51,11 @@ fun ShoppingItemsOverviewScreen(
         shoppingItemsViewModel.loadShoppingItems(shoppingListId, onSuccess = {})
     }
 
-    val (uncheckedItems, checkedItems) = shoppingItems.partition { !it.checked }
+    val uncheckedItems = shoppingItems.filter { !it.checked }
+    val checkedItems = shoppingItems.filter { it.checked }
+
+    var isCheckedItemsVisible by remember { mutableStateOf(true) }
+    //val (uncheckedItems, checkedItems) = shoppingItems.partition { !it.checked }
 
     Scaffold(
         topBar = {
@@ -94,10 +99,6 @@ fun ShoppingItemsOverviewScreen(
         floatingActionButton = {
             FloatingActionButton(
                 onClick = {
-                    navController.currentBackStackEntry?.savedStateHandle?.set(
-                        "shoppingListId",
-                        shoppingListId
-                    )
                     navController.navigate(Routes.ShoppingItemsCreate.createRoute(shoppingListId))
                 },
                 containerColor = MaterialTheme.colorScheme.primary
@@ -114,16 +115,51 @@ fun ShoppingItemsOverviewScreen(
                 isRefreshing = refreshing,
                 onRefresh = onRefresh
             ) {
+                // unchecked list
                 LazyColumn(modifier = Modifier.fillMaxSize()) {
-                    val sortedItems = uncheckedItems + checkedItems
+                    // val sortedItems = uncheckedItems + checkedItems
 
-                    items(sortedItems) { item ->
+                    items(uncheckedItems) { item ->
                         ShoppingItemContainer(item, onCheckedChange = { updatedItem ->
                             shoppingItemsViewModel.updateCheckedStatus(
                                 item.id,
                                 updatedItem.checked
                             )
                         })
+                    }
+
+                    if (checkedItems.isNotEmpty()) {
+                        item {
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .clickable { isCheckedItemsVisible = !isCheckedItemsVisible }
+                                    .padding(vertical = 8.dp, horizontal = 16.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Text(
+                                    text = if (isCheckedItemsVisible) "Hide ${checkedItems.size} Items" else "Show ${checkedItems.size} Items",
+                                    fontSize = 12.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    modifier = Modifier.weight(1f)
+                                )
+                                Icon(
+                                    imageVector = if (isCheckedItemsVisible) Icons.Default.KeyboardArrowUp else Icons.Default.KeyboardArrowDown,
+                                    contentDescription = "Toggle Checked Items"
+                                )
+                            }
+                        }
+
+                        if (isCheckedItemsVisible) {
+                            items(checkedItems) { item ->
+                                ShoppingItemContainer(item, onCheckedChange = { updatedItem ->
+                                    shoppingItemsViewModel.updateCheckedStatus(
+                                        item.id,
+                                        updatedItem.checked
+                                    )
+                                })
+                            }
+                        }
                     }
                 }
             }
@@ -134,12 +170,16 @@ fun ShoppingItemsOverviewScreen(
 @Composable
 fun ShoppingItemContainer(
     shoppingItem: ShoppingItem,
-    onCheckedChange: (ShoppingItem) -> Unit
+    onCheckedChange: (ShoppingItem) -> Unit,
+    //onEditClick: (ShoppingItem) -> Unit
 ) {
+    var showModal by remember { mutableStateOf(false) }
+
     Card(
         modifier = Modifier
             .fillMaxWidth()
             .padding(2.dp)
+            .clickable { showModal = true }
     ) {
         Row(
             modifier = Modifier
@@ -167,8 +207,9 @@ fun ShoppingItemContainer(
                             if (it % 1 == 0.0) it.toInt().toString() else it.toString()
                         }
                     }${shoppingItem.unit}",
-                    fontSize = 14.sp,
-                    fontWeight = FontWeight.Bold
+                    fontSize = 18.sp,
+                    fontWeight = FontWeight.Bold,
+                    modifier = Modifier.padding(end = 10.dp)
                 )
 
                 if (shoppingItem.category.isNotBlank()) {
@@ -184,5 +225,124 @@ fun ShoppingItemContainer(
 
             }
         }
+    }
+
+    if (showModal) {
+        ShoppingItemEditModal(
+            shoppingItem = shoppingItem,
+            onDismiss = {
+                showModal = false
+                // save Item
+            }
+        )
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun ShoppingItemEditModal(
+    shoppingItem: ShoppingItem,
+    onDismiss: () -> Unit
+) {
+    var name by remember { mutableStateOf(shoppingItem.name) }
+    var amount by remember { mutableDoubleStateOf(shoppingItem.amount) }
+    var unit by remember { mutableStateOf(shoppingItem.unit) }
+    var note by remember { mutableStateOf(shoppingItem.note) }
+
+    val sheetState = rememberModalBottomSheetState()
+
+    ModalBottomSheet(
+        sheetState = sheetState,
+        onDismissRequest = onDismiss
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(4.dp)
+        ) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.Start,
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                IconButton(onClick = onDismiss) {
+                    Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
+                }
+                Spacer(modifier = Modifier.width(8.dp))
+                TextField(
+                    value = name,
+                    onValueChange = {
+                        name = it
+                    },
+                    label = { Text("Name") },
+                    modifier = Modifier.weight(1f)
+                )
+            }
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                TextField(
+                    value = amount.toString(),
+                    onValueChange = { newValue ->
+                        amount = newValue.toDouble()
+                    },
+                    label = { Text("Amount") },
+                    keyboardOptions = KeyboardOptions.Default.copy(keyboardType = KeyboardType.Number),
+                    modifier = Modifier.weight(0.4f)
+                )
+                TextField(
+                    value = unit,
+                    onValueChange = {
+                        unit = it
+                    },
+                    label = { Text("Unit") },
+                    modifier = Modifier.weight(0.4f)
+                )
+
+                Column(
+                    verticalArrangement = Arrangement.spacedBy(4.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    modifier = Modifier.align(Alignment.CenterVertically)
+                ) {
+                    IconButton(onClick = {
+                        if (amount > 0) {
+                            amount -= 1
+                        }
+                    }) {
+                        Icon(Icons.Default.Clear, contentDescription = "Remove")
+                    }
+                    IconButton(onClick = {
+                        amount += 1
+                    }) {
+                        Icon(Icons.Default.Add, contentDescription = "Add")
+                    }
+                }
+            }
+
+            // change here
+            if (sheetState.hasPartiallyExpandedState) {
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    TextField(
+                        value = note,
+                        onValueChange = {
+                            note = it
+                        },
+                        label = { Text("Note") },
+                        modifier = Modifier.weight(1f)
+                    )
+                }
+
+            }
+
+
+        }
+
     }
 }
