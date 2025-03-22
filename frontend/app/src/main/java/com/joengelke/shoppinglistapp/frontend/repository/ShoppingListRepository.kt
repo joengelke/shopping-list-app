@@ -1,5 +1,7 @@
 package com.joengelke.shoppinglistapp.frontend.repository
 
+import com.google.gson.Gson
+import com.google.gson.GsonBuilder
 import com.joengelke.shoppinglistapp.frontend.models.ShoppingList
 import com.joengelke.shoppinglistapp.frontend.models.ShoppingListCreateRequest
 import com.joengelke.shoppinglistapp.frontend.models.ShoppingListResponse
@@ -13,9 +15,13 @@ import javax.inject.Singleton
 class ShoppingListRepository @Inject constructor(
     private val authRepository: AuthRepository
 ) {
+    private val gson: Gson = GsonBuilder()
+        .setDateFormat("dd.MM.yyyy HH:mm:ss") // German format: 22.03.2025 12:37:55
+        .create()
+
     private val retrofit = Retrofit.Builder()
         .baseUrl("http://192.168.1.38:8080/api/")
-        .addConverterFactory(GsonConverterFactory.create())
+        .addConverterFactory(GsonConverterFactory.create(gson))
         .build()
 
     private val shoppingListApi = retrofit.create(ShoppingListApi::class.java)

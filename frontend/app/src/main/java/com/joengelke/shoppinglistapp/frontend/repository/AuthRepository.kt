@@ -37,7 +37,6 @@ class AuthRepository @Inject constructor(@ApplicationContext private val context
         return if (response.isSuccessful) {
             val bearerToken = response.body()?.token
             val token = bearerToken?.removePrefix("Bearer ")
-            Log.d("AuthApi", "Received token: $token")
             token?.let { saveToken(it) }
             token
         } else {
@@ -88,5 +87,4 @@ class AuthRepository @Inject constructor(@ApplicationContext private val context
             preferences.remove(tokenKey)
         }
     }
-
 }
