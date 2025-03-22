@@ -35,5 +35,11 @@ interface ShoppingItemApi {
         @Query("checked") checked: Boolean
     ): Response<ShoppingItem>
 
+    @PUT("shoppingitem")
+    suspend fun updateItem(
+        @Header("Authorization") token: String,
+        @Body shoppingItem: ShoppingItem
+    ): Response<ShoppingItem>
+
 
 }

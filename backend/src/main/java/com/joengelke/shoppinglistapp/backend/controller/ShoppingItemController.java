@@ -16,8 +16,8 @@ public class ShoppingItemController {
     }
 
     @PutMapping
-    public ResponseEntity<?> updateShoppingItem(@RequestBody ShoppingItem shoppingItem) {
-        ShoppingItem updatedItem = shoppingItemService.updateItem(shoppingItem);
+    public ResponseEntity<?> updateShoppingItem(@RequestBody ShoppingItem shoppingItem, @RequestHeader("Authorization") String header) {
+        ShoppingItem updatedItem = shoppingItemService.updateItem(header, shoppingItem);
         return ResponseEntity.ok(updatedItem);
     }
 

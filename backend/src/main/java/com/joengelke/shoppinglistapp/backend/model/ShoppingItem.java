@@ -1,5 +1,6 @@
 package com.joengelke.shoppinglistapp.backend.model;
 
+import com.fasterxml.jackson.annotation.JsonFormat;
 import lombok.Getter;
 import lombok.Setter;
 import org.springframework.data.annotation.Id;
@@ -20,10 +21,12 @@ public class ShoppingItem {
     private String unit;
     private boolean checked;
     private String note;
+    @JsonFormat(shape = JsonFormat.Shape.STRING,
+            pattern = "dd.MM.yyyy HH:mm:ss") // German format: 22.03.2025 12:37:55
     private Date editedAt;
-    private String createdBy;
+    private String editedBy;
 
-    public ShoppingItem(String id, String name, String category, Double amount, String unit, String note, String createdBy) {
+    public ShoppingItem(String id, String name, String category, Double amount, String unit, String note, String editedBy) {
         this.id = id;
         this.name = name;
         this.category = category;
@@ -32,6 +35,6 @@ public class ShoppingItem {
         this.checked = false;
         this.note = note;
         this.editedAt = new Date();
-        this.createdBy = createdBy;
+        this.editedBy = editedBy;
     }
 }

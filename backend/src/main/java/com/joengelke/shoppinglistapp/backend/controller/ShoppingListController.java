@@ -46,7 +46,7 @@ public class ShoppingListController {
     @DeleteMapping("/{id}")
     public ResponseEntity<?> deleteShoppingList(@PathVariable String id) {
         shoppingListService.deleteShoppingList(id);
-        return ResponseEntity.ok(Map.of("message","Shopping list deleted successfully"));
+        return ResponseEntity.ok(Map.of("message", "Shopping list deleted successfully"));
     }
 
 
@@ -58,16 +58,18 @@ public class ShoppingListController {
     }
 
     @PutMapping("/{shoppingListId}/item")
-    public ResponseEntity<?> addOneItemToShoppingList(@PathVariable String shoppingListId, @RequestBody ShoppingItem shoppingItem) {
-        ShoppingItem newItem = shoppingListService.addOneItemToShoppingList(shoppingListId, shoppingItem);
-        //TODO add username of creator maybe from token?!
+    public ResponseEntity<?> addOneItemToShoppingList(
+            @PathVariable String shoppingListId,
+            @RequestBody ShoppingItem shoppingItem,
+            @RequestHeader("Authorization") String header) {
+        ShoppingItem newItem = shoppingListService.addOneItemToShoppingList(header, shoppingListId, shoppingItem);
         return ResponseEntity.ok(newItem);
     }
 
     @PatchMapping("/{listId}/item/{itemId}")
     public ResponseEntity<?> removeOneItemById(@PathVariable String listId, @PathVariable String itemId) {
         ShoppingItem updatedItem = shoppingListService.removeOneItemById(listId, itemId);
-        if(updatedItem == null) {
+        if (updatedItem == null) {
             ResponseEntity.noContent().build();
         }
         return ResponseEntity.ok(updatedItem);
@@ -76,7 +78,7 @@ public class ShoppingListController {
     @DeleteMapping("/{listId}/item/{itemId}")
     public ResponseEntity<?> deleteItemById(@PathVariable String listId, @PathVariable String itemId) {
         shoppingListService.deleteItemById(listId, itemId);
-        return ResponseEntity.ok(Map.of("message","Item deleted successfully"));
+        return ResponseEntity.ok(Map.of("message", "Item deleted successfully"));
     }
 
 }

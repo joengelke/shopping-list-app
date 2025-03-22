@@ -28,7 +28,6 @@ import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
 import com.joengelke.shoppinglistapp.frontend.models.ShoppingItem
-import com.joengelke.shoppinglistapp.frontend.models.ShoppingItemRequest
 import com.joengelke.shoppinglistapp.frontend.viewmodel.ShoppingItemsViewModel
 import kotlinx.coroutines.delay
 import java.util.Date
@@ -52,7 +51,7 @@ fun ShoppingItemsCreateScreen(
         checked = false,
         note = "",
         editedAt = Date(),
-        createdBy = ""
+        editedBy = ""
     ))
 
     val shoppingItems by shoppingItemsViewModel.shoppingItems.collectAsState()
@@ -69,7 +68,7 @@ fun ShoppingItemsCreateScreen(
             checked = false,
             note = "",
             editedAt = Date(),
-            createdBy = ""
+            editedBy = ""
         ),
         ShoppingItem(
             id = "",
@@ -80,7 +79,7 @@ fun ShoppingItemsCreateScreen(
             checked = false,
             note = "",
             editedAt = Date(),
-            createdBy = ""
+            editedBy = ""
         ),
         ShoppingItem(
             id = "",
@@ -91,7 +90,7 @@ fun ShoppingItemsCreateScreen(
             checked = false,
             note = "",
             editedAt = Date(),
-            createdBy = ""
+            editedBy = ""
         ),
         ShoppingItem(
             id = "",
@@ -102,7 +101,7 @@ fun ShoppingItemsCreateScreen(
             checked = false,
             note = "",
             editedAt = Date(),
-            createdBy = ""
+            editedBy = ""
         ),
         ShoppingItem(
             id = "",
@@ -113,7 +112,7 @@ fun ShoppingItemsCreateScreen(
             checked = false,
             note = "",
             editedAt = Date(),
-            createdBy = ""
+            editedBy = ""
         ),
         ShoppingItem(
             id = "",
@@ -124,7 +123,7 @@ fun ShoppingItemsCreateScreen(
             checked = false,
             note = "",
             editedAt = Date(),
-            createdBy = ""
+            editedBy = ""
         ),
         ShoppingItem(
             id = "",
@@ -135,7 +134,7 @@ fun ShoppingItemsCreateScreen(
             checked = false,
             note = "",
             editedAt = Date(),
-            createdBy = ""
+            editedBy = ""
         )
     )
     val ownSuggestionsList = tmpOwnSuggestionsList.filter{it.name !in shoppingItems.map{it.name}.toSet()}
@@ -208,10 +207,9 @@ fun ShoppingItemsCreateScreen(
                 items(allItems) { item ->
                     OwnAndSuggestionItemContainer(item.name, item.amount,
                         addOneItem = {
-                            val newItem = ShoppingItemRequest(item.name)
                             shoppingItemsViewModel.addOneShoppingItem(
                                 shoppingListId,
-                                newItem
+                                item.name
                             )
                         },
                         removeOneItem = {

@@ -11,7 +11,7 @@ data class ShoppingItem(
     val checked: Boolean,
     val note: String,
     val editedAt: Date,
-    val createdBy: String
+    val editedBy: String
 )
 
 data class ShoppingItemRequest(

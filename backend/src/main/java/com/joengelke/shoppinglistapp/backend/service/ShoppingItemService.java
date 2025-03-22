@@ -2,6 +2,7 @@ package com.joengelke.shoppinglistapp.backend.service;
 
 import com.joengelke.shoppinglistapp.backend.model.ShoppingItem;
 import com.joengelke.shoppinglistapp.backend.repository.ShoppingItemRepository;
+import com.joengelke.shoppinglistapp.backend.security.JwtTokenProvider;
 import org.springframework.stereotype.Service;
 
 import java.util.Date;
@@ -11,13 +12,17 @@ import java.util.NoSuchElementException;
 public class ShoppingItemService {
 
     private final ShoppingItemRepository shoppingItemRepository;
+    private final JwtTokenProvider jwtTokenProvider;
 
-    public ShoppingItemService(ShoppingItemRepository shoppingItemRepository) {
+    public ShoppingItemService(ShoppingItemRepository shoppingItemRepository, JwtTokenProvider jwtTokenProvider) {
         this.shoppingItemRepository = shoppingItemRepository;
+        this.jwtTokenProvider = jwtTokenProvider;
     }
 
-    public ShoppingItem addOneItem(ShoppingItem shoppingItem) {
-        // TODO add item amount if item already exists
+    public ShoppingItem addOneItem(String header, ShoppingItem shoppingItem) {
+
+        String username = jwtTokenProvider.getUsernameFromToken(header.replace("Bearer ", ""));
+
         if (shoppingItem.getName() == null) {
             shoppingItem.setName("");
         }
@@ -39,13 +44,12 @@ public class ShoppingItemService {
 
         shoppingItem.setEditedAt(new Date());
 
-        if (shoppingItem.getCreatedBy() == null) {
-            shoppingItem.setCreatedBy("");
-        }
+        shoppingItem.setEditedBy(username);
+
 
         ShoppingItem existingItem = shoppingItemRepository.findByName(shoppingItem.getName());
         if (existingItem != null) {
-            existingItem.setAmount(existingItem.getAmount()+1);
+            existingItem.setAmount(existingItem.getAmount() + 1);
             existingItem.setEditedAt(new Date());
             return shoppingItemRepository.save(existingItem);
         }
@@ -58,9 +62,11 @@ public class ShoppingItemService {
                 .orElseThrow(() -> new NoSuchElementException("Item not found with itemId: " + id));
     }
 
-    public ShoppingItem updateItem(ShoppingItem newShoppingItem) {
+    public ShoppingItem updateItem(String header, ShoppingItem newShoppingItem) {
         ShoppingItem shoppingItem = shoppingItemRepository.findById(newShoppingItem.getId())
                 .orElseThrow(() -> new NoSuchElementException("Item not found with itemId: " + newShoppingItem.getId()));
+
+        String username = jwtTokenProvider.getUsernameFromToken(header.replace("Bearer ", ""));
 
         // checked status and createdBy cant be updated
         if (newShoppingItem.getName() != null) {
@@ -78,9 +84,11 @@ public class ShoppingItemService {
         if (newShoppingItem.getNote() != null) {
             shoppingItem.setNote(newShoppingItem.getNote());
         }
-        if (newShoppingItem.getEditedAt() != null) {
-            shoppingItem.setEditedAt(new Date());
-        }
+
+        shoppingItem.setEditedAt(new Date());
+
+        shoppingItem.setEditedBy(username);
+
         return shoppingItemRepository.save(shoppingItem);
     }
 
@@ -97,7 +105,7 @@ public class ShoppingItemService {
         ShoppingItem shoppingItem = shoppingItemRepository.findById(itemId)
                 .orElseThrow(() -> new NoSuchElementException("Item not found with itemId: " + itemId));
         if (shoppingItem.getAmount() > 1) {
-            shoppingItem.setAmount(shoppingItem.getAmount()-1);
+            shoppingItem.setAmount(shoppingItem.getAmount() - 1);
         } else {
             shoppingItemRepository.deleteById(shoppingItem.getId());
             return null;

@@ -1,9 +1,13 @@
 package com.joengelke.shoppinglistapp.frontend.ui
 
+import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
@@ -120,12 +124,20 @@ fun ShoppingItemsOverviewScreen(
                     // val sortedItems = uncheckedItems + checkedItems
 
                     items(uncheckedItems) { item ->
-                        ShoppingItemContainer(item, onCheckedChange = { updatedItem ->
-                            shoppingItemsViewModel.updateCheckedStatus(
-                                item.id,
-                                updatedItem.checked
-                            )
-                        })
+                        ShoppingItemContainer(
+                            item,
+                            onCheckedChange = { updatedItem ->
+                                shoppingItemsViewModel.updateCheckedStatus(
+                                    item.id,
+                                    updatedItem.checked
+                                )
+                            },
+                            onEditClick = { updatedItem ->
+                                shoppingItemsViewModel.updateItem(
+                                    updatedItem
+                                )
+                            }
+                        )
                     }
 
                     if (checkedItems.isNotEmpty()) {
@@ -152,12 +164,20 @@ fun ShoppingItemsOverviewScreen(
 
                         if (isCheckedItemsVisible) {
                             items(checkedItems) { item ->
-                                ShoppingItemContainer(item, onCheckedChange = { updatedItem ->
-                                    shoppingItemsViewModel.updateCheckedStatus(
-                                        item.id,
-                                        updatedItem.checked
-                                    )
-                                })
+                                ShoppingItemContainer(
+                                    item,
+                                    onCheckedChange = { updatedItem ->
+                                        shoppingItemsViewModel.updateCheckedStatus(
+                                            item.id,
+                                            updatedItem.checked
+                                        )
+                                    },
+                                    onEditClick = { updatedItem ->
+                                        shoppingItemsViewModel.updateItem(
+                                            updatedItem
+                                        )
+                                    }
+                                )
                             }
                         }
                     }
@@ -167,19 +187,39 @@ fun ShoppingItemsOverviewScreen(
     )
 }
 
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun ShoppingItemContainer(
     shoppingItem: ShoppingItem,
     onCheckedChange: (ShoppingItem) -> Unit,
-    //onEditClick: (ShoppingItem) -> Unit
+    onEditClick: (ShoppingItem) -> Unit
 ) {
     var showModal by remember { mutableStateOf(false) }
+
+    fun getUsernameColor(username: String): Color {
+        // Generate a hash value based on the username
+        val hash = username.hashCode()
+
+        // Generate color from hash
+        val red = (hash shr 16) and 0xFF
+        val green = (hash shr 8) and 0xFF
+        val blue = hash and 0xFF
+
+        // Return a Color using RGB values, ensuring they stay within the valid range
+        return Color(red / 255f, green / 255f, blue / 255f)
+    }
+
 
     Card(
         modifier = Modifier
             .fillMaxWidth()
             .padding(2.dp)
-            .clickable { showModal = true }
+            .combinedClickable(
+                onClick = { showModal = true },
+                onLongClick = {
+                    // Open Settings pop up
+                }
+            )
     ) {
         Row(
             modifier = Modifier
@@ -192,6 +232,7 @@ fun ShoppingItemContainer(
                 onCheckedChange = { isChecked -> onCheckedChange(shoppingItem.copy(checked = isChecked)) }
             )
 
+            // name and note
             Column(modifier = Modifier.weight(1f)) {
                 Text(text = shoppingItem.name, fontWeight = FontWeight.Bold, fontSize = 18.sp)
                 if (shoppingItem.note.isNotBlank()) {
@@ -199,27 +240,41 @@ fun ShoppingItemContainer(
                 }
             }
 
-            Column(horizontalAlignment = Alignment.End) {
-                Text(
-                    // checks if amount is whole number then cut of ".0"
-                    text = "${
-                        shoppingItem.amount.let {
-                            if (it % 1 == 0.0) it.toInt().toString() else it.toString()
-                        }
-                    }${shoppingItem.unit}",
-                    fontSize = 18.sp,
-                    fontWeight = FontWeight.Bold,
-                    modifier = Modifier.padding(end = 10.dp)
-                )
+            // category
+            /*
+            if (shoppingItem.category.isNotBlank()) {
+                   Text(text = shoppingItem.category, fontSize = 12.sp, color = Color.Blue)
+               }
+             */
 
-                if (shoppingItem.category.isNotBlank()) {
-                    Text(text = shoppingItem.category, fontSize = 12.sp, color = Color.Blue)
-                }
-                if (shoppingItem.createdBy.isNotBlank()) {
+            // amount and unit
+            Text(
+                // checks if amount is whole number then cut of ".0"
+                text = "${
+                    shoppingItem.amount.let {
+                        if (it % 1 == 0.0) it.toInt().toString() else it.toString()
+                    }
+                }${shoppingItem.unit}",
+                fontSize = 18.sp,
+                fontWeight = FontWeight.Bold,
+                modifier = Modifier.padding(end = 10.dp)
+            )
+
+            // editedBy
+            if (shoppingItem.editedBy.isNotBlank()) {
+                Box(
+                    modifier = Modifier
+                        .size(30.dp)
+                        .background(getUsernameColor(shoppingItem.editedBy), shape = CircleShape)
+                        .padding(4.dp),
+                    contentAlignment = Alignment.Center
+                ) {
                     Text(
-                        text = shoppingItem.createdBy,
-                        fontSize = 12.sp,
-                        color = Color.Gray
+                        text = shoppingItem.editedBy.take(2).uppercase(),
+                        fontSize = 14.sp,
+                        color = Color.White,
+                        fontWeight = FontWeight.Bold,
+                        modifier = Modifier.align(Alignment.Center)
                     )
                 }
 
@@ -230,9 +285,9 @@ fun ShoppingItemContainer(
     if (showModal) {
         ShoppingItemEditModal(
             shoppingItem = shoppingItem,
-            onDismiss = {
+            onDismiss = { updatedShoppingItem ->
+                onEditClick(updatedShoppingItem)
                 showModal = false
-                // save Item
             }
         )
     }
@@ -242,18 +297,32 @@ fun ShoppingItemContainer(
 @Composable
 fun ShoppingItemEditModal(
     shoppingItem: ShoppingItem,
-    onDismiss: () -> Unit
+    onDismiss: (ShoppingItem) -> Unit
 ) {
     var name by remember { mutableStateOf(shoppingItem.name) }
     var amount by remember { mutableDoubleStateOf(shoppingItem.amount) }
     var unit by remember { mutableStateOf(shoppingItem.unit) }
+    var category by remember { mutableStateOf(shoppingItem.category) }
     var note by remember { mutableStateOf(shoppingItem.note) }
+
+    val updatedShoppingItem = ShoppingItem(
+        id = shoppingItem.id,
+        name = name,
+        category = category,
+        amount = amount,
+        unit = unit,
+        checked = shoppingItem.checked,
+        note = note,
+        editedAt = shoppingItem.editedAt,
+        editedBy = shoppingItem.editedBy
+    )
 
     val sheetState = rememberModalBottomSheetState()
 
+
     ModalBottomSheet(
         sheetState = sheetState,
-        onDismissRequest = onDismiss
+        onDismissRequest = { onDismiss(updatedShoppingItem) }
     ) {
         Column(
             modifier = Modifier
@@ -265,7 +334,7 @@ fun ShoppingItemEditModal(
                 horizontalArrangement = Arrangement.Start,
                 modifier = Modifier.fillMaxWidth()
             ) {
-                IconButton(onClick = onDismiss) {
+                IconButton(onClick = { onDismiss(updatedShoppingItem) }) {
                     Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
                 }
                 Spacer(modifier = Modifier.width(8.dp))
@@ -303,32 +372,35 @@ fun ShoppingItemEditModal(
                     modifier = Modifier.weight(0.4f)
                 )
 
-                Column(
-                    verticalArrangement = Arrangement.spacedBy(4.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    modifier = Modifier.align(Alignment.CenterVertically)
-                ) {
-                    IconButton(onClick = {
-                        if (amount > 0) {
-                            amount -= 1
-                        }
-                    }) {
-                        Icon(Icons.Default.Clear, contentDescription = "Remove")
+                IconButton(onClick = {
+                    if (amount > 0) {
+                        amount -= 1
                     }
-                    IconButton(onClick = {
-                        amount += 1
-                    }) {
-                        Icon(Icons.Default.Add, contentDescription = "Add")
-                    }
+                }) {
+                    Icon(Icons.Default.Clear, contentDescription = "Remove")
+                }
+                IconButton(onClick = {
+                    amount += 1
+                }) {
+                    Icon(Icons.Default.Add, contentDescription = "Add")
                 }
             }
 
             // change here
-            if (sheetState.hasPartiallyExpandedState) {
+            if (sheetState.hasExpandedState) {
                 Row(
                     horizontalArrangement = Arrangement.spacedBy(8.dp),
                     modifier = Modifier.fillMaxWidth()
                 ) {
+                    TextField(
+                        value = category,
+                        onValueChange = {
+                            category = it
+                        },
+                        label = { Text("Category") },
+                        modifier = Modifier.weight(1f)
+                    )
+
                     TextField(
                         value = note,
                         onValueChange = {

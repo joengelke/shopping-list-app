@@ -42,11 +42,11 @@ class ShoppingItemsViewModel @Inject constructor(
 
     fun addOneShoppingItem(
         shoppingListId: String,
-        shoppingItem: ShoppingItemRequest
+        shoppingItemName: String
     ) {
         viewModelScope.launch {
             val result =
-                shoppingItemRepository.addOneItemToShoppingList(shoppingListId, shoppingItem)
+                shoppingItemRepository.addOneItemToShoppingList(shoppingListId, shoppingItemName)
             result.onSuccess { updatedItem ->
                 // updates shoppingItems with updatedItem via name, maybe later better with id
                 _shoppingItems.update { currentList ->
@@ -100,6 +100,17 @@ class ShoppingItemsViewModel @Inject constructor(
                     if (it.id == updatedItem.id) updatedItem else it
                 }
 
+            }
+        }
+    }
+
+    fun updateItem(updatedItem: ShoppingItem) {
+        viewModelScope.launch {
+            val result = shoppingItemRepository.updateItem(updatedItem)
+            result.onSuccess { updatedItem ->
+                _shoppingItems.value = _shoppingItems.value.map {
+                    if (it.id == updatedItem.id) updatedItem else it
+                }
             }
         }
     }

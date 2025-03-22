@@ -81,9 +81,13 @@ public class ShoppingListService {
         return itemList;
     }
 
+    /*
+    ITEM FUNCTIONS:
+     */
+
     // save item in item repo and update item list in shopping list
-    public ShoppingItem addOneItemToShoppingList(String listId, ShoppingItem shoppingItem) {
-        ShoppingItem createdOrUpdatedItem = shoppingItemService.addOneItem(shoppingItem);
+    public ShoppingItem addOneItemToShoppingList(String header, String listId, ShoppingItem shoppingItem) {
+        ShoppingItem createdOrUpdatedItem = shoppingItemService.addOneItem(header, shoppingItem);
         ShoppingList shoppingList = shoppingListRepository.findById(listId)
                 .orElseThrow(() -> new NoSuchElementException("Shopping list not found"));
 
