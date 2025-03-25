@@ -12,7 +12,7 @@ import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.firstOrNull
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
-import java.util.Date
+import java.time.Instant
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -74,8 +74,8 @@ class AuthRepository @Inject constructor(@ApplicationContext private val context
     suspend fun validateToken(token: String): Boolean {
         return try {
             val jwt = JWT(token)
-            val expirationTime = jwt.expiresAt
-            expirationTime?.after(Date()) == true
+            val expirationTime = jwt.expiresAt?.toInstant()
+            expirationTime?.isAfter(Instant.now()) == true
         } catch (e: Exception) {
             false
         }

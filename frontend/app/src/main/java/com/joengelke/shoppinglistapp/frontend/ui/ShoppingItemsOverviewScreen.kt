@@ -1,5 +1,6 @@
 package com.joengelke.shoppinglistapp.frontend.ui
 
+import android.widget.Toast
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -19,6 +20,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
@@ -28,6 +30,9 @@ import androidx.navigation.NavHostController
 import com.joengelke.shoppinglistapp.frontend.models.ShoppingItem
 import com.joengelke.shoppinglistapp.frontend.navigation.Routes
 import com.joengelke.shoppinglistapp.frontend.viewmodel.ShoppingItemsViewModel
+import java.time.Duration
+import java.time.Instant
+import java.time.format.DateTimeFormatter
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -136,6 +141,11 @@ fun ShoppingItemsOverviewScreen(
                                 shoppingItemsViewModel.updateItem(
                                     updatedItem
                                 )
+                            },
+                            onDeleteClick = { deleteItem ->
+                                shoppingItemsViewModel.deleteItem(
+                                    shoppingListId, deleteItem.id
+                                )
                             }
                         )
                     }
@@ -176,6 +186,11 @@ fun ShoppingItemsOverviewScreen(
                                         shoppingItemsViewModel.updateItem(
                                             updatedItem
                                         )
+                                    },
+                                    onDeleteClick = { deletedItem ->
+                                        shoppingItemsViewModel.deleteItem(
+                                            shoppingListId, deletedItem.id
+                                        )
                                     }
                                 )
                             }
@@ -192,9 +207,13 @@ fun ShoppingItemsOverviewScreen(
 fun ShoppingItemContainer(
     shoppingItem: ShoppingItem,
     onCheckedChange: (ShoppingItem) -> Unit,
-    onEditClick: (ShoppingItem) -> Unit
+    onEditClick: (ShoppingItem) -> Unit,
+    onDeleteClick: (ShoppingItem) -> Unit
 ) {
     var showModal by remember { mutableStateOf(false) }
+    var showDialog by remember { mutableStateOf(false) }
+
+    val context = LocalContext.current
 
     fun getUsernameColor(username: String): Color {
         // Generate a hash value based on the username
@@ -210,6 +229,23 @@ fun ShoppingItemContainer(
     }
 
 
+    fun getTimeAgo(editedAt: String): String {
+        // format editedAt to Instant
+        val formatter = DateTimeFormatter.ISO_DATE_TIME
+        val editedAtInstant = Instant.from(formatter.parse(editedAt))
+
+        val now = Instant.now()
+
+        // Calculate the difference in duration between the edited time and current time
+        val diff = Duration.between(editedAtInstant, now)
+
+        return when {
+            diff.toDays() > 0 -> "${diff.toDays()} days ago"
+            diff.toHours() > 0 -> "${diff.toHours()} hours ago"
+            else -> "${diff.toMinutes()} minutes ago"
+        }
+    }
+
     Card(
         modifier = Modifier
             .fillMaxWidth()
@@ -217,7 +253,7 @@ fun ShoppingItemContainer(
             .combinedClickable(
                 onClick = { showModal = true },
                 onLongClick = {
-                    // Open Settings pop up
+                    showDialog = true
                 }
             )
     ) {
@@ -266,7 +302,14 @@ fun ShoppingItemContainer(
                     modifier = Modifier
                         .size(30.dp)
                         .background(getUsernameColor(shoppingItem.editedBy), shape = CircleShape)
-                        .padding(4.dp),
+                        .padding(4.dp)
+                        .clickable {
+                            Toast.makeText(
+                                context,
+                                "Edited ${getTimeAgo(shoppingItem.editedAt)}",
+                                Toast.LENGTH_SHORT
+                            ).show()
+                        },
                     contentAlignment = Alignment.Center
                 ) {
                     Text(
@@ -282,6 +325,7 @@ fun ShoppingItemContainer(
         }
     }
 
+    // Edit Modal
     if (showModal) {
         ShoppingItemEditModal(
             shoppingItem = shoppingItem,
@@ -289,6 +333,34 @@ fun ShoppingItemContainer(
                 onEditClick(updatedShoppingItem)
                 showModal = false
             }
+        )
+    }
+
+    // Delete/Edit Dialog
+    if (showDialog) {
+        AlertDialog(
+            onDismissRequest = { showDialog = false },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        onDeleteClick(shoppingItem)
+                        showDialog = false
+                    }
+                ) {
+                    Text("Delete")
+                }
+            },
+            dismissButton = {
+                TextButton(
+                    onClick = {
+                        showModal = true
+                        showDialog = false
+                    }
+                ) {
+                    Text("Edit")
+                }
+            }
+
         )
     }
 }

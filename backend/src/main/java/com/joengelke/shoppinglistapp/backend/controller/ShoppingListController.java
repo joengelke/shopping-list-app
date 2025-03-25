@@ -43,9 +43,9 @@ public class ShoppingListController {
         return ResponseEntity.ok(Map.of("name", updatedList.getName()));
     }
 
-    @DeleteMapping("/{id}")
-    public ResponseEntity<?> deleteShoppingList(@PathVariable String id) {
-        shoppingListService.deleteShoppingList(id);
+    @DeleteMapping("/{shoppingListId}")
+    public ResponseEntity<?> deleteShoppingList(@PathVariable String shoppingListId) {
+        shoppingListService.deleteShoppingList(shoppingListId);
         return ResponseEntity.ok(Map.of("message", "Shopping list deleted successfully"));
     }
 
@@ -66,18 +66,18 @@ public class ShoppingListController {
         return ResponseEntity.ok(newItem);
     }
 
-    @PatchMapping("/{listId}/item/{itemId}")
-    public ResponseEntity<?> removeOneItemById(@PathVariable String listId, @PathVariable String itemId) {
-        ShoppingItem updatedItem = shoppingListService.removeOneItemById(listId, itemId);
+    @PatchMapping("/{shoppingListId}/item/{itemId}")
+    public ResponseEntity<?> removeOneItemById(@PathVariable String shoppingListId, @PathVariable String itemId) {
+        ShoppingItem updatedItem = shoppingListService.removeOneItemById(shoppingListId, itemId);
         if (updatedItem == null) {
             ResponseEntity.noContent().build();
         }
         return ResponseEntity.ok(updatedItem);
     }
 
-    @DeleteMapping("/{listId}/item/{itemId}")
-    public ResponseEntity<?> deleteItemById(@PathVariable String listId, @PathVariable String itemId) {
-        shoppingListService.deleteItemById(listId, itemId);
+    @DeleteMapping("/{shoppingListId}/item/{itemId}")
+    public ResponseEntity<?> deleteItemById(@PathVariable String shoppingListId, @PathVariable String itemId) {
+        shoppingListService.deleteItemById(shoppingListId, itemId);
         return ResponseEntity.ok(Map.of("message", "Item deleted successfully"));
     }
 

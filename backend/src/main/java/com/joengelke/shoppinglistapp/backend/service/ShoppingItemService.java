@@ -5,7 +5,7 @@ import com.joengelke.shoppinglistapp.backend.repository.ShoppingItemRepository;
 import com.joengelke.shoppinglistapp.backend.security.JwtTokenProvider;
 import org.springframework.stereotype.Service;
 
-import java.util.Date;
+import java.time.Instant;
 import java.util.NoSuchElementException;
 
 @Service
@@ -39,10 +39,10 @@ public class ShoppingItemService {
             shoppingItem.setNote("");
         }
         if (shoppingItem.getEditedAt() == null) {
-            shoppingItem.setEditedAt(new Date());
+            shoppingItem.setEditedAt(Instant.now());
         }
 
-        shoppingItem.setEditedAt(new Date());
+        shoppingItem.setEditedAt(Instant.now());
 
         shoppingItem.setEditedBy(username);
 
@@ -50,7 +50,7 @@ public class ShoppingItemService {
         ShoppingItem existingItem = shoppingItemRepository.findByName(shoppingItem.getName());
         if (existingItem != null) {
             existingItem.setAmount(existingItem.getAmount() + 1);
-            existingItem.setEditedAt(new Date());
+            existingItem.setEditedAt(Instant.now());
             return shoppingItemRepository.save(existingItem);
         }
 
@@ -85,7 +85,7 @@ public class ShoppingItemService {
             shoppingItem.setNote(newShoppingItem.getNote());
         }
 
-        shoppingItem.setEditedAt(new Date());
+        shoppingItem.setEditedAt(Instant.now());
 
         shoppingItem.setEditedBy(username);
 

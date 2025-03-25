@@ -16,7 +16,7 @@ class ShoppingListRepository @Inject constructor(
     private val authRepository: AuthRepository
 ) {
     private val gson: Gson = GsonBuilder()
-        .setDateFormat("dd.MM.yyyy HH:mm:ss") // German format: 22.03.2025 12:37:55
+        //.setDateFormat("dd.MM.yyyy HH:mm:ss") // German format: 22.03.2025 12:37:55
         .create()
 
     private val retrofit = Retrofit.Builder()

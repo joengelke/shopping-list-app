@@ -49,6 +49,8 @@ fun RegisterScreen(navController: NavController, viewModel: AuthViewModel = hilt
             visualTransformation = PasswordVisualTransformation(),
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password))
 
+        Spacer(modifier = Modifier.height(16.dp))
+
         // Register button
         Button(
             onClick = {

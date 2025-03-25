@@ -2,6 +2,7 @@ package com.joengelke.shoppinglistapp.frontend.repository
 
 import com.google.gson.Gson
 import com.google.gson.GsonBuilder
+import com.joengelke.shoppinglistapp.frontend.models.DeleteResponse
 import com.joengelke.shoppinglistapp.frontend.models.ShoppingItem
 import com.joengelke.shoppinglistapp.frontend.models.ShoppingItemRequest
 import com.joengelke.shoppinglistapp.frontend.network.ShoppingItemApi
@@ -16,8 +17,9 @@ class ShoppingItemRepository @Inject constructor(
     private val authRepository: AuthRepository
 ) {
 
+
     private val gson: Gson = GsonBuilder()
-        .setDateFormat("dd.MM.yyyy HH:mm:ss") // German format: 22.03.2025 12:37:55
+        //.setDateFormat("dd.MM.yyyy HH:mm:ss") // German format: 22.03.2025 12:37:55
         .create()
 
     private val retrofit = Retrofit.Builder()
@@ -126,6 +128,24 @@ class ShoppingItemRepository @Inject constructor(
 
             val response =
                 shoppingItemApi.updateItem("Bearer $token", updatedItem)
+            if (response.isSuccessful) {
+                response.body()?.let { Result.success(it) }
+                    ?: Result.failure(Exception("Unexpected empty response"))
+            } else {
+                Result.failure(Exception("Failed to update item: ${response.message()}"))
+            }
+        } catch (e: Exception) {
+            Result.failure(Exception("Network error: ${e.message}"))
+        }
+    }
+
+    suspend fun deleteItem(shoppingListId: String, itemId: String): Result<DeleteResponse> {
+        return try {
+            val token =
+                authRepository.getToken() ?: return Result.failure(Exception("No token found"))
+
+            val response =
+                shoppingItemApi.deleteItem("Bearer $token", shoppingListId, itemId)
             if (response.isSuccessful) {
                 response.body()?.let { Result.success(it) }
                     ?: Result.failure(Exception("Unexpected empty response"))

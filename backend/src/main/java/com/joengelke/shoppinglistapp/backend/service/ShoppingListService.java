@@ -5,8 +5,8 @@ import com.joengelke.shoppinglistapp.backend.model.ShoppingList;
 import com.joengelke.shoppinglistapp.backend.repository.ShoppingListRepository;
 import org.springframework.stereotype.Service;
 
+import java.time.Instant;
 import java.util.ArrayList;
-import java.util.Date;
 import java.util.List;
 import java.util.NoSuchElementException;
 
@@ -28,7 +28,7 @@ public class ShoppingListService {
             shoppingList.setName("");
         }
         if (shoppingList.getCreatedAt() == null) {
-            shoppingList.setCreatedAt(new Date());
+            shoppingList.setCreatedAt(Instant.now());
         }
         if (shoppingList.getItemIds() == null) {
             shoppingList.setItemIds(new ArrayList<>());

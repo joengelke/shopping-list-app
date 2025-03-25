@@ -1,5 +1,6 @@
 package com.joengelke.shoppinglistapp.frontend.network
 
+import com.joengelke.shoppinglistapp.frontend.models.DeleteResponse
 import com.joengelke.shoppinglistapp.frontend.models.ShoppingItem
 import com.joengelke.shoppinglistapp.frontend.models.ShoppingItemRequest
 import retrofit2.Response
@@ -41,5 +42,10 @@ interface ShoppingItemApi {
         @Body shoppingItem: ShoppingItem
     ): Response<ShoppingItem>
 
-
+    @DELETE("shoppinglist/{shoppingListId}/item/{itemId}")
+    suspend fun deleteItem(
+        @Header("Authorization") token: String,
+        @Path("shoppingListId") shoppingListId: String,
+        @Path("itemId") itemId: String
+    ): Response<DeleteResponse>
 }

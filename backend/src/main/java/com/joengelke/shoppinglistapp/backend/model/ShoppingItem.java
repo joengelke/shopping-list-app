@@ -6,7 +6,7 @@ import lombok.Setter;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.Document;
 
-import java.util.Date;
+import java.time.Instant;
 
 @Getter
 @Setter
@@ -21,9 +21,7 @@ public class ShoppingItem {
     private String unit;
     private boolean checked;
     private String note;
-    @JsonFormat(shape = JsonFormat.Shape.STRING,
-            pattern = "dd.MM.yyyy HH:mm:ss") // German format: 22.03.2025 12:37:55
-    private Date editedAt;
+    private Instant editedAt;
     private String editedBy;
 
     public ShoppingItem(String id, String name, String category, Double amount, String unit, String note, String editedBy) {
@@ -34,7 +32,7 @@ public class ShoppingItem {
         this.unit = unit;
         this.checked = false;
         this.note = note;
-        this.editedAt = new Date();
+        this.editedAt = Instant.now();
         this.editedBy = editedBy;
     }
 }

@@ -1,7 +1,5 @@
 package com.joengelke.shoppinglistapp.frontend.models
 
-import java.util.Date
-
 data class ShoppingItem(
     val id: String,
     val name: String,
@@ -10,10 +8,14 @@ data class ShoppingItem(
     val unit: String,
     val checked: Boolean,
     val note: String,
-    val editedAt: Date,
+    val editedAt: String,
     val editedBy: String
 )
 
 data class ShoppingItemRequest(
     val name: String
+)
+
+data class DeleteResponse(
+    val message: String
 )

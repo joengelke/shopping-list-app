@@ -30,7 +30,6 @@ import androidx.navigation.NavController
 import com.joengelke.shoppinglistapp.frontend.models.ShoppingItem
 import com.joengelke.shoppinglistapp.frontend.viewmodel.ShoppingItemsViewModel
 import kotlinx.coroutines.delay
-import java.util.Date
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -50,7 +49,7 @@ fun ShoppingItemsCreateScreen(
         unit = "",
         checked = false,
         note = "",
-        editedAt = Date(),
+        editedAt = "",
         editedBy = ""
     ))
 
@@ -67,7 +66,7 @@ fun ShoppingItemsCreateScreen(
             unit = "",
             checked = false,
             note = "",
-            editedAt = Date(),
+            editedAt = "",
             editedBy = ""
         ),
         ShoppingItem(
@@ -78,7 +77,7 @@ fun ShoppingItemsCreateScreen(
             unit = "",
             checked = false,
             note = "",
-            editedAt = Date(),
+            editedAt = "",
             editedBy = ""
         ),
         ShoppingItem(
@@ -89,7 +88,7 @@ fun ShoppingItemsCreateScreen(
             unit = "",
             checked = false,
             note = "",
-            editedAt = Date(),
+            editedAt = "",
             editedBy = ""
         ),
         ShoppingItem(
@@ -100,7 +99,7 @@ fun ShoppingItemsCreateScreen(
             unit = "",
             checked = false,
             note = "",
-            editedAt = Date(),
+            editedAt = "",
             editedBy = ""
         ),
         ShoppingItem(
@@ -111,7 +110,7 @@ fun ShoppingItemsCreateScreen(
             unit = "",
             checked = false,
             note = "",
-            editedAt = Date(),
+            editedAt = "",
             editedBy = ""
         ),
         ShoppingItem(
@@ -122,7 +121,7 @@ fun ShoppingItemsCreateScreen(
             unit = "",
             checked = false,
             note = "",
-            editedAt = Date(),
+            editedAt = "",
             editedBy = ""
         ),
         ShoppingItem(
@@ -133,7 +132,7 @@ fun ShoppingItemsCreateScreen(
             unit = "",
             checked = false,
             note = "",
-            editedAt = Date(),
+            editedAt = "",
             editedBy = ""
         )
     )
@@ -198,6 +197,7 @@ fun ShoppingItemsCreateScreen(
             )
         },
         content = { paddingValues ->
+            //TODO Horizontal pager for own item sets
             LazyColumn(
                 modifier = Modifier
                     .fillMaxSize()
