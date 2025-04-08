@@ -15,6 +15,12 @@ public class ShoppingItemController {
         this.shoppingItemService = shoppingItemService;
     }
 
+    @PatchMapping("/{itemId}")
+    public ResponseEntity<?> removeOneItemById(@PathVariable String itemId) {
+        ShoppingItem updatedItem = shoppingItemService.removeOneItemById(itemId);
+        return ResponseEntity.ok(updatedItem);
+    }
+
     @PutMapping
     public ResponseEntity<?> updateShoppingItem(@RequestBody ShoppingItem shoppingItem, @RequestHeader("Authorization") String header) {
         ShoppingItem updatedItem = shoppingItemService.updateItem(header, shoppingItem);
@@ -26,6 +32,4 @@ public class ShoppingItemController {
         ShoppingItem shoppingItem = shoppingItemService.updateCheckedStatus(id, checked);
         return ResponseEntity.ok(shoppingItem);
     }
-
-    // delete and create item in ShoppingListController
 }

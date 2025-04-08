@@ -7,6 +7,7 @@ import org.springframework.stereotype.Service;
 
 import java.time.Instant;
 import java.util.NoSuchElementException;
+import java.util.Objects;
 
 @Service
 public class ShoppingItemService {
@@ -19,19 +20,21 @@ public class ShoppingItemService {
         this.jwtTokenProvider = jwtTokenProvider;
     }
 
-    public ShoppingItem addOneItem(String header, ShoppingItem shoppingItem) {
+    // creates one new item
+    public ShoppingItem createItem(String header, ShoppingItem shoppingItem) {
 
         String username = jwtTokenProvider.getUsernameFromToken(header.replace("Bearer ", ""));
 
+        if (Objects.equals(shoppingItem.getId(), "")) {
+            shoppingItem.setId(null);
+        }
         if (shoppingItem.getName() == null) {
             shoppingItem.setName("");
         }
         if (shoppingItem.getCategory() == null) {
             shoppingItem.setCategory("");
         }
-        if (shoppingItem.getAmount() == null) {
-            shoppingItem.setAmount(1.0);
-        }
+
         if (shoppingItem.getUnit() == null) {
             shoppingItem.setUnit("");
         }
@@ -41,18 +44,13 @@ public class ShoppingItemService {
         if (shoppingItem.getEditedAt() == null) {
             shoppingItem.setEditedAt(Instant.now());
         }
+        shoppingItem.setAmount(0.0);
+
+        shoppingItem.setChecked(false);
 
         shoppingItem.setEditedAt(Instant.now());
 
         shoppingItem.setEditedBy(username);
-
-
-        ShoppingItem existingItem = shoppingItemRepository.findByName(shoppingItem.getName());
-        if (existingItem != null) {
-            existingItem.setAmount(existingItem.getAmount() + 1);
-            existingItem.setEditedAt(Instant.now());
-            return shoppingItemRepository.save(existingItem);
-        }
 
         return shoppingItemRepository.save(shoppingItem);
     }
@@ -85,6 +83,8 @@ public class ShoppingItemService {
             shoppingItem.setNote(newShoppingItem.getNote());
         }
 
+        shoppingItem.setChecked(newShoppingItem.isChecked());
+
         shoppingItem.setEditedAt(Instant.now());
 
         shoppingItem.setEditedBy(username);
@@ -100,15 +100,17 @@ public class ShoppingItemService {
         return shoppingItemRepository.save(shoppingItem);
     }
 
-    public ShoppingItem removeOneItem(String itemId) {
+    // remove one item amount
+    public ShoppingItem removeOneItemById(String itemId) {
         // return null if item was deleted or the item if amount was updated
         ShoppingItem shoppingItem = shoppingItemRepository.findById(itemId)
                 .orElseThrow(() -> new NoSuchElementException("Item not found with itemId: " + itemId));
-        if (shoppingItem.getAmount() > 1) {
+        if (shoppingItem.getAmount() >= 1) {
+            // item exists, reduce amount
             shoppingItem.setAmount(shoppingItem.getAmount() - 1);
-        } else {
-            shoppingItemRepository.deleteById(shoppingItem.getId());
-            return null;
+        }  else {
+            // checks item so its not on active list anymore
+            shoppingItem.setChecked(true);
         }
         return shoppingItemRepository.save(shoppingItem);
     }

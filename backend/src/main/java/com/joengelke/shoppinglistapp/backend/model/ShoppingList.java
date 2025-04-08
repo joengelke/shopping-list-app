@@ -26,4 +26,8 @@ public class ShoppingList {
         this.createdAt = Instant.now();
         this.itemIds = new ArrayList<>();
     }
+
+    public ShoppingList() {
+    }
+
 }

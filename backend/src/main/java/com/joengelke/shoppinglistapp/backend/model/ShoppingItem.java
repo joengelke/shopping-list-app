@@ -1,6 +1,5 @@
 package com.joengelke.shoppinglistapp.backend.model;
 
-import com.fasterxml.jackson.annotation.JsonFormat;
 import lombok.Getter;
 import lombok.Setter;
 import org.springframework.data.annotation.Id;
@@ -24,8 +23,7 @@ public class ShoppingItem {
     private Instant editedAt;
     private String editedBy;
 
-    public ShoppingItem(String id, String name, String category, Double amount, String unit, String note, String editedBy) {
-        this.id = id;
+    public ShoppingItem(String name, String category, Double amount, String unit, String note, String editedBy) {
         this.name = name;
         this.category = category;
         this.amount = amount;
@@ -35,4 +33,6 @@ public class ShoppingItem {
         this.editedAt = Instant.now();
         this.editedBy = editedBy;
     }
+
+    public ShoppingItem(){}
 }

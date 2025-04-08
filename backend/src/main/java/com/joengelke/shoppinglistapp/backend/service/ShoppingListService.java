@@ -6,14 +6,12 @@ import com.joengelke.shoppinglistapp.backend.repository.ShoppingListRepository;
 import org.springframework.stereotype.Service;
 
 import java.time.Instant;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.NoSuchElementException;
+import java.util.*;
 
 @Service
 public class ShoppingListService {
 
-    // TODO add WebSockets
+    // TODO add WebSockets ?
 
     private final ShoppingListRepository shoppingListRepository;
     private final ShoppingItemService shoppingItemService;
@@ -70,8 +68,8 @@ public class ShoppingListService {
     }
 
     // returns shoppingItemList
-    public List<ShoppingItem> getItemsByShoppingList(String listId) {
-        ShoppingList shoppingList = shoppingListRepository.findById(listId)
+    public List<ShoppingItem> getItemsByShoppingList(String id) {
+        ShoppingList shoppingList = shoppingListRepository.findById(id)
                 .orElseThrow(() -> new NoSuchElementException("Shopping list not found"));
 
         List<ShoppingItem> itemList = new ArrayList<>();
@@ -81,34 +79,51 @@ public class ShoppingListService {
         return itemList;
     }
 
+    // return list of maps for each shoppingList and its uncheckedItemsAmount
+    public Map<String, Integer> getUncheckedItemsAmount() {
+        List<ShoppingList> allShoppingLists = shoppingListRepository.findAll();
+        Map<String, Integer> amountList = new HashMap<>();
+
+        for (ShoppingList list : allShoppingLists) {
+            List<String> itemIds = list.getItemIds();
+            int amount = 0;
+
+            for (String id : itemIds) {
+                if (!shoppingItemService.getItemById(id).isChecked()) {
+                    amount++;
+                }
+            }
+            amountList.put(list.getId(), amount);
+        }
+        return amountList;
+    }
+
     /*
     ITEM FUNCTIONS:
      */
 
     // save item in item repo and update item list in shopping list
     public ShoppingItem addOneItemToShoppingList(String header, String listId, ShoppingItem shoppingItem) {
-        ShoppingItem createdOrUpdatedItem = shoppingItemService.addOneItem(header, shoppingItem);
+        ShoppingItem createdOrUpdatedItem;
         ShoppingList shoppingList = shoppingListRepository.findById(listId)
                 .orElseThrow(() -> new NoSuchElementException("Shopping list not found"));
 
 
-        // Check if the item is newly created (it doesn't exist in the shopping list yet)
-        if(!shoppingList.getItemIds().contains(createdOrUpdatedItem.getId())) {
+        if (!shoppingList.getItemIds().contains(shoppingItem.getId())) {
+            // create new item
+            createdOrUpdatedItem = shoppingItemService.createItem(header, shoppingItem);
             shoppingList.getItemIds().add(createdOrUpdatedItem.getId());
             shoppingListRepository.save(shoppingList);
+        } else {
+            // add one item amount
+            if (shoppingItem.isChecked()) {
+                shoppingItem.setChecked(false);
+            } else {
+                shoppingItem.setAmount(shoppingItem.getAmount() + 1);
+            }
+            createdOrUpdatedItem = shoppingItemService.updateItem(header, shoppingItem);
         }
         return createdOrUpdatedItem;
-    }
-
-    public ShoppingItem removeOneItemById(String listId, String itemId) {
-        ShoppingItem updatedItem = shoppingItemService.removeOneItem(itemId);
-        if (updatedItem == null) {
-            ShoppingList shoppingList = shoppingListRepository.findById(listId)
-                    .orElseThrow(() -> new NoSuchElementException("Shopping list not found"));
-            shoppingList.getItemIds().remove(itemId);
-            shoppingListRepository.save(shoppingList);
-        }
-        return updatedItem;
     }
 
     public void deleteItemById(String listId, String itemId) {
@@ -118,7 +133,5 @@ public class ShoppingListService {
         shoppingList.getItemIds().remove(itemId);
         shoppingListRepository.save(shoppingList);
     }
-
-
 
 }

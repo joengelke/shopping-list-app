@@ -22,13 +22,19 @@ public class ShoppingListController {
     @PostMapping
     public ResponseEntity<?> createShoppingList(@RequestBody ShoppingList shoppingList) {
         ShoppingList savedShoppingList = shoppingListService.createShoppingList(shoppingList);
-        return ResponseEntity.ok(Map.of("name", savedShoppingList.getName(), "createdAt", savedShoppingList.getCreatedAt()));
+        return ResponseEntity.ok(savedShoppingList);
     }
 
-    @GetMapping
+    @GetMapping("")
     public ResponseEntity<?> getAllShoppingLists() {
         List<ShoppingList> shoppingLists = shoppingListService.getAllShoppingLists();
         return ResponseEntity.ok(shoppingLists);
+    }
+
+    @GetMapping("/uncheckedItemsAmount")
+    public ResponseEntity<?> getUncheckedItemsAmount() {
+       Map<String, Integer> uncheckedItemsAmount = shoppingListService.getUncheckedItemsAmount();
+        return ResponseEntity.ok(uncheckedItemsAmount);
     }
 
     @GetMapping("/{id}")
@@ -39,8 +45,8 @@ public class ShoppingListController {
 
     @PutMapping
     public ResponseEntity<?> updateShoppingList(@RequestBody ShoppingList shoppingList) {
-        ShoppingList updatedList = shoppingListService.updateShoppingList(shoppingList);
-        return ResponseEntity.ok(Map.of("name", updatedList.getName()));
+        ShoppingList updatedShoppingList = shoppingListService.updateShoppingList(shoppingList);
+        return ResponseEntity.ok(updatedShoppingList);
     }
 
     @DeleteMapping("/{shoppingListId}")
@@ -64,15 +70,6 @@ public class ShoppingListController {
             @RequestHeader("Authorization") String header) {
         ShoppingItem newItem = shoppingListService.addOneItemToShoppingList(header, shoppingListId, shoppingItem);
         return ResponseEntity.ok(newItem);
-    }
-
-    @PatchMapping("/{shoppingListId}/item/{itemId}")
-    public ResponseEntity<?> removeOneItemById(@PathVariable String shoppingListId, @PathVariable String itemId) {
-        ShoppingItem updatedItem = shoppingListService.removeOneItemById(shoppingListId, itemId);
-        if (updatedItem == null) {
-            ResponseEntity.noContent().build();
-        }
-        return ResponseEntity.ok(updatedItem);
     }
 
     @DeleteMapping("/{shoppingListId}/item/{itemId}")
