@@ -10,8 +10,3 @@ data class ShoppingList(
 data class ShoppingListCreateRequest(
     val name: String
 )
-
-data class ShoppingListResponse(
-    val name: String,
-    val createdAt: String
-)

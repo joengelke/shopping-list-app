@@ -56,8 +56,7 @@ fun ShoppingListCreateScreen(
                         name = shoppingListName,
                         onSuccess = {
                             navController.popBackStack()
-                        },
-                        onError = {errorMessage = "Failed to create shopping list"}
+                        }
                     )
                 } else {
                     errorMessage = "Please enter a name"

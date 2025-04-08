@@ -12,10 +12,6 @@ data class ShoppingItem(
     val editedBy: String
 )
 
-data class ShoppingItemRequest(
-    val name: String
-)
-
 data class DeleteResponse(
     val message: String
 )

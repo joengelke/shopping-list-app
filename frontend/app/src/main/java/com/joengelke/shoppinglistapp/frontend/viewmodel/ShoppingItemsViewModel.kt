@@ -20,9 +20,6 @@ class ShoppingItemsViewModel @Inject constructor(
     private val _shoppingItems = MutableStateFlow<List<ShoppingItem>>(emptyList())
     val shoppingItems: StateFlow<List<ShoppingItem>> = _shoppingItems.asStateFlow()
 
-    private val _errorMessage = MutableStateFlow<String?>(null)
-    val errorMessage: StateFlow<String?> = _errorMessage
-
     fun loadShoppingItems(
         shoppingListId: String,
         onSuccess: () -> Unit
@@ -32,58 +29,44 @@ class ShoppingItemsViewModel @Inject constructor(
             result.onSuccess { items ->
                 _shoppingItems.value = items
                 onSuccess()
-            }.onFailure { error ->
-                _errorMessage.value = error.message
             }
         }
     }
 
     fun addOneShoppingItem(
         shoppingListId: String,
-        shoppingItemName: String
+        shoppingItem: ShoppingItem
     ) {
         viewModelScope.launch {
             val result =
-                shoppingItemRepository.addOneItemToShoppingList(shoppingListId, shoppingItemName)
+                shoppingItemRepository.addOneItemToShoppingList(shoppingListId, shoppingItem)
             result.onSuccess { updatedItem ->
                 // updates shoppingItems with updatedItem via name, maybe later better with id
                 _shoppingItems.update { currentList ->
-                    if (currentList.any { it.name == updatedItem.name }) {
+                    if (currentList.any { it.id == updatedItem.id }) {
                         currentList.map { oldItem ->
-                            if (oldItem.name == updatedItem.name) updatedItem else oldItem
+                            if (oldItem.id == updatedItem.id) updatedItem else oldItem
                         }
                     } else {
                         currentList + updatedItem
                     }
                 }
-            }.onFailure { error ->
-                _errorMessage.value = error.message
             }
         }
     }
 
     fun removeOneShoppingItem(
-        shoppingListId: String,
         shoppingItemId: String
     ) {
         viewModelScope.launch {
             val result =
-                shoppingItemRepository.removeOneItemOfShoppingList(shoppingListId, shoppingItemId)
+                shoppingItemRepository.removeOneItemOfShoppingList(shoppingItemId)
             result.onSuccess { updatedItem ->
-                if (updatedItem == null) {
-                    // If updatedItem is null, item has been deleted
-                    _shoppingItems.update { currentList ->
-                        currentList.filter { it.id != shoppingItemId }
-                    }
-                } else {
-                    _shoppingItems.update { currentList ->
-                        currentList.map {
-                            if (it.id == updatedItem.id) updatedItem else it
-                        }
+                _shoppingItems.update { currentList ->
+                    currentList.map {
+                        if (it.id == updatedItem.id) updatedItem else it
                     }
                 }
-            }.onFailure { error ->
-                _errorMessage.value = error.message
             }
         }
     }
@@ -99,9 +82,9 @@ class ShoppingItemsViewModel @Inject constructor(
         }
     }
 
-    fun updateItem(updatedItem: ShoppingItem) {
+    fun updateItem(shoppingItem: ShoppingItem) {
         viewModelScope.launch {
-            val result = shoppingItemRepository.updateItem(updatedItem)
+            val result = shoppingItemRepository.updateItem(shoppingItem)
             result.onSuccess { updatedItem ->
                 _shoppingItems.value = _shoppingItems.value.map {
                     if (it.id == updatedItem.id) updatedItem else it
@@ -117,8 +100,5 @@ class ShoppingItemsViewModel @Inject constructor(
                 _shoppingItems.value = _shoppingItems.value.filter { it.id != shoppingItemId }
             }
         }
-
     }
-
-
 }

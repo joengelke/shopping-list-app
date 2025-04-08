@@ -2,7 +2,6 @@ package com.joengelke.shoppinglistapp.frontend.network
 
 import com.joengelke.shoppinglistapp.frontend.models.DeleteResponse
 import com.joengelke.shoppinglistapp.frontend.models.ShoppingItem
-import com.joengelke.shoppinglistapp.frontend.models.ShoppingItemRequest
 import retrofit2.Response
 import retrofit2.http.*
 
@@ -18,15 +17,14 @@ interface ShoppingItemApi {
     suspend fun addOneItemToShoppingList(
         @Header("Authorization") token: String,
         @Path("shoppingListId") shoppingListId: String,
-        @Body shoppingItem: ShoppingItemRequest
+        @Body shoppingItem: ShoppingItem
     ): Response<ShoppingItem>
 
-    @PATCH("shoppinglist/{shoppingListId}/item/{itemId}")
+    @PATCH("shoppingitem/{itemId}")
     suspend fun removeOneItemFromShoppingList(
         @Header("Authorization") token: String,
-        @Path("shoppingListId") shoppingListId: String,
         @Path("itemId") itemId: String
-    ): Response<ShoppingItem?>
+    ): Response<ShoppingItem>
 
     // update checked status
     @PATCH("shoppingitem/{itemId}/checked")

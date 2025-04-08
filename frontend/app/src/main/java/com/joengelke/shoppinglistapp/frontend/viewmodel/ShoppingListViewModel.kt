@@ -18,8 +18,10 @@ class ShoppingListViewModel @Inject constructor(private val shoppingListReposito
     private val _shoppingLists = MutableStateFlow<List<ShoppingList>>(emptyList())
     val shoppingLists: StateFlow<List<ShoppingList>> = _shoppingLists.asStateFlow()
 
-    private val _errorMessage = MutableStateFlow<String?>(null)
-    val errorMessage: StateFlow<String?> = _errorMessage
+    // list of unchecked items of each shoppingList in shoppingLists: String shoppingListId and Int amount
+    private val _uncheckedItemsAmount = MutableStateFlow<Map<String, Int>>(emptyMap())
+    val uncheckedItemsAmount: StateFlow<Map<String, Int>> = _uncheckedItemsAmount
+
 
     fun loadShoppingLists(
         onSuccess: () -> Unit
@@ -30,24 +32,47 @@ class ShoppingListViewModel @Inject constructor(private val shoppingListReposito
                 _shoppingLists.value = lists
                 onSuccess()
             }
-                .onFailure { error ->
-                    _errorMessage.value = error.message
-                }
+        }
+    }
+
+    fun loadUncheckedItemsAmount() {
+        viewModelScope.launch {
+            val result = shoppingListRepository.getUncheckedItemsAmountList()
+            result.onSuccess { map->
+                _uncheckedItemsAmount.value = map
+            }
         }
     }
 
     fun createShoppingList(
         name: String,
-        onSuccess: () -> Unit,
-        onError: () -> Unit
+        onSuccess: () -> Unit
     ) {
         viewModelScope.launch {
             val result = shoppingListRepository.createShoppingList(name)
+            result.onSuccess { shoppingList ->
+                _shoppingLists.value += shoppingList
+                onSuccess()
+            }
+        }
+    }
+
+    fun updateShoppingList(shoppingList: ShoppingList) {
+        viewModelScope.launch {
+            val result = shoppingListRepository.updateShoppingList(shoppingList)
+            result.onSuccess { updatedShoppingList ->
+                _shoppingLists.value = _shoppingLists.value.map{
+                    if(it.id == updatedShoppingList.id) updatedShoppingList else it
+                }
+            }
+        }
+    }
+
+    fun deleteShoppingList(shoppingListId: String) {
+        viewModelScope.launch {
+            val result = shoppingListRepository.deleteShoppingList(shoppingListId)
             result.onSuccess {
-                loadShoppingLists(onSuccess)
-            }.onFailure { error ->
-                _errorMessage.value = error.message
-                onError()
+                _shoppingLists.value = _shoppingLists.value.filter { it.id != shoppingListId }
             }
         }
     }

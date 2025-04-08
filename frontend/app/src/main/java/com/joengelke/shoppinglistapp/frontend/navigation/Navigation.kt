@@ -53,8 +53,9 @@ fun Navigation(authViewModel: AuthViewModel) {
             ShoppingListCreateScreen(navController)
         }
         composable(Routes.ShoppingItemsOverview.route) { backStackEntry ->
+            val shoppingListName = backStackEntry.arguments?.getString("shoppingListName")?:""
             val shoppingListId = backStackEntry.arguments?.getString("shoppingListId")?:""
-            ShoppingItemsOverviewScreen(navController, shoppingListId)
+            ShoppingItemsOverviewScreen(navController, shoppingListName, shoppingListId)
         }
         composable(Routes.ShoppingItemsCreate.route) { backStackEntry ->
             val shoppingListId = backStackEntry.arguments?.getString("shoppingListId")?:""

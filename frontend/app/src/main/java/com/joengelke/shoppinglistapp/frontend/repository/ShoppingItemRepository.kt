@@ -4,11 +4,9 @@ import com.google.gson.Gson
 import com.google.gson.GsonBuilder
 import com.joengelke.shoppinglistapp.frontend.models.DeleteResponse
 import com.joengelke.shoppinglistapp.frontend.models.ShoppingItem
-import com.joengelke.shoppinglistapp.frontend.models.ShoppingItemRequest
 import com.joengelke.shoppinglistapp.frontend.network.ShoppingItemApi
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
-import java.io.EOFException
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -47,19 +45,19 @@ class ShoppingItemRepository @Inject constructor(
 
     suspend fun addOneItemToShoppingList(
         shoppingListId: String,
-        shoppingItemName: String
+        shoppingItem: ShoppingItem
     ): Result<ShoppingItem> {
         return try {
             val token =
                 authRepository.getToken() ?: return Result.failure(Exception("No token found"))
 
 
-            val shoppingItemRequest = ShoppingItemRequest(shoppingItemName)
+            //val shoppingItemRequest = ShoppingItemRequest(shoppingItemName)
             val response =
                 shoppingItemApi.addOneItemToShoppingList(
                     "Bearer $token",
                     shoppingListId,
-                    shoppingItemRequest
+                    shoppingItem
                 )
             if (response.isSuccessful) {
                 response.body()?.let { Result.success(it) }
@@ -73,9 +71,8 @@ class ShoppingItemRepository @Inject constructor(
     }
 
     suspend fun removeOneItemOfShoppingList(
-        shoppingListId: String,
         shoppingItemId: String
-    ): Result<ShoppingItem?> {
+    ): Result<ShoppingItem> {
         try {
             val token =
                 authRepository.getToken() ?: return Result.failure(Exception("No token found"))
@@ -83,20 +80,14 @@ class ShoppingItemRepository @Inject constructor(
             val response =
                 shoppingItemApi.removeOneItemFromShoppingList(
                     "Bearer $token",
-                    shoppingListId,
                     shoppingItemId
                 )
-
             return if (response.isSuccessful) {
                 response.body()?.let { Result.success(it) }
-                    ?: Result.success(null)
+                    ?: Result.failure(Exception("Unexpected empty response"))
             } else {
                 Result.failure(Exception("Failed to remove one item"))
             }
-
-        } catch (e: EOFException) {
-            // catches if response is null (item deleted) and thus returns an EOFException
-            return Result.success(null)
         } catch (e: Exception) {
             return Result.failure(Exception("Network error: ${e.message}"))
         }
@@ -121,7 +112,7 @@ class ShoppingItemRepository @Inject constructor(
         }
     }
 
-    suspend fun updateItem(updatedItem: ShoppingItem) : Result<ShoppingItem> {
+    suspend fun updateItem(updatedItem: ShoppingItem): Result<ShoppingItem> {
         return try {
             val token =
                 authRepository.getToken() ?: return Result.failure(Exception("No token found"))

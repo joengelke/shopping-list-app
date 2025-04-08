@@ -33,6 +33,7 @@ fun ShoppingListOverviewScreen(
 ) {
 
     val shoppingLists by shoppingListViewModel.shoppingLists.collectAsState()
+    val uncheckedItemsAmount by shoppingListViewModel.uncheckedItemsAmount.collectAsState()
     var isMenuExpanded by remember { mutableStateOf(false) }
 
     //
@@ -50,6 +51,7 @@ fun ShoppingListOverviewScreen(
 
     LaunchedEffect(Unit) {
         shoppingListViewModel.loadShoppingLists(onSuccess = {})
+        shoppingListViewModel.loadUncheckedItemsAmount()
     }
 
     Scaffold(
@@ -108,9 +110,14 @@ fun ShoppingListOverviewScreen(
                     items(shoppingLists) { shoppingList ->
                         ShoppingListContainer(
                             shoppingList = shoppingList,
+                            uncheckedItemsAmount = uncheckedItemsAmount[shoppingList.id] ?: 0,
                             navController = navController,
-                            onEdit = {},
-                            onDelete = {},
+                            onEdit = { updatedShoppingList ->
+                                shoppingListViewModel.updateShoppingList(updatedShoppingList)
+                            },
+                            onDelete = { shoppingListId ->
+                                shoppingListViewModel.deleteShoppingList(shoppingListId)
+                            },
                         )
                     }
 
@@ -134,11 +141,13 @@ fun ShoppingListOverviewScreen(
 @Composable
 fun ShoppingListContainer(
     shoppingList: ShoppingList,
+    uncheckedItemsAmount: Int,
     navController: NavController,
-    onEdit: () -> Unit,
-    onDelete: () -> Unit
+    onEdit: (ShoppingList) -> Unit,
+    onDelete: (String) -> Unit
 ) {
     var isMenuExpanded by remember { mutableStateOf(false) }
+    var showEditModal by remember { mutableStateOf(false) }
 
     //Container for each list
     Card(
@@ -146,20 +155,24 @@ fun ShoppingListContainer(
             .fillMaxWidth()
             .padding(16.dp)
             .clickable {
-                navController.navigate(Routes.ShoppingItemsOverview.createRoute(shoppingList.id)) // forward to items overview
+                // forward to items overview
+                navController.navigate(
+                    Routes.ShoppingItemsOverview.createRoute(
+                        shoppingList.name,
+                        shoppingList.id
+                    )
+                )
             }
     ) {
         Row(
             modifier = Modifier
-                .fillMaxWidth()
-                .padding(16.dp),
+                .fillMaxWidth(),
             verticalAlignment = Alignment.CenterVertically
         ) {
             Column(
-                modifier = Modifier.weight(1f)
+                modifier = Modifier.weight(1f).padding(horizontal = 16.dp)
             ) {
                 Text(text = shoppingList.name, fontWeight = FontWeight.Bold)
-                Text(text = "Items: ${shoppingList.itemIds.size}")
             }
             Column {
                 // Settings button
@@ -172,12 +185,108 @@ fun ShoppingListContainer(
                     onDismissRequest = { isMenuExpanded = false },
                     modifier = Modifier.align(Alignment.End)
                 ) {
-                    DropdownMenuItem(text = { Text("Edit (TODO)") }, onClick = { onEdit() }) //TODO
-                    DropdownMenuItem(text = { Text("Delete (TODO)") }, onClick = { onDelete() }) //TODO
+                    DropdownMenuItem(text = { Text("Edit") }, onClick = {
+                        isMenuExpanded = false
+                        showEditModal = true
+                    })
+                    DropdownMenuItem(
+                        text = { Text("Delete") },
+                        onClick = { onDelete(shoppingList.id) })
                 }
             }
-
         }
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(bottom = 16.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            val allItemsAmount = shoppingList.itemIds.size
+            if (allItemsAmount > 0) {
+                Column(modifier = Modifier.weight(0.8f).padding(horizontal = 16.dp)) {
+                    LinearProgressIndicator(
+                        progress = { (allItemsAmount - uncheckedItemsAmount.toFloat()) / allItemsAmount },
+                        color = Color.DarkGray,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(16.dp)
+                            .padding(top = 4.dp)
+                    )
+                }
+                Column(
+                    modifier = Modifier.weight(0.2f).padding(horizontal = 16.dp),
+                    horizontalAlignment = Alignment.End
+                ) {
+                    Text(text = "$uncheckedItemsAmount/${shoppingList.itemIds.size}")
+                }
+            }
+        }
+    }
 
+    if (showEditModal) {
+        EditShoppingListModal(
+            shoppingList = shoppingList,
+            onSave = { updatedShoppingList ->
+                onEdit(updatedShoppingList)
+            },
+            onDismiss = {
+                showEditModal = false
+            })
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun EditShoppingListModal(
+    shoppingList: ShoppingList,
+    onSave: (ShoppingList) -> Unit,
+    onDismiss: () -> Unit
+) {
+
+    val sheetState = rememberModalBottomSheetState()
+    var name by remember { mutableStateOf(shoppingList.name) }
+
+    val updatedShoppingList = ShoppingList(
+        id = shoppingList.id,
+        name = name,
+        createdAt = shoppingList.createdAt,
+        itemIds = shoppingList.itemIds
+    )
+
+    ModalBottomSheet(
+        onDismissRequest = onDismiss,
+        sheetState = sheetState,
+        modifier = Modifier.wrapContentHeight()
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            OutlinedTextField(
+                value = name,
+                onValueChange = { name = it },
+            )
+
+            Spacer(modifier = Modifier.height(8.dp))
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceEvenly
+            ) {
+                TextButton(onClick = onDismiss) {
+                    Text("Cancel")
+                }
+                TextButton(
+                    onClick = {
+                        onSave(updatedShoppingList)
+                        onDismiss()
+                    }
+                ) {
+                    Text("Save")
+                }
+            }
+        }
     }
 }

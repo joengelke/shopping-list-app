@@ -12,21 +12,31 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.filled.*
+import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.KeyboardArrowDown
+import androidx.compose.material.icons.filled.KeyboardArrowUp
+import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material3.*
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.window.Dialog
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavHostController
+import com.joengelke.shoppinglistapp.frontend.R
 import com.joengelke.shoppinglistapp.frontend.models.ShoppingItem
 import com.joengelke.shoppinglistapp.frontend.navigation.Routes
 import com.joengelke.shoppinglistapp.frontend.viewmodel.ShoppingItemsViewModel
@@ -38,6 +48,7 @@ import java.time.format.DateTimeFormatter
 @Composable
 fun ShoppingItemsOverviewScreen(
     navController: NavHostController,
+    shoppingListName: String,
     shoppingListId: String,
     shoppingItemsViewModel: ShoppingItemsViewModel = hiltViewModel()
 ) {
@@ -75,7 +86,7 @@ fun ShoppingItemsOverviewScreen(
                         horizontalArrangement = Arrangement.SpaceBetween
                     ) {
                         Text(
-                            text = "TODO name of shoppinglist",
+                            text = shoppingListName,
                             fontSize = 24.sp,
                             modifier = Modifier.padding(16.dp)
                         )
@@ -174,6 +185,7 @@ fun ShoppingItemsOverviewScreen(
 
                         if (isCheckedItemsVisible) {
                             items(checkedItems) { item ->
+
                                 ShoppingItemContainer(
                                     item,
                                     onCheckedChange = { updatedItem ->
@@ -193,6 +205,7 @@ fun ShoppingItemsOverviewScreen(
                                         )
                                     }
                                 )
+
                             }
                         }
                     }
@@ -210,7 +223,7 @@ fun ShoppingItemContainer(
     onEditClick: (ShoppingItem) -> Unit,
     onDeleteClick: (ShoppingItem) -> Unit
 ) {
-    var showModal by remember { mutableStateOf(false) }
+    var showEditModal by remember { mutableStateOf(false) }
     var showDialog by remember { mutableStateOf(false) }
 
     val context = LocalContext.current
@@ -251,7 +264,7 @@ fun ShoppingItemContainer(
             .fillMaxWidth()
             .padding(2.dp)
             .combinedClickable(
-                onClick = { showModal = true },
+                onClick = { showEditModal = true },
                 onLongClick = {
                     showDialog = true
                 }
@@ -284,17 +297,19 @@ fun ShoppingItemContainer(
              */
 
             // amount and unit
-            Text(
-                // checks if amount is whole number then cut of ".0"
-                text = "${
-                    shoppingItem.amount.let {
-                        if (it % 1 == 0.0) it.toInt().toString() else it.toString()
-                    }
-                }${shoppingItem.unit}",
-                fontSize = 18.sp,
-                fontWeight = FontWeight.Bold,
-                modifier = Modifier.padding(end = 10.dp)
-            )
+            if (shoppingItem.amount > 0.0) {
+                Text(
+                    // checks if amount is whole number then cut of ".0"
+                    text = "${
+                        shoppingItem.amount.let {
+                            if (it % 1 == 0.0) it.toInt().toString() else it.toString()
+                        }
+                    }${shoppingItem.unit}",
+                    fontSize = 18.sp,
+                    fontWeight = FontWeight.Bold,
+                    modifier = Modifier.padding(end = 10.dp)
+                )
+            }
 
             // editedBy
             if (shoppingItem.editedBy.isNotBlank()) {
@@ -326,56 +341,68 @@ fun ShoppingItemContainer(
     }
 
     // Edit Modal
-    if (showModal) {
-        ShoppingItemEditModal(
+    if (showEditModal) {
+        EditShoppingItemModal(
             shoppingItem = shoppingItem,
             onDismiss = { updatedShoppingItem ->
                 onEditClick(updatedShoppingItem)
-                showModal = false
+                showEditModal = false
             }
         )
     }
 
     // Delete/Edit Dialog
     if (showDialog) {
-        AlertDialog(
-            onDismissRequest = { showDialog = false },
-            confirmButton = {
-                TextButton(
-                    onClick = {
-                        onDeleteClick(shoppingItem)
-                        showDialog = false
-                    }
+        Dialog(
+            onDismissRequest = { showDialog = false }
+        ) {
+            Card(
+                modifier = Modifier
+                    .wrapContentSize()
+                    .padding(16.dp)
+            ) {
+                Row(
+                    horizontalArrangement = Arrangement.Center,
+                    verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Text("Delete")
-                }
-            },
-            dismissButton = {
-                TextButton(
-                    onClick = {
-                        showModal = true
-                        showDialog = false
+                    TextButton(
+                        onClick = {
+                            onDeleteClick(shoppingItem)
+                            showDialog = false
+                        },
+                        modifier = Modifier.padding(8.dp)
+                    ) {
+                        Text("Delete", fontSize = 20.sp, color = Color.Red)
                     }
-                ) {
-                    Text("Edit")
+                    TextButton(
+                        onClick = {
+                            showEditModal = true
+                            showDialog = false
+                        },
+                        modifier = Modifier.padding(8.dp)
+                    ) {
+                        Text("Edit", fontSize = 20.sp)
+                    }
                 }
             }
-
-        )
+        }
     }
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun ShoppingItemEditModal(
+fun EditShoppingItemModal(
     shoppingItem: ShoppingItem,
     onDismiss: (ShoppingItem) -> Unit
 ) {
     var name by remember { mutableStateOf(shoppingItem.name) }
     var amount by remember { mutableDoubleStateOf(shoppingItem.amount) }
+    var amountText by remember { mutableStateOf(amount.toString()) }
     var unit by remember { mutableStateOf(shoppingItem.unit) }
     var category by remember { mutableStateOf(shoppingItem.category) }
     var note by remember { mutableStateOf(shoppingItem.note) }
+
+    var textState by remember { mutableStateOf(TextFieldValue(unit)) }
 
     val updatedShoppingItem = ShoppingItem(
         id = shoppingItem.id,
@@ -392,14 +419,22 @@ fun ShoppingItemEditModal(
     val sheetState = rememberModalBottomSheetState()
 
 
+    LaunchedEffect(amount) {
+        if (amountText.isNotEmpty() && amount != 0.0) {
+            amountText = amount.toString()
+        }
+    }
+
     ModalBottomSheet(
         sheetState = sheetState,
-        onDismissRequest = { onDismiss(updatedShoppingItem) }
+        onDismissRequest = { onDismiss(updatedShoppingItem) },
+        modifier = Modifier.wrapContentHeight(),
+        dragHandle = null
     ) {
         Column(
             modifier = Modifier
-                .fillMaxSize()
-                .padding(4.dp)
+                .fillMaxWidth()
+                .padding(16.dp)
         ) {
             Row(
                 verticalAlignment = Alignment.CenterVertically,
@@ -409,8 +444,8 @@ fun ShoppingItemEditModal(
                 IconButton(onClick = { onDismiss(updatedShoppingItem) }) {
                     Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
                 }
-                Spacer(modifier = Modifier.width(8.dp))
-                TextField(
+
+                OutlinedTextField(
                     value = name,
                     onValueChange = {
                         name = it
@@ -424,69 +459,105 @@ fun ShoppingItemEditModal(
 
             Row(
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalAlignment = Alignment.CenterVertically,
                 modifier = Modifier.fillMaxWidth()
             ) {
-                TextField(
-                    value = amount.toString(),
+
+                OutlinedTextField(
+                    value = amountText,
                     onValueChange = { newValue ->
-                        amount = newValue.toDouble()
+                        val replacedValue = newValue.replace(",", ".")
+                        amountText = replacedValue
+
+                        replacedValue.toDoubleOrNull()?.let { validDouble ->
+                            amount = validDouble
+                        }
                     },
                     label = { Text("Amount") },
                     keyboardOptions = KeyboardOptions.Default.copy(keyboardType = KeyboardType.Number),
-                    modifier = Modifier.weight(0.4f)
+                    modifier = Modifier
+                        .weight(0.3f)
+                        .clickable {
+
+                        }
                 )
-                TextField(
-                    value = unit,
-                    onValueChange = {
-                        unit = it
+                OutlinedTextField(
+                    value = textState,
+                    onValueChange = { newValue ->
+                        textState = newValue
+                        unit = newValue.text
                     },
                     label = { Text("Unit") },
-                    modifier = Modifier.weight(0.4f)
+                    modifier = Modifier
+                        .weight(0.2f)
+                        .onFocusChanged {
+                            if (it.isFocused) {
+                                textState =
+                                    textState.copy(selection = TextRange(0, textState.text.length))
+                            }
+                        }
                 )
 
-                IconButton(onClick = {
-                    if (amount > 0) {
-                        amount -= 1
-                    }
-                }) {
-                    Icon(Icons.Default.Clear, contentDescription = "Remove")
-                }
-                IconButton(onClick = {
-                    amount += 1
-                }) {
-                    Icon(Icons.Default.Add, contentDescription = "Add")
-                }
-            }
-
-            // change here
-            if (sheetState.hasExpandedState) {
-                Row(
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                    modifier = Modifier.fillMaxWidth()
+                IconButton(
+                    onClick = {
+                        if ((amount - 1) > 0) {
+                            amount -= 1
+                        }
+                    },
+                    modifier = Modifier
+                        .size(48.dp)
+                        .clip(CircleShape)
+                        .background(Color.DarkGray)
+                        .padding(horizontal = 8.dp)
                 ) {
-                    TextField(
-                        value = category,
-                        onValueChange = {
-                            category = it
-                        },
-                        label = { Text("Category") },
-                        modifier = Modifier.weight(1f)
-                    )
-
-                    TextField(
-                        value = note,
-                        onValueChange = {
-                            note = it
-                        },
-                        label = { Text("Note") },
-                        modifier = Modifier.weight(1f)
+                    Icon(
+                        painter = painterResource(id = R.drawable.baseline_remove_24),
+                        contentDescription = "Remove",
+                        tint = Color.White
                     )
                 }
 
+                IconButton(
+                    onClick = { amount += 1 },
+                    modifier = Modifier
+                        .size(48.dp)
+                        .clip(CircleShape)
+                        .background(Color.DarkGray)
+                        .padding(horizontal = 8.dp)
+                ) {
+                    Icon(
+                        painter = painterResource(id = R.drawable.baseline_add_24),
+                        contentDescription = "Add",
+                        tint = Color.White
+                    )
+                }
             }
 
+            Spacer(modifier = Modifier.height(16.dp))
 
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                modifier = Modifier.fillMaxWidth()
+            ) {
+
+                /* Category Field
+                OutlinedTextField(
+                    value = category,
+                    onValueChange = {
+                        category = it
+                    },
+                    label = { Text("Category") },
+                    modifier = Modifier.weight(1f)
+                ) */
+                OutlinedTextField(
+                    value = note,
+                    onValueChange = {
+                        note = it
+                    },
+                    label = { Text("Note") },
+                    modifier = Modifier.weight(1f)
+                )
+            }
         }
-
     }
 }
