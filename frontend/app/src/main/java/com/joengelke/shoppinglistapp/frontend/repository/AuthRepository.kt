@@ -8,10 +8,9 @@ import androidx.datastore.preferences.preferencesDataStore
 import com.auth0.android.jwt.JWT
 import com.joengelke.shoppinglistapp.frontend.network.AuthApi
 import com.joengelke.shoppinglistapp.frontend.network.AuthRequest
+import com.joengelke.shoppinglistapp.frontend.network.NetworkClient
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.firstOrNull
-import retrofit2.Retrofit
-import retrofit2.converter.gson.GsonConverterFactory
 import java.time.Instant
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -23,12 +22,7 @@ class AuthRepository @Inject constructor(@ApplicationContext private val context
 
     private val tokenKey = stringPreferencesKey("jwt_token")
 
-    private val retrofit = Retrofit.Builder()
-        .baseUrl("http://192.168.1.38:8080/api/")
-        .addConverterFactory(GsonConverterFactory.create())
-        .build()
-
-    private val authApi = retrofit.create(AuthApi::class.java)
+    private val authApi: AuthApi = NetworkClient.createRetrofit(context).create(AuthApi::class.java)
 
     // perform login
     suspend fun login(username: String, password: String): String? {

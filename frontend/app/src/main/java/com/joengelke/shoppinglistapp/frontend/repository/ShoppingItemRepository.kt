@@ -1,31 +1,22 @@
 package com.joengelke.shoppinglistapp.frontend.repository
 
-import com.google.gson.Gson
-import com.google.gson.GsonBuilder
+import android.content.Context
 import com.joengelke.shoppinglistapp.frontend.models.DeleteResponse
 import com.joengelke.shoppinglistapp.frontend.models.ShoppingItem
+import com.joengelke.shoppinglistapp.frontend.network.NetworkClient
 import com.joengelke.shoppinglistapp.frontend.network.ShoppingItemApi
-import retrofit2.Retrofit
-import retrofit2.converter.gson.GsonConverterFactory
+import dagger.hilt.android.qualifiers.ApplicationContext
 import javax.inject.Inject
 import javax.inject.Singleton
 
 @Singleton
 class ShoppingItemRepository @Inject constructor(
+    @ApplicationContext private val context: Context,
     private val authRepository: AuthRepository
 ) {
 
-
-    private val gson: Gson = GsonBuilder()
-        //.setDateFormat("dd.MM.yyyy HH:mm:ss") // German format: 22.03.2025 12:37:55
-        .create()
-
-    private val retrofit = Retrofit.Builder()
-        .baseUrl("http://192.168.1.38:8080/api/")
-        .addConverterFactory(GsonConverterFactory.create(gson))
-        .build()
-
-    private val shoppingItemApi = retrofit.create(ShoppingItemApi::class.java)
+    private val shoppingItemApi: ShoppingItemApi = NetworkClient.createRetrofit(context).create(
+        ShoppingItemApi::class.java)
 
     suspend fun getItemsByShoppingList(shoppingListId: String): Result<List<ShoppingItem>> {
         return try {

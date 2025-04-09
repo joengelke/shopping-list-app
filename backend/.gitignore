@@ -34,3 +34,8 @@ build/
 
 ### custom folder ###
 backup
+### certificates ###
+/src/main/resources/keystore.p12
+/src/main/resources/mycert.crt
+### secrets
+src/main/resources/application-secrets.properties
