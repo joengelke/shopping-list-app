@@ -12,8 +12,10 @@ import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 @HiltViewModel
-class ShoppingListViewModel @Inject constructor(private val shoppingListRepository: ShoppingListRepository) :
-    ViewModel() {
+class ShoppingListViewModel @Inject constructor(
+    private val shoppingListRepository: ShoppingListRepository,
+) : ViewModel() {
+
 
     private val _shoppingLists = MutableStateFlow<List<ShoppingList>>(emptyList())
     val shoppingLists: StateFlow<List<ShoppingList>> = _shoppingLists.asStateFlow()
@@ -24,7 +26,8 @@ class ShoppingListViewModel @Inject constructor(private val shoppingListReposito
 
 
     fun loadShoppingLists(
-        onSuccess: () -> Unit
+        onSuccess: () -> Unit,
+        onFailure: () -> Unit
     ) {
         viewModelScope.launch {
             val result = shoppingListRepository.getShoppingLists()
@@ -32,13 +35,16 @@ class ShoppingListViewModel @Inject constructor(private val shoppingListReposito
                 _shoppingLists.value = lists
                 onSuccess()
             }
+            result.onFailure {
+                onFailure()
+            }
         }
     }
 
     fun loadUncheckedItemsAmount() {
         viewModelScope.launch {
             val result = shoppingListRepository.getUncheckedItemsAmountList()
-            result.onSuccess { map->
+            result.onSuccess { map ->
                 _uncheckedItemsAmount.value = map
             }
         }
@@ -61,8 +67,8 @@ class ShoppingListViewModel @Inject constructor(private val shoppingListReposito
         viewModelScope.launch {
             val result = shoppingListRepository.updateShoppingList(shoppingList)
             result.onSuccess { updatedShoppingList ->
-                _shoppingLists.value = _shoppingLists.value.map{
-                    if(it.id == updatedShoppingList.id) updatedShoppingList else it
+                _shoppingLists.value = _shoppingLists.value.map {
+                    if (it.id == updatedShoppingList.id) updatedShoppingList else it
                 }
             }
         }

@@ -8,9 +8,12 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.navigation.compose.rememberNavController
 import com.joengelke.shoppinglistapp.frontend.navigation.Navigation
+import com.joengelke.shoppinglistapp.frontend.ui.common.GlobalEventHandler
 import com.joengelke.shoppinglistapp.frontend.viewmodel.AuthViewModel
 import dagger.hilt.android.AndroidEntryPoint
 
@@ -27,11 +30,19 @@ class MainActivity : ComponentActivity() {
 
 @Composable
 fun ShoppingListApp(authViewModel: AuthViewModel) {
+    val navController = rememberNavController()
+    val sessionManager = authViewModel.sessionManager
+    val context = LocalContext.current
     MaterialTheme {
         Surface(
             modifier = Modifier.fillMaxSize()
         ) {
-            Navigation(authViewModel)
+            GlobalEventHandler(
+                sessionManager = sessionManager,
+                navController = navController,
+                context = context
+            )
+            Navigation(authViewModel, navController)
         }
     }
 }

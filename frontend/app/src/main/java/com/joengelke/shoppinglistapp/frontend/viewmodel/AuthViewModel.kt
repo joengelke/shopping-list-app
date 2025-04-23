@@ -3,6 +3,8 @@ package com.joengelke.shoppinglistapp.frontend.viewmodel
 import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.joengelke.shoppinglistapp.frontend.network.SessionManager
+import com.joengelke.shoppinglistapp.frontend.network.TokenManager
 import com.joengelke.shoppinglistapp.frontend.repository.AuthRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -13,7 +15,9 @@ import javax.inject.Inject
 // manages authentication state and checks if a token exists and updates UI accordingly
 @HiltViewModel
 class AuthViewModel @Inject constructor(
-    private val authRepository: AuthRepository
+    private val authRepository: AuthRepository,
+    val sessionManager: SessionManager,
+    private val tokenManager: TokenManager
 ) : ViewModel() {
 
     private val _isLoggedIn = MutableStateFlow(false)
@@ -21,8 +25,8 @@ class AuthViewModel @Inject constructor(
 
     fun checkIfTokenIsValid() {
         viewModelScope.launch {
-            val token = authRepository.getToken()
-            _isLoggedIn.value = token != null && authRepository.validateToken(token)
+            val token = tokenManager.getToken()
+            _isLoggedIn.value = token != null && tokenManager.validateToken(token)
         }
     }
 
@@ -34,11 +38,12 @@ class AuthViewModel @Inject constructor(
         onError: (String) -> Unit
     ) {
         viewModelScope.launch {
-            val token = authRepository.login(username, password)
-            if (token != null) {
+            val result = authRepository.login(username, password)
+            result.onSuccess {
                 _isLoggedIn.value = true
                 onSuccess()
-            } else {
+            }
+            result.onFailure {
                 onError("Invalid credentials")
             }
         }
@@ -69,7 +74,7 @@ class AuthViewModel @Inject constructor(
     // Perform logout
     fun logout() {
         viewModelScope.launch {
-            authRepository.logout()
+            tokenManager.deleteToken()
             _isLoggedIn.value = false
         }
     }

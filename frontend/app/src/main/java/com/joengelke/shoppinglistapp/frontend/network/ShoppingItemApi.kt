@@ -1,6 +1,7 @@
 package com.joengelke.shoppinglistapp.frontend.network
 
 import com.joengelke.shoppinglistapp.frontend.models.DeleteResponse
+import com.joengelke.shoppinglistapp.frontend.models.ItemSetItem
 import com.joengelke.shoppinglistapp.frontend.models.ShoppingItem
 import retrofit2.Response
 import retrofit2.http.*
@@ -46,4 +47,28 @@ interface ShoppingItemApi {
         @Path("shoppingListId") shoppingListId: String,
         @Path("itemId") itemId: String
     ): Response<DeleteResponse>
+
+    @PUT("shoppingitem/addItemSetItem")
+    suspend fun addItemSetItemToShoppingList(
+        @Header("Authorization") token: String,
+        @Body itemSetItem: ItemSetItem
+    ): Response<ShoppingItem>
+
+    @PUT("shoppingitem/addAllItemSetItems/{itemSetId}")
+    suspend fun addAllItemSetItemsToShoppingList(
+        @Header("Authorization") token: String,
+        @Path("itemSetId") itemSetId: String
+    ): Response<List<ShoppingItem>>
+
+    @PUT("shoppingitem/removeItemSetItem")
+    suspend fun removeItemSetItemFromShoppingList(
+        @Header("Authorization") token: String,
+        @Body itemSetItem: ItemSetItem
+    ): Response<ShoppingItem>
+
+    @PUT("shoppingitem/removeAllItemSetItems/{itemSetId}")
+    suspend fun removeAllItemSetItemsFromShoppingList(
+        @Header("Authorization") token: String,
+        @Path("itemSetId") itemSetId: String
+    ): Response<List<ShoppingItem>>
 }

@@ -13,11 +13,13 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
+import com.joengelke.shoppinglistapp.frontend.R
 import com.joengelke.shoppinglistapp.frontend.models.ShoppingList
 import com.joengelke.shoppinglistapp.frontend.navigation.Routes
 import com.joengelke.shoppinglistapp.frontend.viewmodel.AuthViewModel
@@ -29,14 +31,12 @@ import kotlinx.coroutines.launch
 fun ShoppingListOverviewScreen(
     navController: NavController,
     shoppingListViewModel: ShoppingListViewModel = hiltViewModel(),
-    authViewModel: AuthViewModel = hiltViewModel()
+    authViewModel: AuthViewModel = hiltViewModel(),
 ) {
-
     val shoppingLists by shoppingListViewModel.shoppingLists.collectAsState()
     val uncheckedItemsAmount by shoppingListViewModel.uncheckedItemsAmount.collectAsState()
     var isMenuExpanded by remember { mutableStateOf(false) }
 
-    //
     var refreshing by remember { mutableStateOf(false) }
     val state = rememberPullToRefreshState()
     val coroutineScope = rememberCoroutineScope()
@@ -44,31 +44,68 @@ fun ShoppingListOverviewScreen(
         refreshing = true
         coroutineScope.launch {
             shoppingListViewModel.loadShoppingLists(
-                onSuccess = { refreshing = false }
+                onSuccess = { refreshing = false },
+                onFailure = {
+                    refreshing = false
+                }
             )
         }
     }
 
     LaunchedEffect(Unit) {
-        shoppingListViewModel.loadShoppingLists(onSuccess = {})
+        shoppingListViewModel.loadShoppingLists(onSuccess = {}, onFailure = { refreshing = false })
         shoppingListViewModel.loadUncheckedItemsAmount()
     }
+
+
 
     Scaffold(
         topBar = {
             TopAppBar(
                 title = {
                     Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(8.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.Center
                     ) {
                         Text(
-                            text = "Shopping Lists",
+                            text = "List Overview",
                             fontSize = 24.sp,
-                            modifier = Modifier.padding(16.dp)
+                            fontWeight = FontWeight.Bold,
+                            color = Color.White,
+                            modifier = Modifier
+                                .padding(8.dp)
+                                .weight(1f)
                         )
-                        IconButton(onClick = { isMenuExpanded = !isMenuExpanded }) {
-                            Icon(Icons.Default.MoreVert, contentDescription = "More options")
+                        IconButton(
+                            onClick = {
+                                // TODO settings
+                            }
+                        ) {
+                            Icon(
+                                painter = painterResource(id = R.drawable.baseline_settings_24),
+                                contentDescription = "open settings",
+                                tint = Color.White
+                            )
+                        }
+                        IconButton(
+                            onClick = {
+                                authViewModel.logout()
+                                navController.navigate("login") {
+                                    // Clear back stack
+                                    popUpTo("shoppingListOverview") {
+                                        inclusive = true
+                                    }
+                                }
+                            }
+                        ) {
+                            Icon(
+                                painter = painterResource(id = R.drawable.baseline_logout_24),
+                                contentDescription = "logout",
+                                tint = Color.White
+                            )
                         }
                     }
                 },
@@ -90,7 +127,8 @@ fun ShoppingListOverviewScreen(
                                         inclusive = true
                                     }
                                 }
-                            })
+                            }
+                        )
                     }
                 }
             )
@@ -153,7 +191,7 @@ fun ShoppingListContainer(
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(16.dp)
+            .padding(vertical = 4.dp, horizontal = 8.dp)
             .clickable {
                 // forward to items overview
                 navController.navigate(
@@ -170,9 +208,11 @@ fun ShoppingListContainer(
             verticalAlignment = Alignment.CenterVertically
         ) {
             Column(
-                modifier = Modifier.weight(1f).padding(horizontal = 16.dp)
+                modifier = Modifier
+                    .weight(1f)
+                    .padding(horizontal = 16.dp)
             ) {
-                Text(text = shoppingList.name, fontWeight = FontWeight.Bold)
+                Text(text = shoppingList.name, fontSize = 24.sp, fontWeight = FontWeight.Bold)
             }
             Column {
                 // Settings button
@@ -203,7 +243,11 @@ fun ShoppingListContainer(
         ) {
             val allItemsAmount = shoppingList.itemIds.size
             if (allItemsAmount > 0) {
-                Column(modifier = Modifier.weight(0.8f).padding(horizontal = 16.dp)) {
+                Column(
+                    modifier = Modifier
+                        .weight(0.8f)
+                        .padding(horizontal = 16.dp)
+                ) {
                     LinearProgressIndicator(
                         progress = { (allItemsAmount - uncheckedItemsAmount.toFloat()) / allItemsAmount },
                         color = Color.DarkGray,
@@ -214,7 +258,9 @@ fun ShoppingListContainer(
                     )
                 }
                 Column(
-                    modifier = Modifier.weight(0.2f).padding(horizontal = 16.dp),
+                    modifier = Modifier
+                        .weight(0.2f)
+                        .padding(horizontal = 16.dp),
                     horizontalAlignment = Alignment.End
                 ) {
                     Text(text = "$uncheckedItemsAmount/${shoppingList.itemIds.size}")

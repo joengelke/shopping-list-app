@@ -2,6 +2,7 @@ package com.joengelke.shoppinglistapp.frontend.viewmodel
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.joengelke.shoppinglistapp.frontend.models.ItemSetItem
 import com.joengelke.shoppinglistapp.frontend.models.ShoppingItem
 import com.joengelke.shoppinglistapp.frontend.repository.ShoppingItemRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -15,8 +16,8 @@ import javax.inject.Inject
 @HiltViewModel
 class ShoppingItemsViewModel @Inject constructor(
     private val shoppingItemRepository: ShoppingItemRepository,
-) :
-    ViewModel() {
+) : ViewModel() {
+
     private val _shoppingItems = MutableStateFlow<List<ShoppingItem>>(emptyList())
     val shoppingItems: StateFlow<List<ShoppingItem>> = _shoppingItems.asStateFlow()
 
@@ -98,6 +99,59 @@ class ShoppingItemsViewModel @Inject constructor(
             val result = shoppingItemRepository.deleteItem(shoppingListId, shoppingItemId)
             result.onSuccess {
                 _shoppingItems.value = _shoppingItems.value.filter { it.id != shoppingItemId }
+            }
+        }
+    }
+
+    /*
+    ITEM SET METHODS
+     */
+    fun addItemSetItemToShoppingList(
+        itemSetItem: ItemSetItem
+    ) {
+        viewModelScope.launch {
+            val result = shoppingItemRepository.addItemSetItemToShoppingList(itemSetItem)
+            result.onSuccess { updatedItem ->
+                _shoppingItems.value = _shoppingItems.value.map {
+                    if (it.id == updatedItem.id) updatedItem else it
+                }
+            }
+        }
+    }
+
+    fun addAllItemSetItemsToShoppingList(
+        itemSetId: String
+    ) {
+        viewModelScope.launch {
+            val result = shoppingItemRepository.addAllItemSetItemsToShoppingList(itemSetId)
+            result.onSuccess { updatedItems ->
+                val updatedMap = updatedItems.associateBy { it.id }
+                _shoppingItems.value = _shoppingItems.value.map { item ->
+                    updatedMap[item.id] ?: item
+                }
+            }
+        }
+    }
+
+    fun removeItemSetItemFromShoppingList(itemSetItem: ItemSetItem) {
+        viewModelScope.launch {
+            val result = shoppingItemRepository.removeItemSetItemFromShoppingList(itemSetItem)
+            result.onSuccess { updatedItem ->
+                _shoppingItems.value = _shoppingItems.value.map {
+                    if (it.id == updatedItem.id) updatedItem else it
+                }
+            }
+        }
+    }
+
+    fun removeAllItemSetItemsFromShoppingList(itemSetId: String) {
+        viewModelScope.launch {
+            val result = shoppingItemRepository.removeAllItemSetItemsFromShoppingList(itemSetId)
+            result.onSuccess { updatedItems ->
+                val updatedMap = updatedItems.associateBy { it.id }
+                _shoppingItems.value = _shoppingItems.value.map { item ->
+                    updatedMap[item.id] ?: item
+                }
             }
         }
     }

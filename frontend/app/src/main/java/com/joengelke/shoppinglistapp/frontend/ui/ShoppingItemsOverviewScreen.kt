@@ -64,7 +64,6 @@ fun ShoppingItemsOverviewScreen(
             shoppingListId,
             onSuccess = { refreshing = false }
         )
-
     }
 
     LaunchedEffect(shoppingListId) {
@@ -74,7 +73,7 @@ fun ShoppingItemsOverviewScreen(
     val uncheckedItems = shoppingItems.filter { !it.checked }
     val checkedItems = shoppingItems.filter { it.checked }
 
-    var isCheckedItemsVisible by remember { mutableStateOf(true) }
+    var isCheckedItemsVisible by remember { mutableStateOf(false) }
     //val (uncheckedItems, checkedItems) = shoppingItems.partition { !it.checked }
 
     Scaffold(
@@ -83,12 +82,14 @@ fun ShoppingItemsOverviewScreen(
                 title = {
                     Row(
                         modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.SpaceBetween
                     ) {
                         Text(
                             text = shoppingListName,
                             fontSize = 24.sp,
-                            modifier = Modifier.padding(16.dp)
+                            fontWeight = FontWeight.Bold,
+                            modifier = Modifier.padding(8.dp)
                         )
                         IconButton(onClick = { isMenuExpanded = !isMenuExpanded }) {
                             Icon(Icons.Default.MoreVert, contentDescription = "More options")
@@ -109,8 +110,14 @@ fun ShoppingItemsOverviewScreen(
                         onDismissRequest = { isMenuExpanded = false }
                     ) {
                         DropdownMenuItem(
-                            text = { Text("TODO") },
-                            onClick = {}
+                            text = { Text("Item Sets") },
+                            onClick = {
+                                navController.navigate(
+                                    Routes.ItemSetOverview.createRoute(
+                                        shoppingListId
+                                    )
+                                )
+                            }
                         )
                     }
                 }
@@ -177,7 +184,7 @@ fun ShoppingItemsOverviewScreen(
                                     modifier = Modifier.weight(1f)
                                 )
                                 Icon(
-                                    imageVector = if (isCheckedItemsVisible) Icons.Default.KeyboardArrowUp else Icons.Default.KeyboardArrowDown,
+                                    imageVector = if (isCheckedItemsVisible) Icons.Default.KeyboardArrowDown else Icons.Default.KeyboardArrowUp,
                                     contentDescription = "Toggle Checked Items"
                                 )
                             }
@@ -205,7 +212,6 @@ fun ShoppingItemsOverviewScreen(
                                         )
                                     }
                                 )
-
                             }
                         }
                     }
@@ -283,9 +289,9 @@ fun ShoppingItemContainer(
 
             // name and note
             Column(modifier = Modifier.weight(1f)) {
-                Text(text = shoppingItem.name, fontWeight = FontWeight.Bold, fontSize = 18.sp)
+                Text(text = shoppingItem.name, fontWeight = FontWeight.Bold, fontSize = 20.sp)
                 if (shoppingItem.note.isNotBlank()) {
-                    Text(text = shoppingItem.note, fontSize = 14.sp, color = Color.Gray)
+                    Text(text = shoppingItem.note, fontSize = 16.sp, color = Color.Gray)
                 }
             }
 
@@ -397,7 +403,7 @@ fun EditShoppingItemModal(
 ) {
     var name by remember { mutableStateOf(shoppingItem.name) }
     var amount by remember { mutableDoubleStateOf(shoppingItem.amount) }
-    var amountText by remember { mutableStateOf(amount.toString()) }
+    var amountText by remember { mutableStateOf(amount.toString().replace(".0", "")) }
     var unit by remember { mutableStateOf(shoppingItem.unit) }
     var category by remember { mutableStateOf(shoppingItem.category) }
     var note by remember { mutableStateOf(shoppingItem.note) }
@@ -417,13 +423,6 @@ fun EditShoppingItemModal(
     )
 
     val sheetState = rememberModalBottomSheetState()
-
-
-    LaunchedEffect(amount) {
-        if (amountText.isNotEmpty() && amount != 0.0) {
-            amountText = amount.toString()
-        }
-    }
 
     ModalBottomSheet(
         sheetState = sheetState,
@@ -466,10 +465,9 @@ fun EditShoppingItemModal(
                 OutlinedTextField(
                     value = amountText,
                     onValueChange = { newValue ->
-                        val replacedValue = newValue.replace(",", ".")
-                        amountText = replacedValue
+                        amountText = newValue.replace(",", ".")
 
-                        replacedValue.toDoubleOrNull()?.let { validDouble ->
+                        amountText.toDoubleOrNull()?.let { validDouble ->
                             amount = validDouble
                         }
                     },
@@ -477,9 +475,6 @@ fun EditShoppingItemModal(
                     keyboardOptions = KeyboardOptions.Default.copy(keyboardType = KeyboardType.Number),
                     modifier = Modifier
                         .weight(0.3f)
-                        .clickable {
-
-                        }
                 )
                 OutlinedTextField(
                     value = textState,
@@ -502,6 +497,7 @@ fun EditShoppingItemModal(
                     onClick = {
                         if ((amount - 1) > 0) {
                             amount -= 1
+                            amountText = amount.toString()
                         }
                     },
                     modifier = Modifier
@@ -518,7 +514,10 @@ fun EditShoppingItemModal(
                 }
 
                 IconButton(
-                    onClick = { amount += 1 },
+                    onClick = {
+                        amount += 1
+                        amountText = amount.toString()
+                    },
                     modifier = Modifier
                         .size(48.dp)
                         .clip(CircleShape)

@@ -10,7 +10,12 @@ sealed class Routes(val route: String) {
     }
     data object ShoppingItemsCreate: Routes("shoppingItemsCreate/{shoppingListId}") {
         fun createRoute(shoppingListId:String) = "shoppingItemsCreate/$shoppingListId"
-
+    }
+    data object ItemSetOverview: Routes("itemSetOverview/{shoppingListId}") {
+        fun createRoute(shoppingListId: String) = "itemSetOverview/$shoppingListId"
+    }
+    data object ItemSetCreate: Routes("itemSetCreate/{shoppingListId}:{itemSetId}") {
+        fun createRoute(shoppingListId: String, itemSetId: String) = "itemSetCreate/$shoppingListId:$itemSetId"
     }
 
 }

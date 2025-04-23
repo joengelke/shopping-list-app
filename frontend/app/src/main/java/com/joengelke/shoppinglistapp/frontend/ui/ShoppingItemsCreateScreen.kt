@@ -1,5 +1,6 @@
 package com.joengelke.shoppinglistapp.frontend.ui
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -8,7 +9,8 @@ import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.KeyboardArrowDown
+import androidx.compose.material.icons.filled.KeyboardArrowUp
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -27,7 +29,10 @@ import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
 import com.joengelke.shoppinglistapp.frontend.R
+import com.joengelke.shoppinglistapp.frontend.models.ItemSet
+import com.joengelke.shoppinglistapp.frontend.models.ItemSetItem
 import com.joengelke.shoppinglistapp.frontend.models.ShoppingItem
+import com.joengelke.shoppinglistapp.frontend.viewmodel.ItemSetsViewModel
 import com.joengelke.shoppinglistapp.frontend.viewmodel.ShoppingItemsViewModel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -37,9 +42,9 @@ import kotlinx.coroutines.launch
 fun ShoppingItemsCreateScreen(
     navController: NavController,
     shoppingListId: String,
-    shoppingItemsViewModel: ShoppingItemsViewModel = hiltViewModel()
+    shoppingItemsViewModel: ShoppingItemsViewModel = hiltViewModel(),
+    itemSetsViewModel: ItemSetsViewModel = hiltViewModel()
 ) {
-
     var name by remember { mutableStateOf("") }
 
     val newShoppingItem = listOf(
@@ -57,91 +62,10 @@ fun ShoppingItemsCreateScreen(
     )
 
     val shoppingItems by shoppingItemsViewModel.shoppingItems.collectAsState()
+    val itemSets by itemSetsViewModel.itemSets.collectAsState()
 
     //TODO get all Possible Items from Backend once its Screen is loaded
-
     /*
-    val tmpOwnSuggestionsList = listOf(
-        ShoppingItem(
-            id = "",
-            name = "Apple",
-            category = "",
-            amount = 0.0,
-            unit = "",
-            checked = false,
-            note = "",
-            editedAt = "",
-            editedBy = ""
-        ),
-        ShoppingItem(
-            id = "",
-            name = "Banana",
-            category = "",
-            amount = 0.0,
-            unit = "",
-            checked = false,
-            note = "",
-            editedAt = "",
-            editedBy = ""
-        ),
-        ShoppingItem(
-            id = "",
-            name = "Bread",
-            category = "",
-            amount = 0.0,
-            unit = "",
-            checked = false,
-            note = "",
-            editedAt = "",
-            editedBy = ""
-        ),
-        ShoppingItem(
-            id = "",
-            name = "Butter",
-            category = "",
-            amount = 0.0,
-            unit = "",
-            checked = false,
-            note = "",
-            editedAt = "",
-            editedBy = ""
-        ),
-        ShoppingItem(
-            id = "",
-            name = "Carrot",
-            category = "",
-            amount = 0.0,
-            unit = "",
-            checked = false,
-            note = "",
-            editedAt = "",
-            editedBy = ""
-        ),
-        ShoppingItem(
-            id = "",
-            name = "Cheese",
-            category = "",
-            amount = 0.0,
-            unit = "",
-            checked = false,
-            note = "",
-            editedAt = "",
-            editedBy = ""
-        ),
-        ShoppingItem(
-            id = "",
-            name = "Chicken",
-            category = "",
-            amount = 0.0,
-            unit = "",
-            checked = false,
-            note = "",
-            editedAt = "",
-            editedBy = ""
-        )
-    )
-
-
     val ownSuggestionsList =
         tmpOwnSuggestionsList.filter { it.name !in shoppingItems.map { it.name }.toSet()
 
@@ -172,11 +96,11 @@ fun ShoppingItemsCreateScreen(
     // Pager
     val pagerState = rememberPagerState(pageCount = { 2 })
     val tabTitles = listOf("Items", "Sets")
-    var selectedTabIndex by remember { mutableIntStateOf(0) }
     val scope = rememberCoroutineScope()
 
     LaunchedEffect(Unit) {
         shoppingItemsViewModel.loadShoppingItems(shoppingListId, onSuccess = {})
+        itemSetsViewModel.loadItemSets(shoppingListId, onSuccess = {})
         delay(300)
         focusRequester.requestFocus()
         keyboardController?.show()
@@ -219,16 +143,15 @@ fun ShoppingItemsCreateScreen(
                     .padding(paddingValues)
             ) {
                 TabRow(
-                    selectedTabIndex = selectedTabIndex,
+                    selectedTabIndex = pagerState.currentPage,
                     contentColor = MaterialTheme.colorScheme.primary,
                     modifier = Modifier.fillMaxWidth()
                 ) {
                     tabTitles.forEachIndexed { index, title ->
                         Tab(
                             text = { Text(title, fontWeight = FontWeight.Bold) },
-                            selected = selectedTabIndex == index,
+                            selected = pagerState.currentPage == index,
                             onClick = {
-                                selectedTabIndex = index
                                 scope.launch {
                                     pagerState.animateScrollToPage(index)
                                 }
@@ -246,7 +169,8 @@ fun ShoppingItemsCreateScreen(
                 ) { page ->
                     when (page) {
                         0 -> {
-                            ShoppingItemPage(allItems,
+                            ShoppingItemPage(
+                                allItems,
                                 addOneItem = { addItem ->
                                     shoppingItemsViewModel.addOneShoppingItem(
                                         shoppingListId,
@@ -262,7 +186,30 @@ fun ShoppingItemsCreateScreen(
                         }
 
                         1 -> {
-                            ItemSetsPage()
+                            ItemSetsPage(
+                                allItems,
+                                itemSets,
+                                addItemSetItemToShoppingList = { addItemSetItem ->
+                                    shoppingItemsViewModel.addItemSetItemToShoppingList(
+                                        addItemSetItem
+                                    )
+                                },
+                                removeItemSetItemFromShoppingList = { removeItemSetItem ->
+                                    shoppingItemsViewModel.removeItemSetItemFromShoppingList(
+                                        removeItemSetItem
+                                    )
+                                },
+                                addAllItemSetItemsToShoppingList = { itemSetId ->
+                                    shoppingItemsViewModel.addAllItemSetItemsToShoppingList(
+                                        itemSetId
+                                    )
+                                },
+                                removeAllItemSetItemsFromShoppingList = { itemSetId ->
+                                    shoppingItemsViewModel.removeAllItemSetItemsFromShoppingList(
+                                        itemSetId
+                                    )
+                                }
+                            )
                         }
                     }
                 }
@@ -281,7 +228,6 @@ fun ShoppingItemPage(
         modifier = Modifier
             .fillMaxSize()
     ) {
-
         items(shoppingItemList) { item ->
             ItemContainer(item,
                 addOneItem = { addItem ->
@@ -326,17 +272,22 @@ fun ItemContainer(
                     isAdded = true
                 }
             ) {
-                Icon(Icons.Default.Add, contentDescription = "Add Item")
+                Icon(
+                    painter = painterResource(id = R.drawable.baseline_add_24),
+                    contentDescription = "Add Item"
+                )
             }
             Text(
                 text = item.name,
+                fontWeight = FontWeight.Bold,
+                fontSize = 20.sp,
                 modifier = Modifier
                     .padding(start = 8.dp)
                     .weight(1f)
             )
             Row(verticalAlignment = Alignment.CenterVertically) {
                 if (!item.checked) {
-                    if (item.amount>0) {
+                    if (item.amount > 0) {
                         Text(
                             text = item.amount.let {
                                 if (it % 1 == 0.0) it.toInt().toString() else it.toString()
@@ -359,21 +310,242 @@ fun ItemContainer(
                     }
                 }
             }
-
         }
     }
 }
 
 @Composable
 fun ItemSetsPage(
-    //shoppingItemSets: List<List<ShoppingItem>>
+    shoppingItemList: List<ShoppingItem>,
+    shoppingItemSets: List<ItemSet>,
+    addItemSetItemToShoppingList: (ItemSetItem) -> Unit,
+    removeItemSetItemFromShoppingList: (ItemSetItem) -> Unit,
+    addAllItemSetItemsToShoppingList: (String) -> Unit,
+    removeAllItemSetItemsFromShoppingList: (String) -> Unit
 ) {
-    Text(text = "TODO")
+
     LazyColumn(
         modifier = Modifier
             .fillMaxSize()
     ) {
+        items(shoppingItemSets) { itemSet ->
+            ItemSetContainer(
+                shoppingItemList,
+                itemSet,
+                addItemSetItemToShoppingList = { addItemSetItem ->
+                    addItemSetItemToShoppingList(addItemSetItem)
+                },
+                removeItemSetItemFromShoppingList = { removeItemSetItem ->
+                    removeItemSetItemFromShoppingList(removeItemSetItem)
+                },
+                addAllItemSetItemsToShoppingList = { itemSetId ->
+                    addAllItemSetItemsToShoppingList(itemSetId)
+                },
+                removeAllItemSetItemsFromShoppingList = { itemSetId ->
+                    removeAllItemSetItemsFromShoppingList(itemSetId)
+                }
+            )
+        }
+    }
+}
 
+@Composable
+fun ItemSetContainer(
+    shoppingItemList: List<ShoppingItem>,
+    itemSet: ItemSet,
+    addItemSetItemToShoppingList: (ItemSetItem) -> Unit,
+    removeItemSetItemFromShoppingList: (ItemSetItem) -> Unit,
+    addAllItemSetItemsToShoppingList: (String) -> Unit,
+    removeAllItemSetItemsFromShoppingList: (String) -> Unit
+) {
+    var itemSetFolded by remember { mutableStateOf(true) }
 
+    var allAdded by remember { mutableStateOf(false) }
+    val itemSetItemStates =
+        remember { mutableStateMapOf<String, Boolean>() } // creates added state for each ItemSetItem
+
+    fun updateAllAdded() {
+        allAdded = itemSet.itemList.all { itemSetItem ->
+            itemSetItemStates[itemSetItem.id] == true
+        }
+    }
+
+    LaunchedEffect(itemSet.itemList) {
+        itemSet.itemList.forEach { itemSetItem ->
+            itemSetItemStates.putIfAbsent(itemSetItem.tmpId, allAdded)
+        }
+    }
+
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 4.dp, horizontal = 8.dp),
+        colors = CardDefaults.cardColors(
+            if (allAdded) Color.Green.copy(
+                alpha = 0.5f
+            ) else Color.LightGray
+        )
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clickable { itemSetFolded = !itemSetFolded }
+                .padding(start = 4.dp, end = 16.dp, bottom = 8.dp, top = 8.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            IconButton(
+                onClick = {
+                    if (!allAdded) {
+                        addAllItemSetItemsToShoppingList(itemSet.id)
+                        itemSet.itemList.forEach { itemSetItem ->
+                            itemSetItemStates[itemSetItem.id] = true
+                        }
+                        itemSetFolded = false
+                        allAdded = true
+                    } else {
+                        removeAllItemSetItemsFromShoppingList(itemSet.id)
+                        itemSet.itemList.forEach { itemSetItem ->
+                            itemSetItemStates[itemSetItem.id] = false
+                        }
+                        itemSetFolded = true
+                        allAdded = false
+                    }
+                }
+            ) {
+                Icon(
+                    painter = painterResource(
+                        id = if (!allAdded) {
+                            R.drawable.baseline_add_24
+                        } else {
+                            R.drawable.baseline_remove_24
+                        }
+                    ),
+                    contentDescription = if (!allAdded) "Add all" else "Remove all"
+                )
+            }
+            Text(
+                text = itemSet.name,
+                fontSize = 20.sp,
+                fontWeight = FontWeight.Bold,
+                modifier = Modifier.weight(1f)
+            )
+            Icon(
+                imageVector = if (itemSetFolded) Icons.Default.KeyboardArrowUp else Icons.Default.KeyboardArrowDown,
+                contentDescription = "Open item set"
+            )
+
+        }
+    }
+
+    if (!itemSetFolded) {
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+        ) {
+            itemSet.itemList.forEach { itemSetItem ->
+                val isAdded = itemSetItemStates[itemSetItem.id] ?: false
+                ItemSetItemContainer(
+                    shoppingItemList.find { it.id == itemSetItem.id }!!,
+                    itemSetItem,
+                    isAdded,
+                    addItemSetItemToShoppingList = { addItemSetItem ->
+                        addItemSetItemToShoppingList(addItemSetItem)
+                        itemSetItemStates[itemSetItem.id] = true
+                        updateAllAdded()
+                    },
+                    removeItemSetItemFromShoppingList = { removeItemSetItem ->
+                        removeItemSetItemFromShoppingList(removeItemSetItem)
+                        itemSetItemStates[itemSetItem.id] = false
+                        allAdded = false
+                    }
+                )
+            }
+        }
+    }
+}
+
+@Composable
+fun ItemSetItemContainer(
+    shoppingItem: ShoppingItem,
+    itemSetItem: ItemSetItem,
+    isAdded: Boolean,
+    addItemSetItemToShoppingList: (ItemSetItem) -> Unit,
+    removeItemSetItemFromShoppingList: (ItemSetItem) -> Unit
+) {
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 2.dp, horizontal = 14.dp),
+        colors = CardDefaults.cardColors(
+            if (isAdded) Color.Green.copy(
+                alpha = 0.3f
+            ) else Color.White
+        )
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(8.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            if (!isAdded) {
+                IconButton(
+                    onClick = {
+                        addItemSetItemToShoppingList(itemSetItem)
+                    }
+                ) {
+                    Icon(
+                        painter = painterResource(id = R.drawable.baseline_add_24),
+                        contentDescription = "Add"
+                    )
+                }
+            }
+            Text(
+                text = itemSetItem.name,
+                fontWeight = FontWeight.Bold,
+                fontSize = 20.sp,
+                modifier = Modifier
+                    .padding(start = 8.dp)
+                    .weight(1f)
+            )
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                if (shoppingItem.amount > 0) {
+                    Text(
+                        text = "(${
+                            shoppingItem.amount.let {
+                                if (it % 1 == 0.0) it.toInt().toString() else it.toString()
+                            }
+                        }${shoppingItem.unit})",
+                        fontSize = 18.sp,
+                        fontWeight = FontWeight.Bold,
+                        modifier = Modifier.padding(end = 10.dp)
+                    )
+                }
+                if (itemSetItem.amount > 0) {
+                    Text(
+                        text = "${
+                            itemSetItem.amount.let {
+                                if (it % 1 == 0.0) it.toInt().toString() else it.toString()
+                            }
+                        }${itemSetItem.unit}",
+                        fontSize = 18.sp,
+                        fontWeight = FontWeight.Bold,
+                        modifier = Modifier.padding(end = 10.dp)
+                    )
+                }
+                if (isAdded) {
+                    IconButton(
+                        onClick = {
+                            removeItemSetItemFromShoppingList(itemSetItem)
+                        }
+                    ) {
+                        Icon(
+                            painter = painterResource(id = R.drawable.baseline_remove_24),
+                            contentDescription = "Remove"
+                        )
+                    }
+                }
+            }
+        }
     }
 }

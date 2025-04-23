@@ -1,11 +1,15 @@
 package com.joengelke.shoppinglistapp.backend.service;
 
+import com.joengelke.shoppinglistapp.backend.model.ItemSetItem;
 import com.joengelke.shoppinglistapp.backend.model.ShoppingItem;
+import com.joengelke.shoppinglistapp.backend.model.ShoppingList;
 import com.joengelke.shoppinglistapp.backend.repository.ShoppingItemRepository;
 import com.joengelke.shoppinglistapp.backend.security.JwtTokenProvider;
 import org.springframework.stereotype.Service;
 
 import java.time.Instant;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.Objects;
 
@@ -14,14 +18,16 @@ public class ShoppingItemService {
 
     private final ShoppingItemRepository shoppingItemRepository;
     private final JwtTokenProvider jwtTokenProvider;
+    private final ItemSetService itemSetService;
 
-    public ShoppingItemService(ShoppingItemRepository shoppingItemRepository, JwtTokenProvider jwtTokenProvider) {
+    public ShoppingItemService(ShoppingItemRepository shoppingItemRepository, JwtTokenProvider jwtTokenProvider, ItemSetService itemSetService) {
         this.shoppingItemRepository = shoppingItemRepository;
         this.jwtTokenProvider = jwtTokenProvider;
+        this.itemSetService = itemSetService;
     }
 
     // creates one new item
-    public ShoppingItem createItem(String header, ShoppingItem shoppingItem) {
+    public ShoppingItem createItem(String header, ShoppingItem shoppingItem, boolean checked) {
 
         String username = jwtTokenProvider.getUsernameFromToken(header.replace("Bearer ", ""));
 
@@ -46,7 +52,7 @@ public class ShoppingItemService {
         }
         shoppingItem.setAmount(0.0);
 
-        shoppingItem.setChecked(false);
+        shoppingItem.setChecked(checked);
 
         shoppingItem.setEditedAt(Instant.now());
 
@@ -58,6 +64,10 @@ public class ShoppingItemService {
     public ShoppingItem getItemById(String id) {
         return shoppingItemRepository.findById(id)
                 .orElseThrow(() -> new NoSuchElementException("Item not found with itemId: " + id));
+    }
+
+    public List<ShoppingItem> getAllItemsByIds(List<String> ids) {
+        return shoppingItemRepository.findAllById(ids);
     }
 
     public ShoppingItem updateItem(String header, ShoppingItem newShoppingItem) {
@@ -108,7 +118,7 @@ public class ShoppingItemService {
         if (shoppingItem.getAmount() >= 1) {
             // item exists, reduce amount
             shoppingItem.setAmount(shoppingItem.getAmount() - 1);
-        }  else {
+        } else {
             // checks item so its not on active list anymore
             shoppingItem.setChecked(true);
         }
@@ -119,5 +129,88 @@ public class ShoppingItemService {
         shoppingItemRepository.deleteById(id);
     }
 
+    /*
+    ITEM SET METHODS
+     */
+
+    public ShoppingItem addItemSetItemToShoppingList(String header, ItemSetItem itemSetItem) {
+        ShoppingItem shoppingItem = shoppingItemRepository.findById(itemSetItem.getId())
+                .orElseThrow(() -> new NoSuchElementException("Item not found with itemId: " + itemSetItem.getId()));
+        String username = jwtTokenProvider.getUsernameFromToken(header.replace("Bearer ", ""));
+
+        //update shoppingItem by itemSetItem values
+        shoppingItem.setAmount(shoppingItem.getAmount() + itemSetItem.getAmount());
+        //shoppingItem.setUnit(itemSetItem.getUnit());
+        shoppingItem.setChecked(false);
+        shoppingItem.setEditedAt(Instant.now());
+        shoppingItem.setEditedBy(username);
+
+        return shoppingItemRepository.save(shoppingItem);
+    }
+
+    public List<ShoppingItem> addAllItemSetItemsToShoppingList(String header, String itemSetId) {
+        String username = jwtTokenProvider.getUsernameFromToken(header.replace("Bearer ", ""));
+
+        List<ItemSetItem> itemSetItems = itemSetService.getItemSetItemsById(itemSetId);
+
+        List<ShoppingItem> updatedItems = new ArrayList<>();
+
+        for (ItemSetItem itemSetItem : itemSetItems) {
+            //update shoppingItems by itemSetItem values
+
+            ShoppingItem shoppingItem = shoppingItemRepository.findById(itemSetItem.getId())
+                    .orElseThrow(() -> new NoSuchElementException("Item not found with itemId: " + itemSetItem.getId()));
+
+            shoppingItem.setAmount(shoppingItem.getAmount() + itemSetItem.getAmount());
+            //shoppingItem.setUnit(itemSetItem.getUnit());
+            shoppingItem.setChecked(false);
+            shoppingItem.setEditedAt(Instant.now());
+            shoppingItem.setEditedBy(username);
+
+            updatedItems.add(shoppingItem);
+        }
+
+        return shoppingItemRepository.saveAll(updatedItems);
+    }
+
+    public ShoppingItem removeItemSetItemFromShoppingList(String header, ItemSetItem itemSetItem) {
+        ShoppingItem shoppingItem = shoppingItemRepository.findById(itemSetItem.getId())
+                .orElseThrow(() -> new NoSuchElementException("Item not found with itemId: " + itemSetItem.getId()));
+        String username = jwtTokenProvider.getUsernameFromToken(header.replace("Bearer ", ""));
+
+        //update shoppingItem by itemSetItem values
+        shoppingItem.setAmount(shoppingItem.getAmount() - itemSetItem.getAmount());
+        //shoppingItem.setUnit(itemSetItem.getUnit());
+        shoppingItem.setChecked(shoppingItem.getAmount() == 0);
+        shoppingItem.setEditedAt(Instant.now());
+        shoppingItem.setEditedBy(username);
+
+        return shoppingItemRepository.save(shoppingItem);
+    }
+
+    public List<ShoppingItem> removeAllItemSetItemsFromShoppingList(String header, String itemSetId) {
+        String username = jwtTokenProvider.getUsernameFromToken(header.replace("Bearer ", ""));
+
+        List<ItemSetItem> itemSetItems = itemSetService.getItemSetItemsById(itemSetId);
+
+        List<ShoppingItem> updatedItems = new ArrayList<>();
+
+        for (ItemSetItem itemSetItem : itemSetItems) {
+            //update shoppingItems by itemSetItem values
+
+            ShoppingItem shoppingItem = shoppingItemRepository.findById(itemSetItem.getId())
+                    .orElseThrow(() -> new NoSuchElementException("Item not found with itemId: " + itemSetItem.getId()));
+
+            shoppingItem.setAmount(shoppingItem.getAmount() - itemSetItem.getAmount());
+            //shoppingItem.setUnit(itemSetItem.getUnit());
+            shoppingItem.setChecked(false);
+            shoppingItem.setEditedAt(Instant.now());
+            shoppingItem.setEditedBy(username);
+
+            updatedItems.add(shoppingItem);
+        }
+
+        return shoppingItemRepository.saveAll(updatedItems);
+    }
 
 }

@@ -1,5 +1,6 @@
 package com.joengelke.shoppinglistapp.backend.controller;
 
+import com.joengelke.shoppinglistapp.backend.model.ItemSet;
 import com.joengelke.shoppinglistapp.backend.model.ShoppingItem;
 import com.joengelke.shoppinglistapp.backend.model.ShoppingList;
 import com.joengelke.shoppinglistapp.backend.service.ShoppingListService;
@@ -33,7 +34,7 @@ public class ShoppingListController {
 
     @GetMapping("/uncheckedItemsAmount")
     public ResponseEntity<?> getUncheckedItemsAmount() {
-       Map<String, Integer> uncheckedItemsAmount = shoppingListService.getUncheckedItemsAmount();
+        Map<String, Integer> uncheckedItemsAmount = shoppingListService.getUncheckedItemsAmount();
         return ResponseEntity.ok(uncheckedItemsAmount);
     }
 
@@ -55,8 +56,10 @@ public class ShoppingListController {
         return ResponseEntity.ok(Map.of("message", "Shopping list deleted successfully"));
     }
 
+    /*
+    ITEMLIST CHANGES
+     */
 
-    // ItemList changes
     @GetMapping("/{shoppingListId}/items")
     public ResponseEntity<?> getItemsByShoppingList(@PathVariable String shoppingListId) {
         List<ShoppingItem> itemList = shoppingListService.getItemsByShoppingList(shoppingListId);
@@ -78,4 +81,37 @@ public class ShoppingListController {
         return ResponseEntity.ok(Map.of("message", "Item deleted successfully"));
     }
 
+    /*
+    ITEM SET CHANGES
+     */
+
+    @GetMapping("/{shoppingListId}/itemsets")
+    public ResponseEntity<?> getItemSetsByShoppingList(@PathVariable String shoppingListId) {
+        List<ItemSet> itemSets = shoppingListService.getItemSetsByShoppingList(shoppingListId);
+        return ResponseEntity.ok(itemSets);
+    }
+
+    @PostMapping("/{shoppingListId}/itemset")
+    public ResponseEntity<?> createItemSet(
+            @PathVariable String shoppingListId,
+            @RequestBody ItemSet itemSet,
+            @RequestHeader("Authorization") String header) {
+        ItemSet newItemSet = shoppingListService.createItemSet(header, shoppingListId, itemSet);
+        return ResponseEntity.ok(newItemSet);
+    }
+
+    @PutMapping("/{shoppingListId}/itemset")
+    public ResponseEntity<?> updateItemSet(
+            @PathVariable String shoppingListId,
+            @RequestBody ItemSet itemSet,
+            @RequestHeader("Authorization") String header) {
+        ItemSet updatedItemSet = shoppingListService.updateItemSet(header, shoppingListId, itemSet);
+        return ResponseEntity.ok(updatedItemSet);
+    }
+
+    @DeleteMapping("/{shoppingListId}/itemset/{itemSetId}")
+    public ResponseEntity<?> deleteItemSetById(@PathVariable String shoppingListId, @PathVariable String itemSetId) {
+        shoppingListService.deleteItemSetById(shoppingListId, itemSetId);
+        return ResponseEntity.ok(Map.of("message", "Item set deleted successfully"));
+    }
 }

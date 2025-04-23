@@ -2,9 +2,11 @@ package com.joengelke.shoppinglistapp.frontend.repository
 
 import android.content.Context
 import com.joengelke.shoppinglistapp.frontend.models.DeleteResponse
+import com.joengelke.shoppinglistapp.frontend.models.ItemSetItem
 import com.joengelke.shoppinglistapp.frontend.models.ShoppingItem
-import com.joengelke.shoppinglistapp.frontend.network.NetworkClient
-import com.joengelke.shoppinglistapp.frontend.network.ShoppingItemApi
+import com.joengelke.shoppinglistapp.frontend.network.NetworkModule
+import com.joengelke.shoppinglistapp.frontend.network.SessionManager
+import com.joengelke.shoppinglistapp.frontend.network.TokenManager
 import dagger.hilt.android.qualifiers.ApplicationContext
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -12,24 +14,29 @@ import javax.inject.Singleton
 @Singleton
 class ShoppingItemRepository @Inject constructor(
     @ApplicationContext private val context: Context,
-    private val authRepository: AuthRepository
+    private val sessionManager: SessionManager,
+    private val tokenManager: TokenManager
 ) {
-
-    private val shoppingItemApi: ShoppingItemApi = NetworkClient.createRetrofit(context).create(
-        ShoppingItemApi::class.java)
 
     suspend fun getItemsByShoppingList(shoppingListId: String): Result<List<ShoppingItem>> {
         return try {
             val token =
-                authRepository.getToken() ?: return Result.failure(Exception("No token found"))
+                tokenManager.getToken() ?: return Result.failure(Exception("No token found"))
 
-            val response = shoppingItemApi.getItemsByShoppingList("Bearer $token", shoppingListId)
-            if (response.isSuccessful) {
-                Result.success(response.body() ?: emptyList())
-            } else {
-                Result.failure(Exception("Failed to fetch items"))
+            val response = NetworkModule.getShoppingItemApi(context)
+                .getItemsByShoppingList("Bearer $token", shoppingListId)
+
+            when {
+                response.isSuccessful -> Result.success(response.body() ?: emptyList())
+                response.code() == 401 -> {
+                    sessionManager.logout("Unauthorized: try to login again ")
+                    Result.failure(Exception("Unauthorized"))
+                }
+
+                else -> Result.failure(Exception("Error: ${response.code()}"))
             }
         } catch (e: Exception) {
+            sessionManager.disconnected("No connection to the Server")
             Result.failure(Exception("Network error: ${e.message}"))
         }
     }
@@ -40,23 +47,27 @@ class ShoppingItemRepository @Inject constructor(
     ): Result<ShoppingItem> {
         return try {
             val token =
-                authRepository.getToken() ?: return Result.failure(Exception("No token found"))
+                tokenManager.getToken() ?: return Result.failure(Exception("No token found"))
 
-
-            //val shoppingItemRequest = ShoppingItemRequest(shoppingItemName)
             val response =
-                shoppingItemApi.addOneItemToShoppingList(
+                NetworkModule.getShoppingItemApi(context).addOneItemToShoppingList(
                     "Bearer $token",
                     shoppingListId,
                     shoppingItem
                 )
-            if (response.isSuccessful) {
-                response.body()?.let { Result.success(it) }
+            when {
+                response.isSuccessful -> response.body()?.let { Result.success(it) }
                     ?: Result.failure(Exception("Unexpected empty response"))
-            } else {
-                Result.failure(Exception("Failed to add item: ${response.message()}"))
+
+                response.code() == 401 -> {
+                    sessionManager.logout("Unauthorized: try to login again ")
+                    Result.failure(Exception("Unauthorized"))
+                }
+
+                else -> Result.failure(Exception("Error: ${response.code()}"))
             }
         } catch (e: Exception) {
+            sessionManager.disconnected("No connection to the Server")
             Result.failure(Exception("Network error: ${e.message}"))
         }
     }
@@ -64,22 +75,28 @@ class ShoppingItemRepository @Inject constructor(
     suspend fun removeOneItemOfShoppingList(
         shoppingItemId: String
     ): Result<ShoppingItem> {
-        try {
+        return try {
             val token =
-                authRepository.getToken() ?: return Result.failure(Exception("No token found"))
+                tokenManager.getToken() ?: return Result.failure(Exception("No token found"))
 
             val response =
-                shoppingItemApi.removeOneItemFromShoppingList(
+                NetworkModule.getShoppingItemApi(context).removeOneItemFromShoppingList(
                     "Bearer $token",
                     shoppingItemId
                 )
-            return if (response.isSuccessful) {
-                response.body()?.let { Result.success(it) }
+            when {
+                response.isSuccessful -> response.body()?.let { Result.success(it) }
                     ?: Result.failure(Exception("Unexpected empty response"))
-            } else {
-                Result.failure(Exception("Failed to remove one item"))
+
+                response.code() == 401 -> {
+                    sessionManager.logout("Unauthorized: try to login again ")
+                    Result.failure(Exception("Unauthorized"))
+                }
+
+                else -> Result.failure(Exception("Error: ${response.code()}"))
             }
         } catch (e: Exception) {
+            sessionManager.disconnected("No connection to the Server")
             return Result.failure(Exception("Network error: ${e.message}"))
         }
     }
@@ -88,17 +105,24 @@ class ShoppingItemRepository @Inject constructor(
     suspend fun updateCheckedStatus(itemId: String, checked: Boolean): Result<ShoppingItem> {
         return try {
             val token =
-                authRepository.getToken() ?: return Result.failure(Exception("No token found"))
+                tokenManager.getToken() ?: return Result.failure(Exception("No token found"))
 
             val response =
-                shoppingItemApi.updateCheckedStatus("Bearer $token", itemId, checked)
-            if (response.isSuccessful) {
-                response.body()?.let { Result.success(it) }
+                NetworkModule.getShoppingItemApi(context)
+                    .updateCheckedStatus("Bearer $token", itemId, checked)
+            when {
+                response.isSuccessful -> response.body()?.let { Result.success(it) }
                     ?: Result.failure(Exception("Unexpected empty response"))
-            } else {
-                Result.failure(Exception("Failed to update item: ${response.message()}"))
+
+                response.code() == 401 -> {
+                    sessionManager.logout("Unauthorized: try to login again ")
+                    Result.failure(Exception("Unauthorized"))
+                }
+
+                else -> Result.failure(Exception("Error: ${response.code()}"))
             }
         } catch (e: Exception) {
+            sessionManager.disconnected("No connection to the Server")
             Result.failure(Exception("Network error: ${e.message}"))
         }
     }
@@ -106,17 +130,23 @@ class ShoppingItemRepository @Inject constructor(
     suspend fun updateItem(updatedItem: ShoppingItem): Result<ShoppingItem> {
         return try {
             val token =
-                authRepository.getToken() ?: return Result.failure(Exception("No token found"))
+                tokenManager.getToken() ?: return Result.failure(Exception("No token found"))
 
             val response =
-                shoppingItemApi.updateItem("Bearer $token", updatedItem)
-            if (response.isSuccessful) {
-                response.body()?.let { Result.success(it) }
+                NetworkModule.getShoppingItemApi(context).updateItem("Bearer $token", updatedItem)
+            when {
+                response.isSuccessful -> response.body()?.let { Result.success(it) }
                     ?: Result.failure(Exception("Unexpected empty response"))
-            } else {
-                Result.failure(Exception("Failed to update item: ${response.message()}"))
+
+                response.code() == 401 -> {
+                    sessionManager.logout("Unauthorized: try to login again ")
+                    Result.failure(Exception("Unauthorized"))
+                }
+
+                else -> Result.failure(Exception("Error: ${response.code()}"))
             }
         } catch (e: Exception) {
+            sessionManager.disconnected("No connection to the Server")
             Result.failure(Exception("Network error: ${e.message}"))
         }
     }
@@ -124,17 +154,129 @@ class ShoppingItemRepository @Inject constructor(
     suspend fun deleteItem(shoppingListId: String, itemId: String): Result<DeleteResponse> {
         return try {
             val token =
-                authRepository.getToken() ?: return Result.failure(Exception("No token found"))
+                tokenManager.getToken() ?: return Result.failure(Exception("No token found"))
 
             val response =
-                shoppingItemApi.deleteItem("Bearer $token", shoppingListId, itemId)
-            if (response.isSuccessful) {
-                response.body()?.let { Result.success(it) }
+                NetworkModule.getShoppingItemApi(context)
+                    .deleteItem("Bearer $token", shoppingListId, itemId)
+            when {
+                response.isSuccessful -> response.body()?.let { Result.success(it) }
                     ?: Result.failure(Exception("Unexpected empty response"))
-            } else {
-                Result.failure(Exception("Failed to update item: ${response.message()}"))
+
+                response.code() == 401 -> {
+                    sessionManager.logout("Unauthorized: try to login again ")
+                    Result.failure(Exception("Unauthorized"))
+                }
+
+                else -> Result.failure(Exception("Error: ${response.code()}"))
             }
         } catch (e: Exception) {
+            sessionManager.disconnected("No connection to the Server")
+            Result.failure(Exception("Network error: ${e.message}"))
+        }
+    }
+
+    /*
+    ITEM SET METHODS
+     */
+
+    suspend fun addItemSetItemToShoppingList(itemSetItem: ItemSetItem): Result<ShoppingItem> {
+        return try {
+            val token =
+                tokenManager.getToken() ?: return Result.failure(Exception("No token found"))
+
+            val response =
+                NetworkModule.getShoppingItemApi(context)
+                    .addItemSetItemToShoppingList("Bearer $token", itemSetItem)
+            when {
+                response.isSuccessful -> response.body()?.let { Result.success(it) }
+                    ?: Result.failure(Exception("Unexpected empty response"))
+
+                response.code() == 401 -> {
+                    sessionManager.logout("Unauthorized: try to login again ")
+                    Result.failure(Exception("Unauthorized"))
+                }
+
+                else -> Result.failure(Exception("Error: ${response.code()}"))
+            }
+
+        } catch (e: Exception) {
+            sessionManager.disconnected("No connection to the Server")
+            Result.failure(Exception("Network error: ${e.message}"))
+        }
+    }
+
+    suspend fun addAllItemSetItemsToShoppingList(itemSetId: String): Result<List<ShoppingItem>> {
+        return try {
+            val token =
+                tokenManager.getToken() ?: return Result.failure(Exception("No token found"))
+
+            val response =
+                NetworkModule.getShoppingItemApi(context)
+                    .addAllItemSetItemsToShoppingList("Bearer $token", itemSetId)
+            when {
+                response.isSuccessful -> response.body()?.let { Result.success(it) }
+                    ?: Result.failure(Exception("Unexpected empty response"))
+
+                response.code() == 401 -> {
+                    sessionManager.logout("Unauthorized: try to login again ")
+                    Result.failure(Exception("Unauthorized"))
+                }
+
+                else -> Result.failure(Exception("Error: ${response.code()}"))
+            }
+        } catch (e: Exception) {
+            sessionManager.disconnected("No connection to the Server")
+            Result.failure(Exception("Network error: ${e.message}"))
+        }
+    }
+
+    suspend fun removeItemSetItemFromShoppingList(itemSetItem: ItemSetItem): Result<ShoppingItem> {
+        return try {
+            val token =
+                tokenManager.getToken() ?: return Result.failure(Exception("No token found"))
+
+            val response =
+                NetworkModule.getShoppingItemApi(context)
+                    .removeItemSetItemFromShoppingList("Bearer $token", itemSetItem)
+            when {
+                response.isSuccessful -> response.body()?.let { Result.success(it) }
+                    ?: Result.failure(Exception("Unexpected empty response"))
+
+                response.code() == 401 -> {
+                    sessionManager.logout("Unauthorized: try to login again ")
+                    Result.failure(Exception("Unauthorized"))
+                }
+
+                else -> Result.failure(Exception("Error: ${response.code()}"))
+            }
+        } catch (e: Exception) {
+            sessionManager.disconnected("No connection to the Server")
+            Result.failure(Exception("Network error: ${e.message}"))
+        }
+    }
+
+    suspend fun removeAllItemSetItemsFromShoppingList(itemSetId: String): Result<List<ShoppingItem>> {
+        return try {
+            val token =
+                tokenManager.getToken() ?: return Result.failure(Exception("No token found"))
+
+            val response =
+                NetworkModule.getShoppingItemApi(context)
+                    .removeAllItemSetItemsFromShoppingList("Bearer $token", itemSetId)
+            when {
+                response.isSuccessful -> response.body()?.let { Result.success(it) }
+                    ?: Result.failure(Exception("Unexpected empty response"))
+
+                response.code() == 401 -> {
+                    sessionManager.logout("Unauthorized: try to login again ")
+                    Result.failure(Exception("Unauthorized"))
+                }
+
+                else -> Result.failure(Exception("Error: ${response.code()}"))
+            }
+        } catch (e: Exception) {
+            sessionManager.disconnected("No connection to the Server")
             Result.failure(Exception("Network error: ${e.message}"))
         }
     }

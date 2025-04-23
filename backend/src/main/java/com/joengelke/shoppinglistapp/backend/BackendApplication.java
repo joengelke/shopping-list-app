@@ -2,8 +2,12 @@ package com.joengelke.shoppinglistapp.backend;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
+import com.joengelke.shoppinglistapp.backend.model.ItemSet;
 import com.joengelke.shoppinglistapp.backend.model.ShoppingItem;
 import com.joengelke.shoppinglistapp.backend.model.ShoppingList;
+import com.joengelke.shoppinglistapp.backend.model.User;
+import lombok.Getter;
+import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.CommandLineRunner;
@@ -25,9 +29,9 @@ import java.util.List;
 @EnableScheduling
 public class BackendApplication {
 
-    private final boolean clearDB = true;
+    private final boolean clearDB = false;
     private final boolean backupDB = false;
-    private final boolean loadDB = false;
+    private final boolean loadDB = true;
     @Autowired
     private MongoTemplate mongoTemplate;
 
@@ -59,7 +63,7 @@ public class BackendApplication {
 
     }
 
-    @Scheduled(fixedRate = 2 * 60 * 1000) // 5 min
+    @Scheduled(fixedRate = 2 * 60 * 1000) // 2 min
     public void performBackup() {
         if (backupDB) {
             ObjectMapper objectMapper = new ObjectMapper();
@@ -68,8 +72,10 @@ public class BackendApplication {
                 System.out.println("Starting backup...");
 
                 // Fetch the shopping lists and items from MongoDB
+                List<User> users = mongoTemplate.findAll(User.class);
                 List<ShoppingList> shoppingLists = mongoTemplate.findAll(ShoppingList.class);
                 List<ShoppingItem> shoppingItems = mongoTemplate.findAll(ShoppingItem.class);
+                List<ItemSet> itemSets = mongoTemplate.findAll(ItemSet.class);
 
                 // Serialize the data to a file (as an example)
                 String backupFilePath = "backup/shopping_backup.json";  // Modify the path as needed
@@ -80,8 +86,10 @@ public class BackendApplication {
                 try (FileWriter writer = new FileWriter(backupFile)) {
                     // Create a map to hold the data
                     String backupData = "{\n";
+                    backupData += "\"users\": " + objectMapper.writeValueAsString(users) + ",\n";
                     backupData += "\"shoppingLists\": " + objectMapper.writeValueAsString(shoppingLists) + ",\n";
-                    backupData += "\"shoppingItems\": " + objectMapper.writeValueAsString(shoppingItems) + "\n";
+                    backupData += "\"shoppingItems\": " + objectMapper.writeValueAsString(shoppingItems) + ",\n";
+                    backupData += "\"itemSets\": " + objectMapper.writeValueAsString(itemSets) + "\n";
                     backupData += "}";
 
                     writer.write(backupData);
@@ -112,11 +120,16 @@ public class BackendApplication {
                     BackupData backupData = objectMapper.readValue(fileReader, BackupData.class);
 
                     // Restore the shopping lists and items into MongoDB
+                    mongoTemplate.dropCollection(User.class);
                     mongoTemplate.dropCollection(ShoppingList.class);  // Optionally clear existing data before restoring
                     mongoTemplate.dropCollection(ShoppingItem.class);
+                    mongoTemplate.dropCollection(ItemSet.class);
 
+
+                    mongoTemplate.insertAll(backupData.getUsers());
                     mongoTemplate.insertAll(backupData.getShoppingLists());
                     mongoTemplate.insertAll(backupData.getShoppingItems());
+                    mongoTemplate.insertAll(backupData.getItemSets());
 
                     System.out.println("Backup loaded successfully!");
 
@@ -131,25 +144,13 @@ public class BackendApplication {
     }
 
     // Helper class to map the backup JSON structure
+    @Setter
+    @Getter
     private static class BackupData {
+        private List<User> users;
         private List<ShoppingList> shoppingLists;
         private List<ShoppingItem> shoppingItems;
-
-        public List<ShoppingList> getShoppingLists() {
-            return shoppingLists;
-        }
-
-        public void setShoppingLists(List<ShoppingList> shoppingLists) {
-            this.shoppingLists = shoppingLists;
-        }
-
-        public List<ShoppingItem> getShoppingItems() {
-            return shoppingItems;
-        }
-
-        public void setShoppingItems(List<ShoppingItem> shoppingItems) {
-            this.shoppingItems = shoppingItems;
-        }
+        private List<ItemSet> itemSets;
     }
 
 

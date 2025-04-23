@@ -26,4 +26,5 @@ public class User {
         this.roles = new ArrayList<String>(List.of("USER"));
 
     }
+    public User(){}
 }

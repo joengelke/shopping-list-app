@@ -19,15 +19,16 @@ public class ShoppingList {
     private String name;
     private Instant createdAt;
     private List<String> itemIds;
+    private List<String> itemSetIds;
 
     public ShoppingList(String id, String name) {
         this.id = id;
         this.name = name;
         this.createdAt = Instant.now();
         this.itemIds = new ArrayList<>();
+        this.itemSetIds = new ArrayList<>();
     }
 
-    public ShoppingList() {
-    }
+    public ShoppingList(){}
 
 }

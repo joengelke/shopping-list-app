@@ -6,16 +6,16 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
-import androidx.navigation.compose.rememberNavController
 import com.joengelke.shoppinglistapp.frontend.ui.*
 import com.joengelke.shoppinglistapp.frontend.viewmodel.AuthViewModel
 
 
 @Composable
-fun Navigation(authViewModel: AuthViewModel) {
-    val navController = rememberNavController()
+fun Navigation(authViewModel: AuthViewModel, navController: NavHostController) {
+    //val navController = rememberNavController()
     val isLoggedIn by authViewModel.isLoggedIn.collectAsState()
 
     var isCheckingToken by remember { mutableStateOf(true) }
@@ -60,6 +60,15 @@ fun Navigation(authViewModel: AuthViewModel) {
         composable(Routes.ShoppingItemsCreate.route) { backStackEntry ->
             val shoppingListId = backStackEntry.arguments?.getString("shoppingListId")?:""
             ShoppingItemsCreateScreen(navController, shoppingListId)
+        }
+        composable(Routes.ItemSetOverview.route) { backStackEntry ->
+            val shoppingListId = backStackEntry.arguments?.getString("shoppingListId")?:""
+            ItemSetOverviewScreen(navController, shoppingListId)
+        }
+        composable(Routes.ItemSetCreate.route) { backStackEntry ->
+            val shoppingListId = backStackEntry.arguments?.getString("shoppingListId")?:""
+            val itemSetId = backStackEntry.arguments?.getString("itemSetId")?:""
+            ItemSetCreateScreen(navController, shoppingListId, itemSetId)
         }
 
     }

@@ -1,84 +1,56 @@
 package com.joengelke.shoppinglistapp.frontend.repository
 
 import android.content.Context
-import android.util.Log
-import androidx.datastore.preferences.core.edit
-import androidx.datastore.preferences.core.stringPreferencesKey
-import androidx.datastore.preferences.preferencesDataStore
-import com.auth0.android.jwt.JWT
-import com.joengelke.shoppinglistapp.frontend.network.AuthApi
 import com.joengelke.shoppinglistapp.frontend.network.AuthRequest
-import com.joengelke.shoppinglistapp.frontend.network.NetworkClient
+import com.joengelke.shoppinglistapp.frontend.network.NetworkModule
+import com.joengelke.shoppinglistapp.frontend.network.SessionManager
+import com.joengelke.shoppinglistapp.frontend.network.TokenManager
 import dagger.hilt.android.qualifiers.ApplicationContext
-import kotlinx.coroutines.flow.firstOrNull
-import java.time.Instant
 import javax.inject.Inject
 import javax.inject.Singleton
 
-val Context.dataStore by preferencesDataStore(name = "preferences") // not sure if right place
-
 @Singleton
-class AuthRepository @Inject constructor(@ApplicationContext private val context: Context) {
-
-    private val tokenKey = stringPreferencesKey("jwt_token")
-
-    private val authApi: AuthApi = NetworkClient.createRetrofit(context).create(AuthApi::class.java)
-
+class AuthRepository @Inject constructor(
+    @ApplicationContext private val context: Context,
+    private val sessionManager: SessionManager,
+    private val tokenManager: TokenManager
+) {
     // perform login
-    suspend fun login(username: String, password: String): String? {
-        Log.d("AuthApi", "Sending login request: $username, $password")
-        val response = authApi.login(AuthRequest(username, password))
-        return if (response.isSuccessful) {
-            val bearerToken = response.body()?.token
-            val token = bearerToken?.removePrefix("Bearer ")
-            token?.let { saveToken(it) }
-            token
-        } else {
-            null
+    suspend fun login(username: String, password: String): Result<String?> {
+        return try {
+            val response = NetworkModule.getAuthApi(context).login(AuthRequest(username, password))
+            when {
+                response.isSuccessful -> {
+                    val bearerToken = response.body()?.token
+                    val token = bearerToken?.removePrefix("Bearer ")
+                    token?.let { tokenManager.saveToken(it) }
+                    Result.success(token ?: return Result.failure(Exception("Token missing in response")))
+                }
+
+                else -> Result.failure(Exception("Login failed: ${response.code()}"))
+            }
+        } catch (e: Exception) {
+            sessionManager.disconnected("No connection to the Server")
+            Result.failure(Exception("Network error: ${e.message}"))
         }
     }
 
     // perform register
     suspend fun register(username: String, password: String): Result<String> {
         return try {
-            val response = authApi.register(AuthRequest(username, password))
-            if (response.isSuccessful) {
-                val message = response.body()?.username ?: "Registration successful"
-                Result.success("User $message registered")
-            } else {
-                Result.failure(Exception("Username already taken"))
+            val response =
+                NetworkModule.getAuthApi(context).register(AuthRequest(username, password))
+            when {
+                response.isSuccessful -> {
+                    val message = response.body()?.username ?: "Registration successful"
+                    Result.success("User $message registered")
+                }
+
+                else -> Result.failure(Exception("Username already taken"))
             }
         } catch (e: Exception) {
+            sessionManager.disconnected("No connection to the Server")
             Result.failure(Exception("Network error: ${e.message}"))
-        }
-    }
-
-    // save token in dataStore
-    private suspend fun saveToken(token: String) {
-        context.dataStore.edit { preferences ->
-            preferences[tokenKey] = token
-        }
-    }
-
-    // Retrieve token
-    suspend fun getToken(): String? {
-        return context.dataStore.data.firstOrNull()?.get(tokenKey)
-    }
-
-    suspend fun validateToken(token: String): Boolean {
-        return try {
-            val jwt = JWT(token)
-            val expirationTime = jwt.expiresAt?.toInstant()
-            expirationTime?.isAfter(Instant.now()) == true
-        } catch (e: Exception) {
-            false
-        }
-    }
-
-    // logout and clear token
-    suspend fun logout() {
-        context.dataStore.edit { preferences ->
-            preferences.remove(tokenKey)
         }
     }
 }
