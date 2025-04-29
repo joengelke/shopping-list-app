@@ -20,6 +20,7 @@ public class ShoppingList {
     private Instant createdAt;
     private List<String> itemIds;
     private List<String> itemSetIds;
+    private List<String> userIds;
 
     public ShoppingList(String id, String name) {
         this.id = id;
@@ -27,6 +28,7 @@ public class ShoppingList {
         this.createdAt = Instant.now();
         this.itemIds = new ArrayList<>();
         this.itemSetIds = new ArrayList<>();
+        this.userIds = new ArrayList<>();
     }
 
     public ShoppingList(){}

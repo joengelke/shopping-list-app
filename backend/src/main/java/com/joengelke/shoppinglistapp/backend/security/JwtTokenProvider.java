@@ -24,17 +24,18 @@ public class JwtTokenProvider {
     private long expirationTime;
 
 
-    public String generateToken(Authentication authentication) {
+    public String generateToken(Authentication authentication, String userId) {
         String username = authentication.getName();
         String authorities = authentication.getAuthorities().stream(). // roles in here
                 map(GrantedAuthority::getAuthority).
                 collect(Collectors.joining(","));
         Instant currentDate = Instant.now();
-        Instant expireDate = currentDate.plusMillis(expirationTime);
+        Instant expireDate = currentDate.plusMillis(expirationTime); // default 1000 days
 
         // return token
         return Jwts.builder()
                 .setSubject(username)
+                .claim("userId", userId)
                 .claim("authorities", authorities)
                 .setIssuedAt(Date.from(currentDate))
                 .setExpiration(Date.from(expireDate))
@@ -61,6 +62,14 @@ public class JwtTokenProvider {
                 .parseClaimsJws(token)
                 .getBody()
                 .getSubject();
+    }
+
+    public String getUserIdFromToken(String token) {
+        return Jwts.parserBuilder()
+                .setSigningKey(getSignInKey())
+                .build()
+                .parseClaimsJws(token)
+                .getBody().get("userId", String.class);
     }
 
     private Key getSignInKey() {

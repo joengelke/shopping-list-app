@@ -3,8 +3,11 @@ package com.joengelke.shoppinglistapp.backend.controller;
 import com.joengelke.shoppinglistapp.backend.model.ItemSet;
 import com.joengelke.shoppinglistapp.backend.model.ShoppingItem;
 import com.joengelke.shoppinglistapp.backend.model.ShoppingList;
+import com.joengelke.shoppinglistapp.backend.model.User;
 import com.joengelke.shoppinglistapp.backend.service.ShoppingListService;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -21,12 +24,18 @@ public class ShoppingListController {
     }
 
     @PostMapping
-    public ResponseEntity<?> createShoppingList(@RequestBody ShoppingList shoppingList) {
-        ShoppingList savedShoppingList = shoppingListService.createShoppingList(shoppingList);
+    public ResponseEntity<?> createShoppingList(@RequestBody ShoppingList shoppingList, @RequestHeader("Authorization") String header) {
+        ShoppingList savedShoppingList = shoppingListService.createShoppingList(shoppingList, header);
         return ResponseEntity.ok(savedShoppingList);
     }
 
     @GetMapping("")
+    public ResponseEntity<?> getShoppingListsByUserId(@RequestHeader("Authorization") String header) {
+        List<ShoppingList> shoppingLists = shoppingListService.getShoppingListsByUserId(header);
+        return ResponseEntity.ok(shoppingLists);
+    }
+
+    @GetMapping("/all")
     public ResponseEntity<?> getAllShoppingLists() {
         List<ShoppingList> shoppingLists = shoppingListService.getAllShoppingLists();
         return ResponseEntity.ok(shoppingLists);
@@ -38,16 +47,32 @@ public class ShoppingListController {
         return ResponseEntity.ok(uncheckedItemsAmount);
     }
 
-    @GetMapping("/{id}")
-    public ResponseEntity<?> getShoppingListById(@PathVariable String id) {
-        ShoppingList shoppingList = shoppingListService.getShoppingListById(id);
-        return ResponseEntity.ok(shoppingList);
-    }
-
     @PutMapping
     public ResponseEntity<?> updateShoppingList(@RequestBody ShoppingList shoppingList) {
         ShoppingList updatedShoppingList = shoppingListService.updateShoppingList(shoppingList);
         return ResponseEntity.ok(updatedShoppingList);
+    }
+
+    @GetMapping("/{shoppingListId}/user")
+    public ResponseEntity<?> getShoppingListUser(@PathVariable String shoppingListId) {
+        List<User> users = shoppingListService.getShoppingListUser(shoppingListId);
+        return ResponseEntity.ok(users);
+    }
+
+    @PostMapping("/{shoppingListId}/user")
+    public ResponseEntity<?> addUserToShoppingList(@PathVariable String shoppingListId, @RequestBody User user) {
+        try {
+            User addedUser = shoppingListService.addUserToShoppingList(shoppingListId, user.getUsername());
+            return ResponseEntity.ok(addedUser);
+        } catch (UsernameNotFoundException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(e.getMessage());
+        }
+    }
+
+    @DeleteMapping("/{shoppingListId}/user/{userId}")
+    public ResponseEntity<?> removeUserFromShoppingList(@PathVariable String shoppingListId, @PathVariable String userId) {
+        shoppingListService.removeUserFromShoppingList(shoppingListId, userId);
+        return ResponseEntity.ok(Map.of("message", "User removed successfully"));
     }
 
     @DeleteMapping("/{shoppingListId}")

@@ -1,14 +1,13 @@
 package com.joengelke.shoppinglistapp.backend.service;
 
-import com.joengelke.shoppinglistapp.backend.model.ItemSet;
-import com.joengelke.shoppinglistapp.backend.model.ItemSetItem;
-import com.joengelke.shoppinglistapp.backend.model.ShoppingItem;
-import com.joengelke.shoppinglistapp.backend.model.ShoppingList;
+import com.joengelke.shoppinglistapp.backend.model.*;
 import com.joengelke.shoppinglistapp.backend.repository.ShoppingListRepository;
+import com.joengelke.shoppinglistapp.backend.security.JwtTokenProvider;
 import org.springframework.stereotype.Service;
 
 import java.time.Instant;
 import java.util.*;
+import java.util.stream.Collectors;
 
 @Service
 public class ShoppingListService {
@@ -18,14 +17,22 @@ public class ShoppingListService {
     private final ShoppingListRepository shoppingListRepository;
     private final ShoppingItemService shoppingItemService;
     private final ItemSetService itemSetService;
+    private final UserService userService;
+    private final JwtTokenProvider jwtTokenProvider;
 
-    public ShoppingListService(ShoppingListRepository shoppingListRepository, ShoppingItemService shoppingItemService, ItemSetService itemSetService) {
+    public ShoppingListService(ShoppingListRepository shoppingListRepository, ShoppingItemService shoppingItemService, ItemSetService itemSetService, UserService userService, JwtTokenProvider jwtTokenProvider) {
         this.shoppingListRepository = shoppingListRepository;
         this.shoppingItemService = shoppingItemService;
         this.itemSetService = itemSetService;
+        this.userService = userService;
+        this.jwtTokenProvider = jwtTokenProvider;
     }
 
-    public ShoppingList createShoppingList(ShoppingList shoppingList) {
+    public ShoppingList createShoppingList(ShoppingList shoppingList, String header) {
+
+        String username = jwtTokenProvider.getUsernameFromToken(header.replace("Bearer ", ""));
+        User user = userService.getUserByUsername(username);
+
         if (shoppingList.getName() == null) {
             shoppingList.setName("");
         }
@@ -35,6 +42,9 @@ public class ShoppingListService {
         if (shoppingList.getItemIds() == null) {
             shoppingList.setItemIds(new ArrayList<>());
         }
+        if (shoppingList.getUserIds() == null) {
+            shoppingList.setUserIds(List.of(user.getId()));
+        }
         return shoppingListRepository.save(shoppingList);
     }
 
@@ -42,10 +52,13 @@ public class ShoppingListService {
         return shoppingListRepository.findAll();
     }
 
-    public ShoppingList getShoppingListById(String listId) {
+    public List<ShoppingList> getShoppingListsByUserId(String header) {
+        String username = jwtTokenProvider.getUsernameFromToken(header.replace("Bearer ", ""));
+        User user = userService.getUserByUsername(username);
 
-        return shoppingListRepository.findById(listId)
-                .orElseThrow(() -> new NoSuchElementException("Shopping list not found"));
+        return shoppingListRepository.findAll().stream()
+                .filter(list -> list.getUserIds().contains(user.getId()))
+                .collect(Collectors.toList());
     }
 
     public ShoppingList updateShoppingList(ShoppingList newShoppingList) {
@@ -57,6 +70,37 @@ public class ShoppingListService {
             shoppingList.setName(newShoppingList.getName());
         }
         return shoppingListRepository.save(shoppingList);
+    }
+
+    public List<User> getShoppingListUser(String listId) {
+        ShoppingList shoppingList = shoppingListRepository.findById(listId)
+                .orElseThrow(() -> new NoSuchElementException("Shopping list not found"));
+
+        return userService.getAllUserByIds(shoppingList.getUserIds());
+    }
+
+    public User addUserToShoppingList(String listId, String username) {
+        ShoppingList shoppingList = shoppingListRepository.findById(listId)
+                .orElseThrow(() -> new NoSuchElementException("Shopping list not found"));
+
+        User user = userService.getUserByUsername(username);
+
+        if (!shoppingList.getUserIds().contains(user.getId())) {
+            shoppingList.getUserIds().add(user.getId());
+            shoppingListRepository.save(shoppingList);
+        }
+
+        return user;
+    }
+
+    public void removeUserFromShoppingList(String listId, String userId) {
+        ShoppingList shoppingList = shoppingListRepository.findById(listId)
+                .orElseThrow(() -> new NoSuchElementException("Shopping list not found"));
+
+        if (shoppingList.getUserIds().contains(userId)) {
+            shoppingList.getUserIds().remove(userId);
+            shoppingListRepository.save(shoppingList);
+        }
     }
 
     public void deleteShoppingList(String listId) {
@@ -143,7 +187,6 @@ public class ShoppingListService {
         ShoppingList shoppingList = shoppingListRepository.findById(listId)
                 .orElseThrow(() -> new NoSuchElementException("Shopping list not found"));
 
-        List<ShoppingItem> shoppingItems = shoppingItemService.getAllItemsByIds(shoppingList.getItemIds());
         return itemSetService.getAllItemSetsByIds(shoppingList.getItemSetIds());
     }
 
@@ -165,6 +208,9 @@ public class ShoppingListService {
         }
 
         ItemSet newItemSet = itemSetService.createItemSet(new ItemSet(itemSet.getName(), newItemSetItems));
+        if (shoppingList.getItemSetIds() == null) {
+            shoppingList.setItemSetIds(new ArrayList<>());
+        }
         shoppingList.getItemSetIds().add(newItemSet.getId());
         shoppingListRepository.save(shoppingList);
         return newItemSet;
@@ -213,6 +259,4 @@ public class ShoppingListService {
         shoppingList.getItemIds().remove(itemSetId);
         shoppingListRepository.save(shoppingList);
     }
-
-
 }
