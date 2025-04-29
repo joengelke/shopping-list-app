@@ -153,6 +153,10 @@ fun ShoppingListOverviewScreen(
                             onEdit = { updatedShoppingList ->
                                 shoppingListViewModel.updateShoppingList(updatedShoppingList)
                             },
+                            onAddUser = {
+                                navController.navigate(Routes.ShoppingListUser.createRoute(shoppingList.id))
+
+                            },
                             onDelete = { shoppingListId ->
                                 shoppingListViewModel.deleteShoppingList(shoppingListId)
                             },
@@ -182,6 +186,7 @@ fun ShoppingListContainer(
     uncheckedItemsAmount: Int,
     navController: NavController,
     onEdit: (ShoppingList) -> Unit,
+    onAddUser: () -> Unit,
     onDelete: (String) -> Unit
 ) {
     var isMenuExpanded by remember { mutableStateOf(false) }
@@ -228,6 +233,10 @@ fun ShoppingListContainer(
                     DropdownMenuItem(text = { Text("Edit") }, onClick = {
                         isMenuExpanded = false
                         showEditModal = true
+                    })
+                    DropdownMenuItem(text = { Text("User Settings") }, onClick = {
+                        isMenuExpanded = false
+                        onAddUser()
                     })
                     DropdownMenuItem(
                         text = { Text("Delete") },
@@ -277,7 +286,8 @@ fun ShoppingListContainer(
             },
             onDismiss = {
                 showEditModal = false
-            })
+            }
+        )
     }
 }
 
@@ -296,7 +306,9 @@ fun EditShoppingListModal(
         id = shoppingList.id,
         name = name,
         createdAt = shoppingList.createdAt,
-        itemIds = shoppingList.itemIds
+        itemIds = shoppingList.itemIds,
+        itemSetIds = shoppingList.itemSetIds,
+        userIds = shoppingList.userIds
     )
 
     ModalBottomSheet(

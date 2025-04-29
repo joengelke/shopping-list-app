@@ -1,11 +1,9 @@
 package com.joengelke.shoppinglistapp.frontend.navigation
 
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.runtime.*
-import androidx.compose.ui.Alignment
-import androidx.compose.ui.Modifier
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -18,16 +16,8 @@ fun Navigation(authViewModel: AuthViewModel, navController: NavHostController) {
     //val navController = rememberNavController()
     val isLoggedIn by authViewModel.isLoggedIn.collectAsState()
 
-    var isCheckingToken by remember { mutableStateOf(true) }
-
     LaunchedEffect(Unit) {
         authViewModel.checkIfTokenIsValid()
-        isCheckingToken = false
-    }
-
-    if(isCheckingToken) {
-        LoadingScreen()
-        return
     }
 
     // checked for valid token to skip login, TODO: check if backend exists/is online
@@ -52,6 +42,10 @@ fun Navigation(authViewModel: AuthViewModel, navController: NavHostController) {
         composable(Routes.ShoppingListCreate.route) {
             ShoppingListCreateScreen(navController)
         }
+        composable(Routes.ShoppingListUser.route) { backStackEntry ->
+            val shoppingListId = backStackEntry.arguments?.getString("shoppingListId")?:""
+            ShoppingListUserScreen(navController, shoppingListId)
+        }
         composable(Routes.ShoppingItemsOverview.route) { backStackEntry ->
             val shoppingListName = backStackEntry.arguments?.getString("shoppingListName")?:""
             val shoppingListId = backStackEntry.arguments?.getString("shoppingListId")?:""
@@ -71,15 +65,5 @@ fun Navigation(authViewModel: AuthViewModel, navController: NavHostController) {
             ItemSetCreateScreen(navController, shoppingListId, itemSetId)
         }
 
-    }
-}
-
-@Composable
-fun LoadingScreen() {
-    Box(
-        modifier = Modifier.fillMaxSize(),
-        contentAlignment = Alignment.Center
-    ) {
-        CircularProgressIndicator()
     }
 }

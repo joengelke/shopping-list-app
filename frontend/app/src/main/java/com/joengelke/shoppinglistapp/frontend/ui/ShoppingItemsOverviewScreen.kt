@@ -35,7 +35,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.hilt.navigation.compose.hiltViewModel
-import androidx.navigation.NavHostController
+import androidx.navigation.NavController
 import com.joengelke.shoppinglistapp.frontend.R
 import com.joengelke.shoppinglistapp.frontend.models.ShoppingItem
 import com.joengelke.shoppinglistapp.frontend.navigation.Routes
@@ -47,7 +47,7 @@ import java.time.format.DateTimeFormatter
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ShoppingItemsOverviewScreen(
-    navController: NavHostController,
+    navController: NavController, //navHostContoller?
     shoppingListName: String,
     shoppingListId: String,
     shoppingItemsViewModel: ShoppingItemsViewModel = hiltViewModel()
@@ -117,6 +117,7 @@ fun ShoppingItemsOverviewScreen(
                                         shoppingListId
                                     )
                                 )
+                                isMenuExpanded = false
                             }
                         )
                     }

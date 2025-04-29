@@ -24,7 +24,6 @@ class ShoppingListViewModel @Inject constructor(
     private val _uncheckedItemsAmount = MutableStateFlow<Map<String, Int>>(emptyMap())
     val uncheckedItemsAmount: StateFlow<Map<String, Int>> = _uncheckedItemsAmount
 
-
     fun loadShoppingLists(
         onSuccess: () -> Unit,
         onFailure: () -> Unit

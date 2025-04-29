@@ -30,6 +30,24 @@ class TokenManager @Inject constructor(
         return context.dataStore.data.firstOrNull()?.get(tokenKey)
     }
 
+    fun getUsernameFromToken(token: String): String? {
+        return try {
+            val jwt = JWT(token)
+            jwt.subject // This is the "sub" claim, which contains the username
+        } catch (e: Exception) {
+            null
+        }
+    }
+
+    fun getAuthoritiesFromToken(token: String): List<String> {
+        return try {
+            val jwt = JWT(token)
+            jwt.getClaim("authorities").asString()?.split(",") ?: emptyList()
+        } catch (e: Exception) {
+            emptyList()
+        }
+    }
+
     // Validate token expiration
     fun validateToken(token: String): Boolean {
         return try {

@@ -35,6 +35,9 @@ object NetworkModule{
     private var shoppingListApi: ShoppingListApi? = null
     private var shoppingItemApi: ShoppingItemApi? = null
     private var itemSetApi: ItemSetApi? = null
+    private var userApi: UserApi? = null
+
+    private var serverURL = "https://192.168.1.38:8443/api/" // dev server on .38 (.23 WiFi) raspberryPi on .60
 
     // checks if device is in local network or not
     // !!! just for local networks starting with 192.168.1. !!!
@@ -93,8 +96,8 @@ object NetworkModule{
             if (localRetrofit == null) {
                 localRetrofit = createRetrofitInstance(
                     context,
-                    "https://192.168.1.23:8443/api/"
-                ) // dev server on .23 raspberryPi on .60
+                    serverURL
+                )
             }
             localRetrofit!!
         } else {
@@ -113,6 +116,7 @@ object NetworkModule{
         shoppingListApi = retrofit.create(ShoppingListApi::class.java)
         shoppingItemApi = retrofit.create(ShoppingItemApi::class.java)
         itemSetApi = retrofit.create(ItemSetApi::class.java)
+        userApi = retrofit.create(UserApi::class.java)
     }
 
     fun getAuthApi(context: Context): AuthApi {
@@ -127,7 +131,7 @@ object NetworkModule{
     fun getShoppingListApi(context: Context): ShoppingListApi {
         // checks if api was created before and if the connection changed
         currentBaseUrl =
-            if (isInLocalServer()) "https://192.168.1.23:8443/api/" else "https://dlmdla.ddnss.de:8443/api/" // dev server on .23 raspberryPi on .60
+            if (isInLocalServer()) serverURL else "https://dlmdla.ddnss.de:8443/api/"
         if (shoppingListApi == null || lastUsedBaseUrl != currentBaseUrl) {
             updateApis(context)
             lastUsedBaseUrl = currentBaseUrl
@@ -151,5 +155,14 @@ object NetworkModule{
             lastUsedBaseUrl = currentBaseUrl
         }
         return itemSetApi!!
+    }
+
+    fun getUserApi(context: Context): UserApi {
+        // checks if api was created before and if the connection changed
+        if (itemSetApi == null || lastUsedBaseUrl != currentBaseUrl) {
+            updateApis(context)
+            lastUsedBaseUrl = currentBaseUrl
+        }
+        return userApi!!
     }
 }
