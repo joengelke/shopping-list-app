@@ -1,23 +1,22 @@
 package com.joengelke.shoppinglistapp.frontend.ui
 
-import android.widget.Toast
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
-import androidx.navigation.NavController
+import androidx.navigation.NavHostController
 import com.joengelke.shoppinglistapp.frontend.R
 import com.joengelke.shoppinglistapp.frontend.models.User
 import com.joengelke.shoppinglistapp.frontend.viewmodel.UserViewModel
@@ -25,16 +24,22 @@ import com.joengelke.shoppinglistapp.frontend.viewmodel.UserViewModel
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ShoppingListUserScreen(
-    navController: NavController,
+    navController: NavHostController,
     shoppingListId: String,
     userViewModel: UserViewModel = hiltViewModel()
 ) {
     var username by remember { mutableStateOf("") }
     val userList by userViewModel.listUser.collectAsState()
+    val currentUserId by userViewModel.currentUserId.collectAsState()
     val context = LocalContext.current
+    var userNotFound by remember { mutableStateOf(false) }
+    val sortedUserList = userList.sortedWith(
+        compareByDescending<User> { it.id == currentUserId }.thenBy { it.username }
+    ) // currentUser is always first in list
 
     LaunchedEffect(Unit) {
         userViewModel.loadListUser(shoppingListId)
+        userViewModel.updateCurrentUserId()
     }
 
     Scaffold(
@@ -43,8 +48,7 @@ fun ShoppingListUserScreen(
                 title = {
                     Row(
                         modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(8.dp),
+                            .fillMaxWidth(),
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.Center
                     ) {
@@ -52,21 +56,23 @@ fun ShoppingListUserScreen(
                             text = "User Settings",
                             fontSize = 24.sp,
                             fontWeight = FontWeight.Bold,
-                            color = Color.White,
-                            modifier = Modifier
-                                .padding(8.dp)
-                                .weight(1f)
+                            color = MaterialTheme.colorScheme.onPrimary,
+                            modifier = Modifier.weight(1f)
                         )
                     }
                 },
                 navigationIcon = {
                     IconButton(onClick = { navController.popBackStack() }) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
+                        Icon(
+                            Icons.AutoMirrored.Filled.ArrowBack,
+                            contentDescription = "Back",
+                            tint = MaterialTheme.colorScheme.onPrimary
+                        )
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = Color.DarkGray
-                )
+                    containerColor = MaterialTheme.colorScheme.primary
+                ),
             )
         },
         content = { paddingValues ->
@@ -79,7 +85,7 @@ fun ShoppingListUserScreen(
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(start = 16.dp, end = 16.dp, top = 16.dp),
+                        .padding(start = 8.dp, end = 8.dp, top = 8.dp),
                     horizontalArrangement = Arrangement.Start,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
@@ -87,49 +93,75 @@ fun ShoppingListUserScreen(
                         text = "Add new user:",
                         fontSize = 24.sp,
                         fontWeight = FontWeight.Bold,
-                        color = Color.Black,
+                        color = MaterialTheme.colorScheme.primary,
                     )
                 }
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(horizontal = 16.dp),
+                        .padding(horizontal = 8.dp),
                     horizontalArrangement = Arrangement.Center,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     OutlinedTextField(
                         value = username,
-                        onValueChange = { username = it },
+                        onValueChange = {
+                            username = it
+                            userNotFound = false
+                        },
                         placeholder = { Text("Username") },
                         modifier = Modifier
-                            .weight(1f)
-                    )
-                    IconButton(
-                        onClick = {
-                            userViewModel.addUserToShoppingList(
-                                shoppingListId,
-                                username,
-                                onFailure = {
-                                    Toast.makeText(
-                                        context,
-                                        "Username not found",
-                                        Toast.LENGTH_SHORT
-                                    ).show()
+                            .weight(1f),
+                        trailingIcon = {
+                            if (!userNotFound) {
+                                IconButton(
+                                    onClick = {
+                                        userViewModel.addUserToShoppingList(
+                                            shoppingListId,
+                                            username,
+                                            onFailure = {
+                                                userNotFound = true
+                                            }
+                                        )
+                                    },
+                                    modifier = Modifier
+                                        .padding(end = 8.dp)
+                                ) {
+                                    Icon(
+                                        painter = painterResource(id = R.drawable.baseline_person_add_24),
+                                        contentDescription = "Add",
+                                        tint = MaterialTheme.colorScheme.primary
+                                    )
                                 }
-                            )
-                        }
-                    ) {
-                        Icon(
-                            painter = painterResource(id = R.drawable.baseline_person_add_24),
-                            contentDescription = "Add",
-                            tint = Color.Black
+                            } else {
+                                Icon(
+                                    painter = painterResource(id = R.drawable.baseline_error_24),
+                                    contentDescription = "Error",
+                                    tint = MaterialTheme.colorScheme.error
+                                )
+                            }
+                        },
+                        supportingText = {
+                            if (userNotFound) {
+                                Text(
+                                    text = "Username doesn't exist",
+                                    color = MaterialTheme.colorScheme.error
+                                )
+                            }
+                        },
+                        isError = userNotFound,
+                        shape = RoundedCornerShape(20),
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedBorderColor = MaterialTheme.colorScheme.primary,
+                            unfocusedBorderColor = MaterialTheme.colorScheme.primary
                         )
-                    }
+                    )
                 }
+                Spacer(modifier = Modifier.height(8.dp))
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(start = 16.dp, end = 16.dp, top = 16.dp),
+                        .padding(horizontal = 8.dp),
                     horizontalArrangement = Arrangement.Start,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
@@ -137,18 +169,18 @@ fun ShoppingListUserScreen(
                         text = "User with access:",
                         fontSize = 24.sp,
                         fontWeight = FontWeight.Bold,
-                        color = Color.Black,
+                        color = MaterialTheme.colorScheme.primary,
                     )
                 }
                 LazyColumn(
                     modifier = Modifier
                         .fillMaxSize()
-                        .padding(horizontal = 16.dp)
+                        .padding(horizontal = 8.dp)
                 ) {
-                    //TODO mark own user
-                    items(userList) { user ->
+                    items(sortedUserList) { user ->
                         UserContainer(
                             user,
+                            currentUserId,
                             removeUser = { userId ->
                                 userViewModel.removeUserFromShoppingList(shoppingListId, userId)
                             }
@@ -163,12 +195,18 @@ fun ShoppingListUserScreen(
 @Composable
 fun UserContainer(
     user: User,
+    currentUserId: String,
     removeUser: (String) -> Unit
 ) {
+    var showConfirmation by remember { mutableStateOf(false) }
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(vertical = 2.dp)
+            .padding(bottom = 4.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.primaryContainer,
+            contentColor = MaterialTheme.colorScheme.onPrimaryContainer
+        )
     ) {
         Row(
             modifier = Modifier
@@ -177,24 +215,71 @@ fun UserContainer(
             horizontalArrangement = Arrangement.Center,
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Text(
-                text = user.username,
-                fontWeight = FontWeight.Bold,
-                fontSize = 20.sp,
-                modifier = Modifier
-                    .padding(start = 8.dp)
-                    .weight(1f)
-            )
-            IconButton(
-                onClick = {
-                    removeUser(user.id)
-                }
-            ) {
-                Icon(
-                    painter = painterResource(id = R.drawable.baseline_person_remove_24),
-                    contentDescription = "Remove",
-                    tint = Color.Black
+            if (!showConfirmation) {
+                Text(
+                    text = if (user.id == currentUserId) {
+                        "${user.username} (me)"
+                    } else {
+                        user.username
+                    },
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 20.sp,
+                    modifier = Modifier
+                        .padding(start = 8.dp)
+                        .weight(1f),
+                    color = MaterialTheme.colorScheme.onSurface
                 )
+                if (user.id == currentUserId) {
+                    Icon(
+                        painter = painterResource(id = R.drawable.baseline_person_24),
+                        contentDescription = "Remove",
+                        modifier = Modifier.padding(12.dp)
+                    )
+                } else {
+                    IconButton(
+                        onClick = {
+                            showConfirmation = true
+                        }
+                    ) {
+                        Icon(
+                            painter = painterResource(id = R.drawable.baseline_person_remove_24),
+                            contentDescription = "Remove"
+                        )
+                    }
+                }
+            } else {
+                Text(
+                    text = "Are you sure?",
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 20.sp,
+                    modifier = Modifier
+                        .padding(start = 8.dp)
+                        .weight(1f),
+                    color = MaterialTheme.colorScheme.onSurface
+                )
+
+                IconButton(
+                    onClick = {
+                        showConfirmation = false
+                        removeUser(user.id)
+                    }
+                ) {
+                    Icon(
+                        painter = painterResource(id = R.drawable.baseline_check_24),
+                        contentDescription = "confirm delete"
+                    )
+                }
+                IconButton(
+                    onClick = {
+                        showConfirmation = false
+                    }
+                ) {
+                    Icon(
+                        painter = painterResource(id = R.drawable.baseline_close_24),
+                        contentDescription = "decline delete",
+                        tint = MaterialTheme.colorScheme.error
+                    )
+                }
             }
         }
     }

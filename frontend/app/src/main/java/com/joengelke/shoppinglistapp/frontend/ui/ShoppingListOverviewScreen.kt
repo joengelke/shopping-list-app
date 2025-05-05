@@ -12,13 +12,12 @@ import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
-import androidx.navigation.NavController
+import androidx.navigation.NavHostController
 import com.joengelke.shoppinglistapp.frontend.R
 import com.joengelke.shoppinglistapp.frontend.models.ShoppingList
 import com.joengelke.shoppinglistapp.frontend.navigation.Routes
@@ -29,7 +28,7 @@ import kotlinx.coroutines.launch
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ShoppingListOverviewScreen(
-    navController: NavController,
+    navController: NavHostController,
     shoppingListViewModel: ShoppingListViewModel = hiltViewModel(),
     authViewModel: AuthViewModel = hiltViewModel(),
 ) {
@@ -66,7 +65,7 @@ fun ShoppingListOverviewScreen(
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(8.dp),
+                            .padding(horizontal = 4.dp),
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.Center
                     ) {
@@ -74,9 +73,8 @@ fun ShoppingListOverviewScreen(
                             text = "List Overview",
                             fontSize = 24.sp,
                             fontWeight = FontWeight.Bold,
-                            color = Color.White,
+                            color = MaterialTheme.colorScheme.onPrimary,
                             modifier = Modifier
-                                .padding(8.dp)
                                 .weight(1f)
                         )
                         IconButton(
@@ -87,7 +85,7 @@ fun ShoppingListOverviewScreen(
                             Icon(
                                 painter = painterResource(id = R.drawable.baseline_settings_24),
                                 contentDescription = "open settings",
-                                tint = Color.White
+                                tint = MaterialTheme.colorScheme.onPrimary
                             )
                         }
                         IconButton(
@@ -104,13 +102,13 @@ fun ShoppingListOverviewScreen(
                             Icon(
                                 painter = painterResource(id = R.drawable.baseline_logout_24),
                                 contentDescription = "logout",
-                                tint = Color.White
+                                tint = MaterialTheme.colorScheme.onPrimary
                             )
                         }
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = Color.DarkGray
+                    containerColor = MaterialTheme.colorScheme.primary
                 ),
                 actions = {
                     DropdownMenu(
@@ -143,7 +141,7 @@ fun ShoppingListOverviewScreen(
                 onRefresh = onRefresh
             ) {
                 LazyColumn(
-                    modifier = Modifier.fillMaxSize()
+                    modifier = Modifier.fillMaxSize().padding(8.dp)
                 ) {
                     items(shoppingLists) { shoppingList ->
                         ShoppingListContainer(
@@ -154,7 +152,11 @@ fun ShoppingListOverviewScreen(
                                 shoppingListViewModel.updateShoppingList(updatedShoppingList)
                             },
                             onAddUser = {
-                                navController.navigate(Routes.ShoppingListUser.createRoute(shoppingList.id))
+                                navController.navigate(
+                                    Routes.ShoppingListUser.createRoute(
+                                        shoppingList.id
+                                    )
+                                )
 
                             },
                             onDelete = { shoppingListId ->
@@ -167,16 +169,17 @@ fun ShoppingListOverviewScreen(
                     item {
                         Button(
                             modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(16.dp),
-                            onClick = { navController.navigate("shoppingListCreate") }
+                                .fillMaxWidth(),
+                            onClick = { navController.navigate("shoppingListCreate") },
                         ) {
                             Text("New Shopping List")
                         }
                     }
                 }
             }
-        }
+        },
+        containerColor = MaterialTheme.colorScheme.background,
+        contentColor = MaterialTheme.colorScheme.onBackground
     )
 }
 
@@ -184,7 +187,7 @@ fun ShoppingListOverviewScreen(
 fun ShoppingListContainer(
     shoppingList: ShoppingList,
     uncheckedItemsAmount: Int,
-    navController: NavController,
+    navController: NavHostController,
     onEdit: (ShoppingList) -> Unit,
     onAddUser: () -> Unit,
     onDelete: (String) -> Unit
@@ -196,7 +199,7 @@ fun ShoppingListContainer(
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(vertical = 4.dp, horizontal = 8.dp)
+            .padding(bottom = 4.dp)
             .clickable {
                 // forward to items overview
                 navController.navigate(
@@ -205,7 +208,11 @@ fun ShoppingListContainer(
                         shoppingList.id
                     )
                 )
-            }
+            },
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.primaryContainer,
+            contentColor = MaterialTheme.colorScheme.onPrimaryContainer
+        )
     ) {
         Row(
             modifier = Modifier
@@ -217,12 +224,20 @@ fun ShoppingListContainer(
                     .weight(1f)
                     .padding(horizontal = 16.dp)
             ) {
-                Text(text = shoppingList.name, fontSize = 24.sp, fontWeight = FontWeight.Bold)
+                Text(
+                    text = shoppingList.name,
+                    fontSize = 24.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.onSurface
+                )
             }
             Column {
                 // Settings button
                 IconButton(onClick = { isMenuExpanded = !isMenuExpanded }) {
-                    Icon(Icons.Default.MoreVert, contentDescription = "More options")
+                    Icon(
+                        Icons.Default.MoreVert,
+                        contentDescription = "More options"
+                    )
                 }
                 // Dropdown Menu
                 DropdownMenu(
@@ -259,7 +274,7 @@ fun ShoppingListContainer(
                 ) {
                     LinearProgressIndicator(
                         progress = { (allItemsAmount - uncheckedItemsAmount.toFloat()) / allItemsAmount },
-                        color = Color.DarkGray,
+                        color = MaterialTheme.colorScheme.primary,
                         modifier = Modifier
                             .fillMaxWidth()
                             .height(16.dp)

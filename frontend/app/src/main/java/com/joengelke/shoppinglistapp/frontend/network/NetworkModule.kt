@@ -37,7 +37,7 @@ object NetworkModule{
     private var itemSetApi: ItemSetApi? = null
     private var userApi: UserApi? = null
 
-    private var serverURL = "https://192.168.1.38:8443/api/" // dev server on .38 (.23 WiFi) raspberryPi on .60
+    private var serverURL = "https://192.168.1.60:8443/api/" // dev server on .38 (.23 WiFi) raspberryPi on .60
 
     // checks if device is in local network or not
     // !!! just for local networks starting with 192.168.1. !!!

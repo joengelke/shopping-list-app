@@ -16,7 +16,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
@@ -69,21 +68,28 @@ fun ItemSetOverviewScreen(
                         Text(
                             text = "Item Sets",
                             fontSize = 24.sp,
-                            modifier = Modifier.padding(16.dp)
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.onPrimary,
+                            modifier = Modifier
+                                .weight(1f)
                         )
                     }
                 },
                 navigationIcon = {
                     IconButton(onClick = { navController.popBackStack() }) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
+                        Icon(
+                            Icons.AutoMirrored.Filled.ArrowBack,
+                            contentDescription = "Back",
+                            tint = MaterialTheme.colorScheme.onPrimary
+                        )
                     }
                 },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = Color.DarkGray
-                ),
                 actions = {
                     // dropdown menu possible
-                }
+                },
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = MaterialTheme.colorScheme.primary
+                ),
             )
         },
         content = { paddingValues ->
@@ -96,7 +102,9 @@ fun ItemSetOverviewScreen(
                 onRefresh = onRefresh
             ) {
                 LazyColumn(
-                    modifier = Modifier.fillMaxSize()
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(8.dp)
                 ) {
                     items(itemSets) { itemSet ->
                         ItemSetContainer(
@@ -124,8 +132,7 @@ fun ItemSetOverviewScreen(
                     item {
                         Button(
                             modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(8.dp),
+                                .fillMaxWidth(),
                             onClick = {
                                 showDialog = true
                             }
@@ -135,7 +142,9 @@ fun ItemSetOverviewScreen(
                     }
                 }
             }
-        }
+        },
+        containerColor = MaterialTheme.colorScheme.background,
+        contentColor = MaterialTheme.colorScheme.onBackground
     )
 
     if (showDialog) {
@@ -229,10 +238,14 @@ fun ItemSetContainer(
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(vertical = 4.dp, horizontal = 8.dp)
+            .padding(bottom = 4.dp)
             .clickable {
                 onEditItems(itemSet.id)
-            }
+            },
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.primaryContainer,
+            contentColor = MaterialTheme.colorScheme.onPrimaryContainer
+        )
     ) {
         Row(
             modifier = Modifier
@@ -257,8 +270,7 @@ fun ItemSetContainer(
                 ) {
                     Icon(
                         painter = painterResource(id = R.drawable.baseline_edit_24),
-                        contentDescription = "edit item set name",
-                        tint = Color.Black
+                        contentDescription = "edit item set name"
                     )
                 }
                 IconButton(
@@ -268,8 +280,7 @@ fun ItemSetContainer(
                 ) {
                     Icon(
                         painter = painterResource(id = R.drawable.baseline_delete_24),
-                        contentDescription = "delete item set",
-                        tint = Color.Black
+                        contentDescription = "delete item set"
                     )
                 }
             } else {
@@ -280,7 +291,11 @@ fun ItemSetContainer(
                     },
                     modifier = Modifier
                         .padding(start = 12.dp, top = 4.dp, bottom = 4.dp, end = 8.dp)
-                        .weight(1f)
+                        .weight(1f),
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedBorderColor = MaterialTheme.colorScheme.primary,
+                        unfocusedBorderColor = MaterialTheme.colorScheme.primary
+                    )
                 )
                 IconButton(
                     onClick = {
@@ -292,8 +307,7 @@ fun ItemSetContainer(
                 ) {
                     Icon(
                         painter = painterResource(id = R.drawable.baseline_check_24),
-                        contentDescription = "save item set name",
-                        tint = Color.Black
+                        contentDescription = "save item set name"
                     )
                 }
                 IconButton(
@@ -303,8 +317,7 @@ fun ItemSetContainer(
                 ) {
                     Icon(
                         painter = painterResource(id = R.drawable.baseline_close_24),
-                        contentDescription = "cancel edit",
-                        tint = Color.Black
+                        contentDescription = "cancel edit"
                     )
                 }
 

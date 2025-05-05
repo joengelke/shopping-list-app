@@ -22,12 +22,12 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
-import androidx.navigation.NavController
+import androidx.navigation.NavHostController
 import com.joengelke.shoppinglistapp.frontend.viewmodel.AuthViewModel
 
 
 @Composable
-fun LoginScreen(navController: NavController, authViewModel: AuthViewModel, onLoginSuccess: () -> Unit) {
+fun LoginScreen(navController: NavHostController, authViewModel: AuthViewModel, onLoginSuccess: () -> Unit) {
     var username by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
     var showPassword by remember { mutableStateOf(false) } // TODO 

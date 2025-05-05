@@ -1,6 +1,8 @@
 package com.joengelke.shoppinglistapp.frontend.ui
 
 import android.widget.Toast
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -25,6 +27,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.TextRange
@@ -35,11 +38,12 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.hilt.navigation.compose.hiltViewModel
-import androidx.navigation.NavController
+import androidx.navigation.NavHostController
 import com.joengelke.shoppinglistapp.frontend.R
 import com.joengelke.shoppinglistapp.frontend.models.ShoppingItem
 import com.joengelke.shoppinglistapp.frontend.navigation.Routes
 import com.joengelke.shoppinglistapp.frontend.viewmodel.ShoppingItemsViewModel
+import kotlinx.coroutines.delay
 import java.time.Duration
 import java.time.Instant
 import java.time.format.DateTimeFormatter
@@ -47,7 +51,7 @@ import java.time.format.DateTimeFormatter
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ShoppingItemsOverviewScreen(
-    navController: NavController, //navHostContoller?
+    navController: NavHostController,
     shoppingListName: String,
     shoppingListId: String,
     shoppingItemsViewModel: ShoppingItemsViewModel = hiltViewModel()
@@ -67,7 +71,10 @@ fun ShoppingItemsOverviewScreen(
     }
 
     LaunchedEffect(shoppingListId) {
-        shoppingItemsViewModel.loadShoppingItems(shoppingListId, onSuccess = {})
+        while(true) {
+            shoppingItemsViewModel.loadShoppingItems(shoppingListId, onSuccess = {})
+            delay(10_000) // 10 seconds auto refresh
+        }
     }
 
     val uncheckedItems = shoppingItems.filter { !it.checked }
@@ -89,20 +96,44 @@ fun ShoppingItemsOverviewScreen(
                             text = shoppingListName,
                             fontSize = 24.sp,
                             fontWeight = FontWeight.Bold,
-                            modifier = Modifier.padding(8.dp)
+                            color = MaterialTheme.colorScheme.onPrimary,
+                            modifier = Modifier.weight(1f)
                         )
+                        IconButton(
+                            onClick = {
+                                navController.navigate(
+                                    Routes.ShoppingListUser.createRoute(
+                                        shoppingListId
+                                    )
+                                )
+                            }
+                        ) {
+                            Icon(
+                                painter = painterResource(id = R.drawable.baseline_person_add_24),
+                                contentDescription = "add User to List",
+                                tint = MaterialTheme.colorScheme.onPrimary
+                            )
+                        }
                         IconButton(onClick = { isMenuExpanded = !isMenuExpanded }) {
-                            Icon(Icons.Default.MoreVert, contentDescription = "More options")
+                            Icon(
+                                Icons.Default.MoreVert,
+                                contentDescription = "More options",
+                                tint = MaterialTheme.colorScheme.onPrimary
+                            )
                         }
                     }
                 },
                 navigationIcon = {
                     IconButton(onClick = { navController.popBackStack() }) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
+                        Icon(
+                            Icons.AutoMirrored.Filled.ArrowBack,
+                            contentDescription = "Back",
+                            tint = MaterialTheme.colorScheme.onPrimary
+                        )
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = Color.DarkGray
+                    containerColor = MaterialTheme.colorScheme.primary
                 ),
                 actions = {
                     DropdownMenu(
@@ -144,29 +175,36 @@ fun ShoppingItemsOverviewScreen(
                 onRefresh = onRefresh
             ) {
                 // unchecked list
-                LazyColumn(modifier = Modifier.fillMaxSize()) {
-                    // val sortedItems = uncheckedItems + checkedItems
-
+                LazyColumn(
+                    modifier = Modifier.fillMaxSize()
+                ) {
                     items(uncheckedItems) { item ->
-                        ShoppingItemContainer(
-                            item,
-                            onCheckedChange = { updatedItem ->
-                                shoppingItemsViewModel.updateCheckedStatus(
-                                    item.id,
-                                    updatedItem.checked
-                                )
-                            },
-                            onEditClick = { updatedItem ->
-                                shoppingItemsViewModel.updateItem(
-                                    updatedItem
-                                )
-                            },
-                            onDeleteClick = { deleteItem ->
-                                shoppingItemsViewModel.deleteItem(
-                                    shoppingListId, deleteItem.id
-                                )
-                            }
-                        )
+                        var visible by remember { mutableStateOf(true) }
+                        AnimatedVisibility(
+                            visible = visible,
+                            exit = slideOutHorizontally()
+                        ) {
+                            ShoppingItemContainer(
+                                item,
+                                onCheckedChange = { updatedItem ->
+                                    visible = false
+                                    shoppingItemsViewModel.updateCheckedStatus(
+                                        item.id,
+                                        updatedItem.checked
+                                    )
+                                },
+                                onEditClick = { updatedItem ->
+                                    shoppingItemsViewModel.updateItem(
+                                        updatedItem
+                                    )
+                                },
+                                onDeleteClick = { deleteItem ->
+                                    shoppingItemsViewModel.deleteItem(
+                                        shoppingListId, deleteItem.id
+                                    )
+                                }
+                            )
+                        }
                     }
 
                     if (checkedItems.isNotEmpty()) {
@@ -269,13 +307,18 @@ fun ShoppingItemContainer(
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(2.dp)
             .combinedClickable(
                 onClick = { showEditModal = true },
                 onLongClick = {
                     showDialog = true
                 }
-            )
+            ),
+        elevation = CardDefaults.cardElevation(0.dp),
+        shape = RectangleShape,
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surfaceContainer,
+            contentColor = MaterialTheme.colorScheme.onSurface
+        )
     ) {
         Row(
             modifier = Modifier
@@ -285,14 +328,18 @@ fun ShoppingItemContainer(
         ) {
             Checkbox(
                 checked = shoppingItem.checked,
-                onCheckedChange = { isChecked -> onCheckedChange(shoppingItem.copy(checked = isChecked)) }
+                onCheckedChange = { isChecked -> onCheckedChange(shoppingItem.copy(checked = isChecked)) },
+                colors = CheckboxDefaults.colors(
+                    checkedColor = MaterialTheme.colorScheme.primary,
+                    uncheckedColor = MaterialTheme.colorScheme.primary
+                )
             )
 
             // name and note
             Column(modifier = Modifier.weight(1f)) {
                 Text(text = shoppingItem.name, fontWeight = FontWeight.Bold, fontSize = 20.sp)
                 if (shoppingItem.note.isNotBlank()) {
-                    Text(text = shoppingItem.note, fontSize = 16.sp, color = Color.Gray)
+                    Text(text = shoppingItem.note, fontSize = 16.sp)
                 }
             }
 
@@ -311,7 +358,7 @@ fun ShoppingItemContainer(
                         shoppingItem.amount.let {
                             if (it % 1 == 0.0) it.toInt().toString() else it.toString()
                         }
-                    }${shoppingItem.unit}",
+                    } ${shoppingItem.unit}",
                     fontSize = 18.sp,
                     fontWeight = FontWeight.Bold,
                     modifier = Modifier.padding(end = 10.dp)
@@ -332,7 +379,7 @@ fun ShoppingItemContainer(
                                 Toast.LENGTH_SHORT
                             ).show()
                         },
-                    contentAlignment = Alignment.Center
+                    contentAlignment = Alignment.Center,
                 ) {
                     Text(
                         text = shoppingItem.editedBy.take(2).uppercase(),
@@ -346,6 +393,10 @@ fun ShoppingItemContainer(
             }
         }
     }
+    HorizontalDivider(
+        thickness = 1.dp,
+        color = MaterialTheme.colorScheme.primary.copy(alpha = 0.3f)
+    )
 
     // Edit Modal
     if (showEditModal) {
@@ -366,7 +417,11 @@ fun ShoppingItemContainer(
             Card(
                 modifier = Modifier
                     .wrapContentSize()
-                    .padding(16.dp)
+                    .padding(16.dp),
+                colors = CardDefaults.cardColors(
+                    containerColor = MaterialTheme.colorScheme.primaryContainer,
+                    contentColor = MaterialTheme.colorScheme.onPrimaryContainer
+                )
             ) {
                 Row(
                     horizontalArrangement = Arrangement.Center,
@@ -379,7 +434,7 @@ fun ShoppingItemContainer(
                         },
                         modifier = Modifier.padding(8.dp)
                     ) {
-                        Text("Delete", fontSize = 20.sp, color = Color.Red)
+                        Text("Delete", fontSize = 20.sp, color = MaterialTheme.colorScheme.error)
                     }
                     TextButton(
                         onClick = {
@@ -429,7 +484,8 @@ fun EditShoppingItemModal(
         sheetState = sheetState,
         onDismissRequest = { onDismiss(updatedShoppingItem) },
         modifier = Modifier.wrapContentHeight(),
-        dragHandle = null
+        dragHandle = null,
+        containerColor = MaterialTheme.colorScheme.surface
     ) {
         Column(
             modifier = Modifier
@@ -441,17 +497,17 @@ fun EditShoppingItemModal(
                 horizontalArrangement = Arrangement.Start,
                 modifier = Modifier.fillMaxWidth()
             ) {
-                IconButton(onClick = { onDismiss(updatedShoppingItem) }) {
-                    Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
-                }
-
                 OutlinedTextField(
                     value = name,
                     onValueChange = {
                         name = it
                     },
                     label = { Text("Name") },
-                    modifier = Modifier.weight(1f)
+                    modifier = Modifier.weight(1f),
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedBorderColor = MaterialTheme.colorScheme.primary,
+                        unfocusedBorderColor = MaterialTheme.colorScheme.primary
+                    )
                 )
             }
 
@@ -475,7 +531,11 @@ fun EditShoppingItemModal(
                     label = { Text("Amount") },
                     keyboardOptions = KeyboardOptions.Default.copy(keyboardType = KeyboardType.Number),
                     modifier = Modifier
-                        .weight(0.3f)
+                        .weight(0.3f),
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedBorderColor = MaterialTheme.colorScheme.primary,
+                        unfocusedBorderColor = MaterialTheme.colorScheme.primary
+                    )
                 )
                 OutlinedTextField(
                     value = textState,
@@ -491,7 +551,11 @@ fun EditShoppingItemModal(
                                 textState =
                                     textState.copy(selection = TextRange(0, textState.text.length))
                             }
-                        }
+                        },
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedBorderColor = MaterialTheme.colorScheme.primary,
+                        unfocusedBorderColor = MaterialTheme.colorScheme.primary
+                    )
                 )
 
                 IconButton(
@@ -504,13 +568,13 @@ fun EditShoppingItemModal(
                     modifier = Modifier
                         .size(48.dp)
                         .clip(CircleShape)
-                        .background(Color.DarkGray)
+                        .background(MaterialTheme.colorScheme.primary)
                         .padding(horizontal = 8.dp)
                 ) {
                     Icon(
                         painter = painterResource(id = R.drawable.baseline_remove_24),
                         contentDescription = "Remove",
-                        tint = Color.White
+                        tint = MaterialTheme.colorScheme.onPrimary
                     )
                 }
 
@@ -522,13 +586,13 @@ fun EditShoppingItemModal(
                     modifier = Modifier
                         .size(48.dp)
                         .clip(CircleShape)
-                        .background(Color.DarkGray)
-                        .padding(horizontal = 8.dp)
+                        .background(MaterialTheme.colorScheme.primary)
+                        .padding(horizontal = 8.dp),
                 ) {
                     Icon(
                         painter = painterResource(id = R.drawable.baseline_add_24),
                         contentDescription = "Add",
-                        tint = Color.White
+                        tint = MaterialTheme.colorScheme.onPrimary
                     )
                 }
             }
@@ -539,7 +603,6 @@ fun EditShoppingItemModal(
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
                 modifier = Modifier.fillMaxWidth()
             ) {
-
                 /* Category Field
                 OutlinedTextField(
                     value = category,
@@ -555,7 +618,11 @@ fun EditShoppingItemModal(
                         note = it
                     },
                     label = { Text("Note") },
-                    modifier = Modifier.weight(1f)
+                    modifier = Modifier.weight(1f),
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedBorderColor = MaterialTheme.colorScheme.primary,
+                        unfocusedBorderColor = MaterialTheme.colorScheme.primary
+                    )
                 )
             }
         }

@@ -30,6 +30,11 @@ class TokenManager @Inject constructor(
         return context.dataStore.data.firstOrNull()?.get(tokenKey)
     }
 
+    fun getUserIdFromToken(token: String): String {
+        val jwt = JWT(token)
+        return jwt.getClaim("userId").asString() ?: throw IllegalArgumentException("User ID missing from token")
+    }
+
     fun getUsernameFromToken(token: String): String? {
         return try {
             val jwt = JWT(token)

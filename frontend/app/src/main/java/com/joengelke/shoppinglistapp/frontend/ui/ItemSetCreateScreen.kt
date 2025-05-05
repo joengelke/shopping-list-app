@@ -12,9 +12,10 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.text.input.KeyboardType
@@ -40,6 +41,7 @@ fun ItemSetCreateScreen(
     val itemSet = itemSets.find { it.id == itemSetId }
     val itemSetItems = itemSet?.itemList ?: emptyList()
 
+    val hasUnsavedChanges by itemSetsViewModel.hasUnsavedChanges.collectAsState()
     var showDialog by remember { mutableStateOf(false) }
 
     LaunchedEffect(shoppingListId) {
@@ -52,16 +54,39 @@ fun ItemSetCreateScreen(
                 title = {
                     Row(
                         modifier = Modifier.fillMaxWidth(),
-                        verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.SpaceBetween
                     ) {
                         if (itemSet != null) {
                             Text(
                                 text = itemSet.name,
                                 fontSize = 24.sp,
-                                modifier = Modifier.padding(16.dp)
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.onPrimary,
+                                modifier = Modifier
+                                    .weight(1f)
                             )
                         }
+                    }
+                },
+                navigationIcon = {
+                    IconButton(
+                        onClick = {
+                            if (hasUnsavedChanges) {
+                                showDialog = true
+                            } else {
+                                navController.popBackStack()
+                            }
+                        }
+                    ) {
+                        Icon(
+                            Icons.AutoMirrored.Filled.ArrowBack,
+                            contentDescription = "Back",
+                            tint = MaterialTheme.colorScheme.onPrimary
+                        )
+                    }
+                },
+                actions = {
+                    if (hasUnsavedChanges) {
                         IconButton(
                             onClick = {
                                 itemSetsViewModel.updateItemSet(
@@ -78,23 +103,15 @@ fun ItemSetCreateScreen(
                             }
                         ) {
                             Icon(
-                                painter = painterResource(id = R.drawable.baseline_check_24),
-                                contentDescription = "Save"
+                                painter = painterResource(id = R.drawable.baseline_save_24),
+                                contentDescription = "Save",
+                                tint = MaterialTheme.colorScheme.onPrimary
                             )
                         }
                     }
                 },
-                navigationIcon = {
-                    IconButton(
-                        onClick = {
-                            showDialog = true
-                        }
-                    ) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
-                    }
-                },
                 colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = Color.DarkGray
+                    containerColor = MaterialTheme.colorScheme.primary
                 )
             )
         },
@@ -117,7 +134,7 @@ fun ItemSetCreateScreen(
                     Button(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(horizontal = 8.dp, vertical = 4.dp),
+                            .padding(horizontal = 8.dp),
                         onClick = {
                             itemSetsViewModel.addEmptyItemSetItem(itemSetId)
                         }
@@ -209,8 +226,13 @@ fun ItemSetItemContainer(
 
     Card(
         modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 8.dp, vertical = 4.dp),
+            .fillMaxWidth(),
+        elevation = CardDefaults.cardElevation(0.dp),
+        shape = RectangleShape,
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surfaceContainer,
+            contentColor = MaterialTheme.colorScheme.primary
+        )
     ) {
         Row(
             modifier = Modifier
@@ -240,6 +262,10 @@ fun ItemSetItemContainer(
                         capitalization = KeyboardCapitalization.Sentences,
                         keyboardType = KeyboardType.Text,
                         imeAction = ImeAction.Done
+                    ),
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedBorderColor = MaterialTheme.colorScheme.primary,
+                        unfocusedBorderColor = MaterialTheme.colorScheme.primary
                     )
                 )
             }
@@ -262,7 +288,11 @@ fun ItemSetItemContainer(
                     },
                     keyboardOptions = KeyboardOptions.Default.copy(keyboardType = KeyboardType.Number),
                     singleLine = true,
-                    modifier = Modifier.fillMaxWidth()
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedBorderColor = MaterialTheme.colorScheme.primary,
+                        unfocusedBorderColor = MaterialTheme.colorScheme.primary
+                    )
                 )
             }
             Column(
@@ -280,7 +310,11 @@ fun ItemSetItemContainer(
                         )
                     },
                     singleLine = true,
-                    modifier = Modifier.fillMaxWidth()
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedBorderColor = MaterialTheme.colorScheme.primary,
+                        unfocusedBorderColor = MaterialTheme.colorScheme.primary
+                    )
                     //TODO dropdown with kg,g,st,ml,l
                 )
             }
@@ -300,4 +334,8 @@ fun ItemSetItemContainer(
             }
         }
     }
+    HorizontalDivider(
+        thickness = 1.dp,
+        color = MaterialTheme.colorScheme.primary.copy(alpha = 0.3f)
+    )
 }

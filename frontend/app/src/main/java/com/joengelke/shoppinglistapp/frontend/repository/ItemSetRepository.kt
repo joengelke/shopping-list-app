@@ -65,7 +65,12 @@ class ItemSetRepository @Inject constructor(
             val token =
                 tokenManager.getToken() ?: return Result.failure(Exception("No token found"))
 
-            val response = NetworkModule.getItemSetApi(context).updateItemSet("Bearer $token", shoppingListId, itemSet)
+            // filter out itemsetitems with empty name
+            val cleanedItemSet = itemSet.copy(
+                itemList = itemSet.itemList.filter { it.name.isNotBlank() }
+            )
+
+            val response = NetworkModule.getItemSetApi(context).updateItemSet("Bearer $token", shoppingListId, cleanedItemSet)
             when {
                 response.isSuccessful -> response.body()?.let { Result.success(it) }
                     ?: Result.failure(Exception("Unexpected empty response"))

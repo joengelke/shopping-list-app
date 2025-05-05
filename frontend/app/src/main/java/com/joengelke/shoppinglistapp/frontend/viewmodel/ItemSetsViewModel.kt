@@ -22,6 +22,9 @@ class ItemSetsViewModel @Inject constructor(
     private val _itemSets = MutableStateFlow<List<ItemSet>>(emptyList())
     val itemSets: StateFlow<List<ItemSet>> = _itemSets.asStateFlow()
 
+    private val _hasUnsavedChanges = MutableStateFlow(false)
+    val hasUnsavedChanges: StateFlow<Boolean> = _hasUnsavedChanges.asStateFlow()
+
     fun loadItemSets(
         shoppingListId: String,
         onSuccess: () -> Unit
@@ -64,6 +67,7 @@ class ItemSetsViewModel @Inject constructor(
                     if (it.id == updatedItemSet.id) updatedItemSet else it
                 }
                 onSuccess(updatedItemSet.name)
+                _hasUnsavedChanges.value = false
             }
         }
     }
@@ -100,6 +104,7 @@ class ItemSetsViewModel @Inject constructor(
                 itemSet
             }
         }
+        _hasUnsavedChanges.value = true
     }
 
     fun updateItemSetItem(itemSetId: String, updatedItemSetItem: ItemSetItem) {
@@ -111,6 +116,7 @@ class ItemSetsViewModel @Inject constructor(
                 itemSet.copy(itemList = updatedItems)
             } else itemSet
         }
+        _hasUnsavedChanges.value = true
     }
 
     fun deleteItemSetItem(itemSetId: String, itemSetItem: ItemSetItem) {
@@ -124,5 +130,6 @@ class ItemSetsViewModel @Inject constructor(
                 itemSet
             }
         }
+        _hasUnsavedChanges.value = true
     }
 }

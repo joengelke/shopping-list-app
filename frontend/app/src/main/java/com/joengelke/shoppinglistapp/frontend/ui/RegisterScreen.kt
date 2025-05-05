@@ -13,11 +13,12 @@ import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
+import androidx.navigation.NavHostController
 import com.joengelke.shoppinglistapp.frontend.viewmodel.AuthViewModel
 
 
 @Composable
-fun RegisterScreen(navController: NavController, viewModel: AuthViewModel = hiltViewModel()) {
+fun RegisterScreen(navController: NavHostController, viewModel: AuthViewModel = hiltViewModel()) {
     var username by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
     var confirmPassword by remember { mutableStateOf("") } // TODO

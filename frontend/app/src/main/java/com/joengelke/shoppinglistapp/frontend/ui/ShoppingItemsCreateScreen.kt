@@ -1,23 +1,31 @@
 package com.joengelke.shoppinglistapp.frontend.ui
 
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Clear
 import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.KeyboardArrowUp
+import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
-import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.RectangleShape
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
@@ -27,26 +35,24 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
-import androidx.navigation.NavController
+import androidx.navigation.NavHostController
 import com.joengelke.shoppinglistapp.frontend.R
 import com.joengelke.shoppinglistapp.frontend.models.ItemSet
 import com.joengelke.shoppinglistapp.frontend.models.ItemSetItem
 import com.joengelke.shoppinglistapp.frontend.models.ShoppingItem
 import com.joengelke.shoppinglistapp.frontend.viewmodel.ItemSetsViewModel
 import com.joengelke.shoppinglistapp.frontend.viewmodel.ShoppingItemsViewModel
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ShoppingItemsCreateScreen(
-    navController: NavController,
+    navController: NavHostController,
     shoppingListId: String,
     shoppingItemsViewModel: ShoppingItemsViewModel = hiltViewModel(),
     itemSetsViewModel: ItemSetsViewModel = hiltViewModel()
 ) {
     var name by remember { mutableStateOf("") }
-
     val newShoppingItem = listOf(
         ShoppingItem(
             id = "",
@@ -64,7 +70,6 @@ fun ShoppingItemsCreateScreen(
     val shoppingItems by shoppingItemsViewModel.shoppingItems.collectAsState()
     val itemSets by itemSetsViewModel.itemSets.collectAsState()
 
-    //TODO get all Possible Items from Backend once its Screen is loaded
     /*
     val ownSuggestionsList =
         tmpOwnSuggestionsList.filter { it.name !in shoppingItems.map { it.name }.toSet()
@@ -92,6 +97,7 @@ fun ShoppingItemsCreateScreen(
 
     val focusRequester = remember { FocusRequester() }
     val keyboardController = LocalSoftwareKeyboardController.current
+    val focusManager = LocalFocusManager.current
 
     // Pager
     val pagerState = rememberPagerState(pageCount = { 2 })
@@ -101,51 +107,110 @@ fun ShoppingItemsCreateScreen(
     LaunchedEffect(Unit) {
         shoppingItemsViewModel.loadShoppingItems(shoppingListId, onSuccess = {})
         itemSetsViewModel.loadItemSets(shoppingListId, onSuccess = {})
-        delay(300)
         focusRequester.requestFocus()
         keyboardController?.show()
     }
 
+    LaunchedEffect(name) {
+        if (name.isNotEmpty() && pagerState.currentPage != 0) {
+            pagerState.animateScrollToPage(0)
+        }
+    }
+
     Scaffold(
         topBar = {
-            TopAppBar(modifier = Modifier.padding(horizontal = 8.dp),
-                title = {
-                    OutlinedTextField(
-                        value = name,
-                        onValueChange = { newName ->
-                            run {
-                                name = newName
-                            }
-                        },
-                        placeholder = { Text("Enter item name") },
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .focusRequester(focusRequester),
-                        singleLine = true,
-                        keyboardOptions = KeyboardOptions(
-                            capitalization = KeyboardCapitalization.Sentences,
-                            keyboardType = KeyboardType.Text,
-                            imeAction = ImeAction.Done
-                        )
-                    )
-                },
-                navigationIcon = {
-                    IconButton(onClick = { navController.popBackStack() }) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
-                    }
-                }
-            )
-        },
-        content = { paddingValues ->
-            Column(
+            Row(
                 modifier = Modifier
-                    .fillMaxSize()
-                    .padding(paddingValues)
+                    .fillMaxWidth()
+                    .background(MaterialTheme.colorScheme.primary)
+                    .padding(bottom = 8.dp),
+                verticalAlignment = Alignment.Bottom,
             ) {
+                TopAppBar(
+                    title = {
+                        OutlinedTextField(
+                            value = name,
+                            onValueChange = { name = it },
+                            placeholder = {
+                                Text(
+                                    "Enter item name",
+                                    color = MaterialTheme.colorScheme.onPrimary
+                                )
+                            },
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .focusRequester(focusRequester),
+                            singleLine = true,
+                            leadingIcon = {
+                                Icon(
+                                    imageVector = Icons.Default.Search,
+                                    contentDescription = "Search",
+                                    tint = MaterialTheme.colorScheme.onPrimary
+                                )
+                            },
+                            trailingIcon = {
+                                if (name.isNotBlank()) {
+                                    IconButton(
+                                        onClick = { name = "" },
+                                        modifier = Modifier.padding(end =4.dp)
+                                    ) {
+                                        Icon(
+                                            imageVector = Icons.Default.Clear,
+                                            contentDescription = "Clear",
+                                            tint = MaterialTheme.colorScheme.onPrimary
+                                        )
+                                    }
+                                }
+                            },
+                            shape = RoundedCornerShape(50),
+                            keyboardOptions = KeyboardOptions(
+                                capitalization = KeyboardCapitalization.Sentences,
+                                keyboardType = KeyboardType.Text,
+                                imeAction = ImeAction.Done
+                            ),
+                            colors = OutlinedTextFieldDefaults.colors(
+                                focusedBorderColor = MaterialTheme.colorScheme.onPrimary,
+                                focusedTextColor = MaterialTheme.colorScheme.onPrimary,
+                                unfocusedBorderColor = MaterialTheme.colorScheme.onPrimary.copy(
+                                    alpha = 0.5f
+                                ),
+                                unfocusedTextColor = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.8f),
+                                cursorColor = MaterialTheme.colorScheme.onPrimary,
+                            )
+                        )
+                    },
+                    navigationIcon = {
+                        IconButton(onClick = { navController.popBackStack() }) {
+                            Icon(
+                                Icons.AutoMirrored.Filled.ArrowBack,
+                                contentDescription = "Back",
+                                tint = MaterialTheme.colorScheme.onPrimary
+                            )
+                        }
+                    },
+                    colors = TopAppBarDefaults.topAppBarColors(
+                        containerColor = MaterialTheme.colorScheme.primary,
+                        titleContentColor = MaterialTheme.colorScheme.onPrimary
+                    )
+                )
+
+
+            }
+        },
+    ) { paddingValues ->
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(paddingValues)
+                .pointerInput(Unit) {
+                    detectTapGestures{ focusManager.clearFocus()}
+                }
+        ) {
+            AnimatedVisibility(name.isEmpty()) {
                 TabRow(
                     selectedTabIndex = pagerState.currentPage,
                     contentColor = MaterialTheme.colorScheme.primary,
-                    modifier = Modifier.fillMaxWidth()
+                    modifier = Modifier.fillMaxWidth(),
                 ) {
                     tabTitles.forEachIndexed { index, title ->
                         Tab(
@@ -159,63 +224,64 @@ fun ShoppingItemsCreateScreen(
                         )
                     }
                 }
+            }
 
-                // Items and Sets pages
-                HorizontalPager(
-                    state = pagerState,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .weight(1f)
-                ) { page ->
-                    when (page) {
-                        0 -> {
-                            ShoppingItemPage(
-                                allItems,
-                                addOneItem = { addItem ->
-                                    shoppingItemsViewModel.addOneShoppingItem(
-                                        shoppingListId,
-                                        addItem
-                                    )
-                                },
-                                removeOneItem = { itemId ->
-                                    shoppingItemsViewModel.removeOneShoppingItem(
-                                        itemId
-                                    )
-                                }
-                            )
-                        }
+            // Items and Sets pages
+            HorizontalPager(
+                state = pagerState,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .weight(1f),
+                userScrollEnabled = name.isEmpty()
+            ) { page ->
+                when (page) {
+                    0 -> {
+                        ShoppingItemPage(
+                            allItems,
+                            addOneItem = { addItem ->
+                                shoppingItemsViewModel.addOneShoppingItem(
+                                    shoppingListId,
+                                    addItem
+                                )
+                            },
+                            removeOneItem = { itemId ->
+                                shoppingItemsViewModel.removeOneShoppingItem(
+                                    itemId
+                                )
+                            }
+                        )
+                    }
 
-                        1 -> {
-                            ItemSetsPage(
-                                allItems,
-                                itemSets,
-                                addItemSetItemToShoppingList = { addItemSetItem ->
-                                    shoppingItemsViewModel.addItemSetItemToShoppingList(
-                                        addItemSetItem
-                                    )
-                                },
-                                removeItemSetItemFromShoppingList = { removeItemSetItem ->
-                                    shoppingItemsViewModel.removeItemSetItemFromShoppingList(
-                                        removeItemSetItem
-                                    )
-                                },
-                                addAllItemSetItemsToShoppingList = { itemSetId ->
-                                    shoppingItemsViewModel.addAllItemSetItemsToShoppingList(
-                                        itemSetId
-                                    )
-                                },
-                                removeAllItemSetItemsFromShoppingList = { itemSetId ->
-                                    shoppingItemsViewModel.removeAllItemSetItemsFromShoppingList(
-                                        itemSetId
-                                    )
-                                }
-                            )
-                        }
+                    1 -> {
+                        ItemSetsPage(
+                            shoppingItems,
+                            itemSets,
+                            addItemSetItemToShoppingList = { addItemSetItem ->
+                                shoppingItemsViewModel.addItemSetItemToShoppingList(
+                                    addItemSetItem
+                                )
+                            },
+                            removeItemSetItemFromShoppingList = { removeItemSetItem ->
+                                shoppingItemsViewModel.removeItemSetItemFromShoppingList(
+                                    removeItemSetItem
+                                )
+                            },
+                            addAllItemSetItemsToShoppingList = { itemSetId ->
+                                shoppingItemsViewModel.addAllItemSetItemsToShoppingList(
+                                    itemSetId
+                                )
+                            },
+                            removeAllItemSetItemsFromShoppingList = { itemSetId ->
+                                shoppingItemsViewModel.removeAllItemSetItemsFromShoppingList(
+                                    itemSetId
+                                )
+                            }
+                        )
                     }
                 }
             }
         }
-    )
+    }
 }
 
 @Composable
@@ -229,7 +295,8 @@ fun ShoppingItemPage(
             .fillMaxSize()
     ) {
         items(shoppingItemList) { item ->
-            ItemContainer(item,
+            ItemContainer(
+                item,
                 addOneItem = { addItem ->
                     addOneItem(addItem)
                 },
@@ -251,13 +318,21 @@ fun ItemContainer(
 
     Card(
         modifier = Modifier
-            .fillMaxWidth()
-            .padding(2.dp),
-        colors = CardDefaults.cardColors(
-            if (!item.checked) Color.Green.copy(
-                alpha = 0.3f
-            ) else Color.White
-        )
+            .fillMaxWidth(),
+        elevation = CardDefaults.cardElevation(0.dp),
+        shape = RectangleShape,
+        colors =
+            if (!item.checked) {
+                CardDefaults.cardColors(
+                    containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.8f),
+                    contentColor = MaterialTheme.colorScheme.onPrimaryContainer
+                )
+            } else {
+                CardDefaults.cardColors(
+                    containerColor = MaterialTheme.colorScheme.surfaceContainer,
+                    contentColor = MaterialTheme.colorScheme.onSurface
+                )
+            }
     ) {
         Row(
             modifier = Modifier
@@ -312,6 +387,10 @@ fun ItemContainer(
             }
         }
     }
+    HorizontalDivider(
+        thickness = 1.dp,
+        color = MaterialTheme.colorScheme.primary.copy(alpha = 0.3f)
+    )
 }
 
 @Composable
@@ -378,19 +457,27 @@ fun ItemSetContainer(
 
     Card(
         modifier = Modifier
-            .fillMaxWidth()
-            .padding(vertical = 4.dp, horizontal = 8.dp),
-        colors = CardDefaults.cardColors(
-            if (allAdded) Color.Green.copy(
-                alpha = 0.5f
-            ) else Color.LightGray
-        )
+            .fillMaxWidth(),
+        elevation = CardDefaults.cardElevation(0.dp),
+        shape = RectangleShape,
+        colors =
+            if (allAdded) {
+                CardDefaults.cardColors(
+                    containerColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.4f),
+                    contentColor = MaterialTheme.colorScheme.onPrimaryContainer
+                )
+            } else {
+                CardDefaults.cardColors(
+                    containerColor = MaterialTheme.colorScheme.secondary.copy(alpha = 0.25f),
+                    contentColor = MaterialTheme.colorScheme.onSurface
+                )
+            }
     ) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
                 .clickable { itemSetFolded = !itemSetFolded }
-                .padding(start = 4.dp, end = 16.dp, bottom = 8.dp, top = 8.dp),
+                .padding(start = 2.dp, end = 16.dp, bottom = 8.dp, top = 8.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
             IconButton(
@@ -415,9 +502,9 @@ fun ItemSetContainer(
                 Icon(
                     painter = painterResource(
                         id = if (!allAdded) {
-                            R.drawable.baseline_add_24
+                            R.drawable.baseline_playlist_add_24
                         } else {
-                            R.drawable.baseline_remove_24
+                            R.drawable.baseline_playlist_remove_24
                         }
                     ),
                     contentDescription = if (!allAdded) "Add all" else "Remove all"
@@ -462,6 +549,10 @@ fun ItemSetContainer(
             }
         }
     }
+    HorizontalDivider(
+        thickness = 2.dp,
+        color = MaterialTheme.colorScheme.primary.copy(alpha = 0.5f)
+    )
 }
 
 @Composable
@@ -472,20 +563,32 @@ fun ItemSetItemContainer(
     addItemSetItemToShoppingList: (ItemSetItem) -> Unit,
     removeItemSetItemFromShoppingList: (ItemSetItem) -> Unit
 ) {
+    HorizontalDivider(
+        thickness = 1.dp,
+        color = MaterialTheme.colorScheme.primary.copy(alpha = 0.3f)
+    )
     Card(
         modifier = Modifier
-            .fillMaxWidth()
-            .padding(vertical = 2.dp, horizontal = 14.dp),
-        colors = CardDefaults.cardColors(
-            if (isAdded) Color.Green.copy(
-                alpha = 0.3f
-            ) else Color.White
-        )
+            .fillMaxWidth(),
+        elevation = CardDefaults.cardElevation(0.dp),
+        shape = RectangleShape,
+        colors =
+            if (isAdded) {
+                CardDefaults.cardColors(
+                    containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.8f),
+                    contentColor = MaterialTheme.colorScheme.onPrimaryContainer
+                )
+            } else {
+                CardDefaults.cardColors(
+                    containerColor = MaterialTheme.colorScheme.surfaceContainer,
+                    contentColor = MaterialTheme.colorScheme.onSurface
+                )
+            }
     ) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(8.dp),
+                .padding(10.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
             if (!isAdded) {

@@ -4,14 +4,14 @@ import android.content.Context
 import android.widget.Toast
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.navigation.NavController
+import androidx.navigation.NavHostController
 import com.joengelke.shoppinglistapp.frontend.network.SessionManager
 import kotlinx.coroutines.launch
 
 @Composable
 fun GlobalEventHandler(
     sessionManager: SessionManager,
-    navController: NavController,
+    navController: NavHostController,
     context: Context
 ) {
     LaunchedEffect(Unit) {

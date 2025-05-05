@@ -3,6 +3,7 @@ package com.joengelke.shoppinglistapp.frontend.viewmodel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.joengelke.shoppinglistapp.frontend.models.User
+import com.joengelke.shoppinglistapp.frontend.network.TokenManager
 import com.joengelke.shoppinglistapp.frontend.repository.UserRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -13,7 +14,8 @@ import javax.inject.Inject
 
 @HiltViewModel
 class UserViewModel @Inject constructor(
-    private val userRepository: UserRepository
+    private val userRepository: UserRepository,
+    private val tokenManager: TokenManager
 ): ViewModel() {
 
     // all users in all shoppingLists
@@ -23,6 +25,23 @@ class UserViewModel @Inject constructor(
     // users with access to specific shoppingList
     private val _listUser = MutableStateFlow<List<User>>(emptyList())
     val listUser: StateFlow<List<User>> = _listUser.asStateFlow()
+
+    // current logged in user
+    private val _currentUserId = MutableStateFlow<String>("")
+    val currentUserId: StateFlow<String> = _currentUserId.asStateFlow()
+
+    fun updateCurrentUserId() {
+        viewModelScope.launch {
+            val token = tokenManager.getToken()
+            // Safely try to get the user ID, or set it to an empty string if the token is invalid or missing
+            try {
+                _currentUserId.value = token?.let { tokenManager.getUserIdFromToken(it) } ?: ""
+            } catch (e: IllegalArgumentException) {
+                // Handle the case where the token is invalid or the user ID is missing
+                _currentUserId.value = ""
+            }
+        }
+    }
 
     fun loadAllUser() {
 
@@ -54,6 +73,7 @@ class UserViewModel @Inject constructor(
     }
 
     fun removeUserFromShoppingList(shoppingListId: String, userId: String) {
+        if (userId == _currentUserId.value) return // prevents self-removal
         viewModelScope.launch {
             val result = userRepository.removeUserFromShoppingList(shoppingListId, userId)
             result.onSuccess {
@@ -61,5 +81,4 @@ class UserViewModel @Inject constructor(
             }
         }
     }
-
 }

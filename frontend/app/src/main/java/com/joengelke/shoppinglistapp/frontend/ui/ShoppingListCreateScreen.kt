@@ -16,13 +16,13 @@ import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
-import androidx.navigation.NavController
+import androidx.navigation.NavHostController
 import com.joengelke.shoppinglistapp.frontend.viewmodel.ShoppingListViewModel
 
 
 @Composable
 fun ShoppingListCreateScreen(
-    navController: NavController,
+    navController: NavHostController,
     shoppingListViewModel: ShoppingListViewModel = hiltViewModel()
 ) {
     var shoppingListName by remember { mutableStateOf("") }
