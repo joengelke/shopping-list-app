@@ -1,8 +1,6 @@
 package com.joengelke.shoppinglistapp.frontend.network
 
-import com.joengelke.shoppinglistapp.frontend.models.AddUserRequest
-import com.joengelke.shoppinglistapp.frontend.models.DeleteResponse
-import com.joengelke.shoppinglistapp.frontend.models.User
+import com.joengelke.shoppinglistapp.frontend.models.*
 import retrofit2.Response
 import retrofit2.http.*
 
@@ -20,7 +18,12 @@ interface UserApi {
         @Header("Authorization") token: String,
         @Path("userId") userId: String,
         @Query("role") role: String
-    ): Response<User> //
+    ): Response<User>
+
+    @GET("user")
+    suspend fun getAllUsers(
+        @Header("Authorization") token: String
+    ): Response<List<User>>
 
     @GET("shoppinglist/{shoppingListId}/user")
     suspend fun getShoppingListUser(
@@ -39,6 +42,24 @@ interface UserApi {
     suspend fun removeUserFromShoppingList(
         @Header("Authorization") token: String,
         @Path("shoppingListId") shoppingListId: String,
+        @Path("userId") userId: String
+    ): Response<DeleteResponse>
+
+    @PUT("user/username")
+    suspend fun changeUsername(
+        @Header("Authorization") token: String,
+        @Body request: ChangeUsernameRequest
+    ): Response<User>
+
+    @PUT("user/password")
+    suspend fun changePassword(
+        @Header("Authorization") token: String,
+        @Body request: ChangePasswordRequest
+    ): Response<User>
+
+    @DELETE("shoppinglist/user/{userId}")
+    suspend fun deleteUser(
+        @Header("Authorization") token: String,
         @Path("userId") userId: String
     ): Response<DeleteResponse>
 }

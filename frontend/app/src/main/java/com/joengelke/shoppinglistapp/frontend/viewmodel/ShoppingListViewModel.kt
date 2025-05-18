@@ -24,6 +24,10 @@ class ShoppingListViewModel @Inject constructor(
     private val _uncheckedItemsAmount = MutableStateFlow<Map<String, Int>>(emptyMap())
     val uncheckedItemsAmount: StateFlow<Map<String, Int>> = _uncheckedItemsAmount
 
+    // Admin settings
+    private val _allShoppingLists = MutableStateFlow<List<ShoppingList>>(emptyList())
+    val allShoppingLists: StateFlow<List<ShoppingList>> = _allShoppingLists.asStateFlow()
+
     fun loadShoppingLists(
         onSuccess: () -> Unit,
         onFailure: () -> Unit
@@ -36,6 +40,18 @@ class ShoppingListViewModel @Inject constructor(
             }
             result.onFailure {
                 onFailure()
+            }
+        }
+    }
+
+    fun loadAllShoppingLists(
+        onSuccess: () -> Unit
+    ) {
+        viewModelScope.launch {
+            val result = shoppingListRepository.getAllShoppingLists()
+            result.onSuccess { lists ->
+                _allShoppingLists.value = lists
+                onSuccess()
             }
         }
     }
@@ -78,6 +94,7 @@ class ShoppingListViewModel @Inject constructor(
             val result = shoppingListRepository.deleteShoppingList(shoppingListId)
             result.onSuccess {
                 _shoppingLists.value = _shoppingLists.value.filter { it.id != shoppingListId }
+                _allShoppingLists.value = _allShoppingLists.value.filter { it.id != shoppingListId }
             }
         }
     }

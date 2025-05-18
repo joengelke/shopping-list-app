@@ -1,9 +1,8 @@
 package com.joengelke.shoppinglistapp.frontend.repository
 
 import android.content.Context
-import com.joengelke.shoppinglistapp.frontend.models.AddUserRequest
-import com.joengelke.shoppinglistapp.frontend.models.DeleteResponse
-import com.joengelke.shoppinglistapp.frontend.models.User
+import com.joengelke.shoppinglistapp.frontend.common.exception.UserException
+import com.joengelke.shoppinglistapp.frontend.models.*
 import com.joengelke.shoppinglistapp.frontend.network.NetworkModule
 import com.joengelke.shoppinglistapp.frontend.network.SessionManager
 import com.joengelke.shoppinglistapp.frontend.network.TokenManager
@@ -17,20 +16,15 @@ class UserRepository @Inject constructor(
     private val sessionManager: SessionManager,
     private val tokenManager: TokenManager
 ){
-    suspend fun addRoleToUser(
-        userId: String,
-        role: String
-    ) : Result<User> {
+    suspend fun getAllUsers() : Result<List<User>> {
         return try {
             val token =
                 tokenManager.getToken() ?: return Result.failure(Exception("No token found"))
 
             val response =
                 NetworkModule.getUserApi(context)
-                    .addRoleToUser(
-                        "Bearer $token",
-                        userId,
-                        role
+                    .getAllUsers(
+                        "Bearer $token"
                     )
             when {
                 response.isSuccessful -> response.body()?.let { Result.success(it) }
@@ -39,43 +33,6 @@ class UserRepository @Inject constructor(
                 response.code() == 401 -> {
                     sessionManager.logout("Unauthorized: try to login again ")
                     Result.failure(Exception("Unauthorized"))
-                }
-
-                else -> Result.failure(Exception("Error: ${response.code()}"))
-            }
-        } catch (e: Exception) {
-            sessionManager.disconnected("No connection to the Server")
-            Result.failure(Exception("Network error: ${e.message}"))
-        }
-    }
-
-    suspend fun removeRoleFromUser(
-        userId: String,
-        role: String
-    ) : Result<User> {
-        return try {
-            val token =
-                tokenManager.getToken() ?: return Result.failure(Exception("No token found"))
-
-            val response =
-                NetworkModule.getUserApi(context)
-                    .removeRoleFromUser(
-                        "Bearer $token",
-                        userId,
-                        role
-                    )
-            when {
-                response.isSuccessful -> response.body()?.let { Result.success(it) }
-                    ?: Result.failure(Exception("Unexpected empty response"))
-
-                response.code() == 401 -> {
-                    sessionManager.logout("Unauthorized: try to login again ")
-                    Result.failure(Exception("Unauthorized"))
-                }
-
-                // user cant remove own ADMIN role
-                response.code() == 403 -> {
-                    Result.failure(Exception("TODO"))
                 }
 
                 else -> Result.failure(Exception("Error: ${response.code()}"))
@@ -163,6 +120,176 @@ class UserRepository @Inject constructor(
                     .removeUserFromShoppingList(
                         "Bearer $token",
                         shoppingListId,
+                        userId
+                    )
+            when {
+                response.isSuccessful -> response.body()?.let { Result.success(it) }
+                    ?: Result.failure(Exception("Unexpected empty response"))
+
+                response.code() == 401 -> {
+                    sessionManager.logout("Unauthorized: try to login again ")
+                    Result.failure(Exception("Unauthorized"))
+                }
+
+                else -> Result.failure(Exception("Error: ${response.code()}"))
+            }
+        } catch (e: Exception) {
+            sessionManager.disconnected("No connection to the Server")
+            Result.failure(Exception("Network error: ${e.message}"))
+        }
+    }
+
+    suspend fun changeUsername(newUsername: String): Result<User> {
+        // TODO check Username standards
+        return try {
+            val token =
+                tokenManager.getToken() ?: return Result.failure(Exception("No token found"))
+
+            val response =
+                NetworkModule.getUserApi(context)
+                    .changeUsername(
+                        "Bearer $token",
+                        ChangeUsernameRequest(newUsername)
+                    )
+            when {
+                response.isSuccessful -> response.body()?.let { Result.success(it) }
+                    ?: Result.failure(Exception("Unexpected empty response"))
+
+                response.code() == 401 -> {
+                    sessionManager.logout("Unauthorized: try to login again ")
+                    Result.failure(Exception("Unauthorized"))
+                }
+
+                response.code() == 409 -> {
+                    // Username already taken
+                    Result.failure(UserException.UsernameTakenException())
+                }
+
+                else -> Result.failure(Exception("Error: ${response.code()}"))
+            }
+        } catch (e: Exception) {
+            sessionManager.disconnected("No connection to the Server")
+            Result.failure(Exception("Network error: ${e.message}"))
+        }
+    }
+
+    suspend fun changePassword(currentPassword: String, newPassword: String): Result<User> {
+        // TODO check for password strength
+        return try {
+            val token =
+                tokenManager.getToken() ?: return Result.failure(Exception("No token found"))
+
+            val response =
+                NetworkModule.getUserApi(context)
+                    .changePassword(
+                        "Bearer $token",
+                        ChangePasswordRequest(currentPassword, newPassword)
+                    )
+            when {
+                response.isSuccessful -> response.body()?.let { Result.success(it) }
+                    ?: Result.failure(Exception("Unexpected empty response"))
+
+                response.code() == 401 -> {
+                    sessionManager.logout("Unauthorized: try to login again ")
+                    Result.failure(Exception("Unauthorized"))
+                }
+
+                response.code() == 403 -> {
+                    // wrong current password
+                    Result.failure(UserException.IncorrectCurrentPasswordException())
+                }
+
+                response.code() == 400 -> {
+                    // current and new password are similar
+                    Result.failure(UserException.SamePasswordException())
+                }
+
+                else -> Result.failure(Exception("Error: ${response.code()}"))
+            }
+        } catch (e: Exception) {
+            sessionManager.disconnected("No connection to the Server")
+            Result.failure(Exception("Network error: ${e.message}"))
+        }
+    }
+
+    suspend fun addRoleToUser(
+        userId: String,
+        role: String
+    ) : Result<User> {
+        return try {
+            val token =
+                tokenManager.getToken() ?: return Result.failure(Exception("No token found"))
+
+            val response =
+                NetworkModule.getUserApi(context)
+                    .addRoleToUser(
+                        "Bearer $token",
+                        userId,
+                        role
+                    )
+            when {
+                response.isSuccessful -> response.body()?.let { Result.success(it) }
+                    ?: Result.failure(Exception("Unexpected empty response"))
+
+                response.code() == 401 -> {
+                    sessionManager.logout("Unauthorized: try to login again ")
+                    Result.failure(Exception("Unauthorized"))
+                }
+
+                else -> Result.failure(Exception("Error: ${response.code()}"))
+            }
+        } catch (e: Exception) {
+            sessionManager.disconnected("No connection to the Server")
+            Result.failure(Exception("Network error: ${e.message}"))
+        }
+    }
+
+    suspend fun removeRoleFromUser(
+        userId: String,
+        role: String
+    ) : Result<User> {
+        return try {
+            val token =
+                tokenManager.getToken() ?: return Result.failure(Exception("No token found"))
+
+            val response =
+                NetworkModule.getUserApi(context)
+                    .removeRoleFromUser(
+                        "Bearer $token",
+                        userId,
+                        role
+                    )
+            when {
+                response.isSuccessful -> response.body()?.let { Result.success(it) }
+                    ?: Result.failure(Exception("Unexpected empty response"))
+
+                response.code() == 401 -> {
+                    sessionManager.logout("Unauthorized: try to login again ")
+                    Result.failure(Exception("Unauthorized"))
+                }
+
+                // user cant remove own ADMIN role
+                response.code() == 403 -> {
+                    Result.failure(Exception("TODO"))
+                }
+
+                else -> Result.failure(Exception("Error: ${response.code()}"))
+            }
+        } catch (e: Exception) {
+            sessionManager.disconnected("No connection to the Server")
+            Result.failure(Exception("Network error: ${e.message}"))
+        }
+    }
+
+    suspend fun deleteUser(userId: String): Result<DeleteResponse> {
+        return try {
+            val token =
+                tokenManager.getToken() ?: return Result.failure(Exception("No token found"))
+
+            val response =
+                NetworkModule.getUserApi(context)
+                    .deleteUser(
+                        "Bearer $token",
                         userId
                     )
             when {

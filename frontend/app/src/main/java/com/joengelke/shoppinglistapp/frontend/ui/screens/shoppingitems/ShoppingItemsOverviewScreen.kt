@@ -1,8 +1,6 @@
-package com.joengelke.shoppinglistapp.frontend.ui
+package com.joengelke.shoppinglistapp.frontend.ui.screens.shoppingitems
 
 import android.widget.Toast
-import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -30,6 +28,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
@@ -42,6 +41,10 @@ import androidx.navigation.NavHostController
 import com.joengelke.shoppinglistapp.frontend.R
 import com.joengelke.shoppinglistapp.frontend.models.ShoppingItem
 import com.joengelke.shoppinglistapp.frontend.navigation.Routes
+import com.joengelke.shoppinglistapp.frontend.ui.common.ShoppingItemsSortCategory
+import com.joengelke.shoppinglistapp.frontend.ui.common.ShoppingItemsSortOptions
+import com.joengelke.shoppinglistapp.frontend.ui.common.SortDirection
+import com.joengelke.shoppinglistapp.frontend.viewmodel.SettingsViewModel
 import com.joengelke.shoppinglistapp.frontend.viewmodel.ShoppingItemsViewModel
 import kotlinx.coroutines.delay
 import java.time.Duration
@@ -54,10 +57,12 @@ fun ShoppingItemsOverviewScreen(
     navController: NavHostController,
     shoppingListName: String,
     shoppingListId: String,
+    settingsViewModel: SettingsViewModel,
     shoppingItemsViewModel: ShoppingItemsViewModel = hiltViewModel()
 ) {
 
-    val shoppingItems by shoppingItemsViewModel.shoppingItems.collectAsState()
+    val sortedShoppingItems by shoppingItemsViewModel.sortedShoppingItems.collectAsState()
+    val isUndoAvailable by shoppingItemsViewModel.isUndoAvailable.collectAsState()
     var isMenuExpanded by remember { mutableStateOf(false) }
 
     var refreshing by remember { mutableStateOf(false) }
@@ -71,17 +76,20 @@ fun ShoppingItemsOverviewScreen(
     }
 
     LaunchedEffect(shoppingListId) {
-        while(true) {
+        onRefresh()
+        while (true) {
             shoppingItemsViewModel.loadShoppingItems(shoppingListId, onSuccess = {})
             delay(10_000) // 10 seconds auto refresh
         }
     }
-
-    val uncheckedItems = shoppingItems.filter { !it.checked }
-    val checkedItems = shoppingItems.filter { it.checked }
+    val uncheckedItems = sortedShoppingItems.filter { !it.checked }
+    val checkedItems = sortedShoppingItems.filter { it.checked }
 
     var isCheckedItemsVisible by remember { mutableStateOf(false) }
-    //val (uncheckedItems, checkedItems) = shoppingItems.partition { !it.checked }
+
+    var showSorting by remember { mutableStateOf(false) }
+    val shoppingItemsSortOption by settingsViewModel.shoppingItemsSortOption.collectAsState()
+
 
     Scaffold(
         topBar = {
@@ -99,28 +107,6 @@ fun ShoppingItemsOverviewScreen(
                             color = MaterialTheme.colorScheme.onPrimary,
                             modifier = Modifier.weight(1f)
                         )
-                        IconButton(
-                            onClick = {
-                                navController.navigate(
-                                    Routes.ShoppingListUser.createRoute(
-                                        shoppingListId
-                                    )
-                                )
-                            }
-                        ) {
-                            Icon(
-                                painter = painterResource(id = R.drawable.baseline_person_add_24),
-                                contentDescription = "add User to List",
-                                tint = MaterialTheme.colorScheme.onPrimary
-                            )
-                        }
-                        IconButton(onClick = { isMenuExpanded = !isMenuExpanded }) {
-                            Icon(
-                                Icons.Default.MoreVert,
-                                contentDescription = "More options",
-                                tint = MaterialTheme.colorScheme.onPrimary
-                            )
-                        }
                     }
                 },
                 navigationIcon = {
@@ -136,6 +122,45 @@ fun ShoppingItemsOverviewScreen(
                     containerColor = MaterialTheme.colorScheme.primary
                 ),
                 actions = {
+                    if (isUndoAvailable) {
+                        IconButton(
+                            onClick = {
+                                shoppingItemsViewModel.undoLastCheckedItem()
+                            }
+                        ) {
+                            Icon(
+                                painter = painterResource(id = R.drawable.baseline_undo_24),
+                                contentDescription = "undo",
+                                tint = MaterialTheme.colorScheme.onPrimary
+                            )
+                        }
+                    }
+                    IconButton(
+                        onClick = {
+                            navController.navigate(
+                                Routes.ShoppingListUser.createRoute(
+                                    shoppingListId
+                                )
+                            )
+                        }
+                    ) {
+                        Icon(
+                            painter = painterResource(id = R.drawable.baseline_person_add_24),
+                            contentDescription = "add User to List",
+                            tint = MaterialTheme.colorScheme.onPrimary
+                        )
+                    }
+                    IconButton(
+                        onClick = {
+                            isMenuExpanded = !isMenuExpanded
+                        }
+                    ) {
+                        Icon(
+                            Icons.Default.MoreVert,
+                            contentDescription = "More options",
+                            tint = MaterialTheme.colorScheme.onPrimary
+                        )
+                    }
                     DropdownMenu(
                         expanded = isMenuExpanded,
                         onDismissRequest = { isMenuExpanded = false }
@@ -148,6 +173,13 @@ fun ShoppingItemsOverviewScreen(
                                         shoppingListId
                                     )
                                 )
+                                isMenuExpanded = false
+                            }
+                        )
+                        DropdownMenuItem(
+                            text = { Text("Sorted by") },
+                            onClick = {
+                                showSorting = true
                                 isMenuExpanded = false
                             }
                         )
@@ -179,32 +211,38 @@ fun ShoppingItemsOverviewScreen(
                     modifier = Modifier.fillMaxSize()
                 ) {
                     items(uncheckedItems) { item ->
+                        /*
+                        // TODO bug: sometimes 2 container disappear
                         var visible by remember { mutableStateOf(true) }
                         AnimatedVisibility(
-                            visible = visible,
-                            exit = slideOutHorizontally()
+                            visible = visible
                         ) {
-                            ShoppingItemContainer(
-                                item,
-                                onCheckedChange = { updatedItem ->
-                                    visible = false
-                                    shoppingItemsViewModel.updateCheckedStatus(
-                                        item.id,
-                                        updatedItem.checked
-                                    )
-                                },
-                                onEditClick = { updatedItem ->
-                                    shoppingItemsViewModel.updateItem(
-                                        updatedItem
-                                    )
-                                },
-                                onDeleteClick = { deleteItem ->
-                                    shoppingItemsViewModel.deleteItem(
-                                        shoppingListId, deleteItem.id
-                                    )
-                                }
-                            )
+
+                         */
+                        ShoppingItemContainer(
+                            item,
+                            onCheckedChange = { updatedItem ->
+                                //visible = false
+                                shoppingItemsViewModel.updateCheckedStatus(
+                                    item.id,
+                                    updatedItem.checked
+                                )
+                            },
+                            onEditClick = { updatedItem ->
+                                shoppingItemsViewModel.updateItem(
+                                    updatedItem
+                                )
+                            },
+                            onDeleteClick = { deleteItem ->
+                                shoppingItemsViewModel.deleteItem(
+                                    shoppingListId, deleteItem.id
+                                )
+                            }
+                        )
+                        /*
                         }
+
+                         */
                     }
 
                     if (checkedItems.isNotEmpty()) {
@@ -231,7 +269,6 @@ fun ShoppingItemsOverviewScreen(
 
                         if (isCheckedItemsVisible) {
                             items(checkedItems) { item ->
-
                                 ShoppingItemContainer(
                                     item,
                                     onCheckedChange = { updatedItem ->
@@ -258,6 +295,15 @@ fun ShoppingItemsOverviewScreen(
             }
         }
     )
+    if (showSorting) {
+        SortShoppingItemsModal(
+            shoppingItemsSortOption,
+            onChooseSortOption = { option ->
+                settingsViewModel.setShoppingItemsSortOption(option)
+            },
+            onDismiss = { showSorting = false }
+        )
+    }
 }
 
 @OptIn(ExperimentalFoundationApi::class)
@@ -287,10 +333,10 @@ fun ShoppingItemContainer(
     }
 
 
-    fun getTimeAgo(editedAt: String): String {
+    fun getTimeAgo(checkedAt: String): String {
         // format editedAt to Instant
         val formatter = DateTimeFormatter.ISO_DATE_TIME
-        val editedAtInstant = Instant.from(formatter.parse(editedAt))
+        val editedAtInstant = Instant.from(formatter.parse(checkedAt))
 
         val now = Instant.now()
 
@@ -375,7 +421,7 @@ fun ShoppingItemContainer(
                         .clickable {
                             Toast.makeText(
                                 context,
-                                "Edited ${getTimeAgo(shoppingItem.editedAt)}",
+                                "Added ${getTimeAgo(shoppingItem.checkedAt)}",
                                 Toast.LENGTH_SHORT
                             ).show()
                         },
@@ -473,6 +519,7 @@ fun EditShoppingItemModal(
         amount = amount,
         unit = unit,
         checked = shoppingItem.checked,
+        checkedAt = shoppingItem.checkedAt,
         note = note,
         editedAt = shoppingItem.editedAt,
         editedBy = shoppingItem.editedBy
@@ -483,6 +530,7 @@ fun EditShoppingItemModal(
     ModalBottomSheet(
         sheetState = sheetState,
         onDismissRequest = { onDismiss(updatedShoppingItem) },
+        shape = RectangleShape,
         modifier = Modifier.wrapContentHeight(),
         dragHandle = null,
         containerColor = MaterialTheme.colorScheme.surface
@@ -528,7 +576,7 @@ fun EditShoppingItemModal(
                             amount = validDouble
                         }
                     },
-                    label = { Text("Amount") },
+                    label = { Text(stringResource(R.string.amount)) },
                     keyboardOptions = KeyboardOptions.Default.copy(keyboardType = KeyboardType.Number),
                     modifier = Modifier
                         .weight(0.3f),
@@ -626,5 +674,87 @@ fun EditShoppingItemModal(
                 )
             }
         }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun SortShoppingItemsModal(
+    currentSortOption: ShoppingItemsSortOptions,
+    onChooseSortOption: (ShoppingItemsSortOptions) -> Unit,
+    onDismiss: () -> Unit,
+) {
+    val sheetState = rememberModalBottomSheetState()
+
+    ModalBottomSheet(
+        sheetState = sheetState,
+        onDismissRequest = { onDismiss() },
+        shape = RectangleShape,
+        modifier = Modifier.wrapContentHeight(),
+        dragHandle = null,
+        containerColor = MaterialTheme.colorScheme.surface
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+        ) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(16.dp)
+            ) {
+                Text(
+                    text = "Sort Items by"
+                )
+            }
+            listOf(
+                ShoppingItemsSortCategory.ALPHABETICAL,
+                ShoppingItemsSortCategory.CHECKED_AT,
+                ShoppingItemsSortCategory.EDITED_AT
+            ).forEach { category ->
+                HorizontalDivider(
+                    thickness = 1.dp,
+                    color = MaterialTheme.colorScheme.primary.copy(alpha = 0.3f)
+                )
+
+                val isSelected = currentSortOption.category == category
+                val direction = currentSortOption.direction
+
+                ListItem(
+                    headlineContent = {
+                        Text(
+                            text = when (category) {
+                                ShoppingItemsSortCategory.ALPHABETICAL -> "Alphabetical"
+                                ShoppingItemsSortCategory.CHECKED_AT -> "Added to list"
+                                ShoppingItemsSortCategory.EDITED_AT -> "Edited"
+                            }
+                        )
+                    },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable {
+                            val newDirection =
+                                if (isSelected && direction == SortDirection.ASCENDING) {
+                                    SortDirection.DESCENDING
+                                } else {
+                                    SortDirection.ASCENDING
+                                }
+                            onChooseSortOption(ShoppingItemsSortOptions(category, newDirection))
+                        },
+
+                    trailingContent = {
+                        if (isSelected) {
+                            Icon(
+                                painter = painterResource(id = if (direction == SortDirection.ASCENDING) R.drawable.baseline_arrow_upward_24 else R.drawable.baseline_arrow_downward_24),
+                                contentDescription = if (direction == SortDirection.ASCENDING) "Ascending" else "Descending"
+                            )
+                        }
+                    }
+
+                )
+            }
+        }
+
     }
 }

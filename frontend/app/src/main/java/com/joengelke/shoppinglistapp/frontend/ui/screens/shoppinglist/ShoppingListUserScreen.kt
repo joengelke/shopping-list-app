@@ -1,4 +1,4 @@
-package com.joengelke.shoppinglistapp.frontend.ui
+package com.joengelke.shoppinglistapp.frontend.ui.screens.shoppinglist
 
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -10,7 +10,6 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -31,14 +30,14 @@ fun ShoppingListUserScreen(
     var username by remember { mutableStateOf("") }
     val userList by userViewModel.listUser.collectAsState()
     val currentUserId by userViewModel.currentUserId.collectAsState()
-    val context = LocalContext.current
+    var isLoadingAddUser by remember { mutableStateOf(false) }
     var userNotFound by remember { mutableStateOf(false) }
     val sortedUserList = userList.sortedWith(
         compareByDescending<User> { it.id == currentUserId }.thenBy { it.username }
     ) // currentUser is always first in list
 
     LaunchedEffect(Unit) {
-        userViewModel.loadListUser(shoppingListId)
+        userViewModel.getShoppingListUser(shoppingListId)
         userViewModel.updateCurrentUserId()
     }
 
@@ -113,33 +112,54 @@ fun ShoppingListUserScreen(
                         modifier = Modifier
                             .weight(1f),
                         trailingIcon = {
-                            if (!userNotFound) {
-                                IconButton(
-                                    onClick = {
-                                        userViewModel.addUserToShoppingList(
-                                            shoppingListId,
-                                            username,
-                                            onFailure = {
-                                                userNotFound = true
-                                            }
-                                        )
-                                    },
-                                    modifier = Modifier
-                                        .padding(end = 8.dp)
-                                ) {
-                                    Icon(
-                                        painter = painterResource(id = R.drawable.baseline_person_add_24),
-                                        contentDescription = "Add",
-                                        tint = MaterialTheme.colorScheme.primary
+                            when {
+                                isLoadingAddUser -> {
+                                    CircularProgressIndicator(
+                                        modifier = Modifier
+                                            .padding(end = 8.dp),
+                                        color = MaterialTheme.colorScheme.primary
                                     )
                                 }
-                            } else {
-                                Icon(
-                                    painter = painterResource(id = R.drawable.baseline_error_24),
-                                    contentDescription = "Error",
-                                    tint = MaterialTheme.colorScheme.error
-                                )
+
+                                userNotFound -> {
+                                    Icon(
+                                        painter = painterResource(id = R.drawable.baseline_error_24),
+                                        contentDescription = "Error",
+                                        tint = MaterialTheme.colorScheme.error
+                                    )
+                                }
+
+                                else -> {
+                                    IconButton(
+                                        onClick = {
+                                            isLoadingAddUser = true
+                                            userViewModel.addUserToShoppingList(
+                                                shoppingListId,
+                                                username,
+                                                onSuccess = {
+                                                    username = ""
+                                                    userNotFound = false
+                                                    isLoadingAddUser = false
+                                                },
+                                                onFailure = {
+                                                    userNotFound = true
+                                                    isLoadingAddUser = false
+                                                }
+                                            )
+                                        },
+                                        modifier = Modifier
+                                            .padding(end = 8.dp)
+                                    ) {
+                                        Icon(
+                                            painter = painterResource(id = R.drawable.baseline_person_add_24),
+                                            contentDescription = "Add",
+                                            tint = MaterialTheme.colorScheme.primary
+                                        )
+                                    }
+                                }
                             }
+
+
                         },
                         supportingText = {
                             if (userNotFound) {

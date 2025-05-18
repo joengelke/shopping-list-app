@@ -2,6 +2,7 @@ package com.joengelke.shoppinglistapp.frontend.viewmodel
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.joengelke.shoppinglistapp.frontend.common.exception.UserException
 import com.joengelke.shoppinglistapp.frontend.models.User
 import com.joengelke.shoppinglistapp.frontend.network.TokenManager
 import com.joengelke.shoppinglistapp.frontend.repository.UserRepository
@@ -9,6 +10,7 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
@@ -16,11 +18,11 @@ import javax.inject.Inject
 class UserViewModel @Inject constructor(
     private val userRepository: UserRepository,
     private val tokenManager: TokenManager
-): ViewModel() {
+) : ViewModel() {
 
     // all users in all shoppingLists
-    private val _user = MutableStateFlow<List<User>>(emptyList())
-    val users: StateFlow<List<User>> = _user.asStateFlow()
+    private val _allUsers = MutableStateFlow<List<User>>(emptyList())
+    val allUsers: StateFlow<List<User>> = _allUsers.asStateFlow()
 
     // users with access to specific shoppingList
     private val _listUser = MutableStateFlow<List<User>>(emptyList())
@@ -29,6 +31,12 @@ class UserViewModel @Inject constructor(
     // current logged in user
     private val _currentUserId = MutableStateFlow<String>("")
     val currentUserId: StateFlow<String> = _currentUserId.asStateFlow()
+
+    private val _currentRoles = MutableStateFlow<List<String>>(emptyList())
+    val currentRoles: StateFlow<List<String>> = _currentRoles.asStateFlow()
+
+    private val _currentUsername = MutableStateFlow<String>("")
+    val currentUsername: StateFlow<String> = _currentUsername.asStateFlow()
 
     fun updateCurrentUserId() {
         viewModelScope.launch {
@@ -43,11 +51,45 @@ class UserViewModel @Inject constructor(
         }
     }
 
-    fun loadAllUser() {
-
+    fun updateUserRoles(
+        isAdmin: (Boolean) -> Unit = {}
+    ) {
+        viewModelScope.launch {
+            val token = tokenManager.getToken()
+            try {
+                val roles = token?.let { tokenManager.getAuthoritiesFromToken(it) }
+                _currentRoles.value = roles ?: emptyList()
+                isAdmin(roles?.contains("ROLE_ADMIN") ?: false)
+            } catch (e: Exception) {
+                _currentRoles.value = emptyList()
+            }
+        }
     }
 
-    fun loadListUser(
+    fun updateUsername() {
+        viewModelScope.launch {
+            val token = tokenManager.getToken()
+            try {
+                _currentUsername.value = token?.let { tokenManager.getUsernameFromToken(it) } ?: ""
+            } catch (e: Exception) {
+                _currentUsername.value = ""
+            }
+        }
+    }
+
+    fun getAllUsers(
+        onSuccess: () -> Unit
+    ) {
+        viewModelScope.launch {
+            val result = userRepository.getAllUsers()
+            result.onSuccess { users ->
+                _allUsers.value = users
+                onSuccess()
+            }
+        }
+    }
+
+    fun getShoppingListUser(
         shoppingListId: String
     ) {
         viewModelScope.launch {
@@ -58,13 +100,19 @@ class UserViewModel @Inject constructor(
         }
     }
 
-    fun addUserToShoppingList(shoppingListId: String, username: String, onFailure: () -> Unit) {
+    fun addUserToShoppingList(
+        shoppingListId: String,
+        username: String,
+        onSuccess: () -> Unit,
+        onFailure: () -> Unit
+    ) {
         viewModelScope.launch {
             val result = userRepository.addUserToShoppingList(shoppingListId, username)
             result.onSuccess { addedUser ->
-                if(!_listUser.value.any{it.id==addedUser.id}) {
+                if (!_listUser.value.any { it.id == addedUser.id }) {
                     _listUser.value += addedUser
                 }
+                onSuccess()
             }
             result.onFailure {
                 onFailure()
@@ -77,7 +125,95 @@ class UserViewModel @Inject constructor(
         viewModelScope.launch {
             val result = userRepository.removeUserFromShoppingList(shoppingListId, userId)
             result.onSuccess {
-                _listUser.value = _listUser.value.filter {it.id != userId}
+                _listUser.value = _listUser.value.filter { it.id != userId }
+            }
+        }
+    }
+
+    fun changeUsername(
+        newUsername: String,
+        usernameTaken: () -> Unit,
+        onSuccess: () -> Unit,
+    ) {
+        viewModelScope.launch {
+            val result = userRepository.changeUsername(newUsername)
+            result.onSuccess {
+                _currentUsername.value = it.username
+                onSuccess()
+            }
+            result.onFailure { e ->
+                when (e) {
+                    is UserException.UsernameTakenException -> usernameTaken()
+                }
+            }
+        }
+    }
+
+    fun changePassword(
+        currentPassword: String,
+        newPassword: String,
+        samePassword: () -> Unit,
+        incorrectCurrentPassword: () -> Unit,
+        onSuccess: () -> Unit,
+    ) {
+        viewModelScope.launch {
+            val result = userRepository.changePassword(currentPassword, newPassword)
+            result.onSuccess {
+                _currentUsername.value = it.username
+                onSuccess()
+            }
+            result.onFailure { e ->
+                when (e) {
+                    is UserException.SamePasswordException -> samePassword()
+                    is UserException.IncorrectCurrentPasswordException -> incorrectCurrentPassword()
+                }
+            }
+        }
+    }
+
+    fun addRoleToUser(
+        userId: String,
+        role: String
+    ) {
+        viewModelScope.launch {
+            val result = userRepository.addRoleToUser(userId, role)
+            result.onSuccess { updatedUser ->
+                _allUsers.update { users ->
+                    users.map { user ->
+                        if (user.id == updatedUser.id) updatedUser else user
+                    }
+                }
+            }
+        }
+    }
+
+    fun removeRoleFromUser(
+        userId: String,
+        role: String
+    ) {
+        viewModelScope.launch {
+            val result = userRepository.removeRoleFromUser(userId, role)
+            result.onSuccess { updatedUser ->
+                _allUsers.update { users ->
+                    users.map { user ->
+                        if (user.id == updatedUser.id) updatedUser else user
+                    }
+                }
+            }
+        }
+    }
+
+    fun deleteUser(
+        userId: String,
+        onSuccess: () -> Unit
+    ) {
+        viewModelScope.launch {
+            val result = userRepository.deleteUser(userId)
+            result.onSuccess {
+                _allUsers.update { users ->
+                    users.filter { it.id != userId }
+                }
+                onSuccess()
             }
         }
     }

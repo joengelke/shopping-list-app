@@ -6,15 +6,17 @@ import androidx.activity.compose.setContent
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.compose.rememberNavController
 import com.joengelke.shoppinglistapp.frontend.navigation.Navigation
 import com.joengelke.shoppinglistapp.frontend.ui.common.GlobalEventHandler
 import com.joengelke.shoppinglistapp.frontend.ui.theme.AppTheme
 import com.joengelke.shoppinglistapp.frontend.viewmodel.AuthViewModel
+import com.joengelke.shoppinglistapp.frontend.viewmodel.SettingsViewModel
 import dagger.hilt.android.AndroidEntryPoint
 
 @AndroidEntryPoint
@@ -23,17 +25,22 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         setContent {
             val authViewModel: AuthViewModel = hiltViewModel()
-            ShoppingListApp(authViewModel)
+            val settingsViewModel: SettingsViewModel = hiltViewModel()
+            ShoppingListApp(authViewModel, settingsViewModel)
         }
     }
 }
 
 @Composable
-fun ShoppingListApp(authViewModel: AuthViewModel) {
+fun ShoppingListApp(authViewModel: AuthViewModel, settingsViewModel: SettingsViewModel) {
+
     val navController = rememberNavController()
     val sessionManager = authViewModel.sessionManager
     val context = LocalContext.current
-    AppTheme(darkTheme = false) {
+
+    val darkMode by settingsViewModel.darkMode.collectAsState()
+
+    AppTheme(darkTheme = darkMode) {
         Surface(
             modifier = Modifier.fillMaxSize()
         ) {
@@ -42,14 +49,7 @@ fun ShoppingListApp(authViewModel: AuthViewModel) {
                 navController = navController,
                 context = context
             )
-            Navigation(authViewModel, navController)
+            Navigation(authViewModel, settingsViewModel, navController)
         }
     }
-}
-
-@Preview(showBackground = true)
-@Composable
-fun PreviewShoppingListApp() {
-    val authViewModel: AuthViewModel = hiltViewModel()
-    ShoppingListApp(authViewModel)
 }

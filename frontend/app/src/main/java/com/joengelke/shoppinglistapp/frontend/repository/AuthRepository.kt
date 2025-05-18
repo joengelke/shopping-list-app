@@ -17,6 +17,7 @@ class AuthRepository @Inject constructor(
 ) {
     // perform login
     suspend fun login(username: String, password: String): Result<String?> {
+        //TODO change all Exceptions
         return try {
             val response = NetworkModule.getAuthApi(context).login(AuthRequest(username, password))
             when {

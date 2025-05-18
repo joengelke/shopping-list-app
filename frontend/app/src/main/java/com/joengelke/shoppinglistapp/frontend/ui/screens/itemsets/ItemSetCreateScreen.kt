@@ -1,4 +1,4 @@
-package com.joengelke.shoppinglistapp.frontend.ui
+package com.joengelke.shoppinglistapp.frontend.ui.screens.itemsets
 
 import android.widget.Toast
 import androidx.compose.foundation.layout.*

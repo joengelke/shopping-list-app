@@ -41,6 +41,30 @@ class ShoppingListRepository @Inject constructor(
 
     }
 
+    suspend fun getAllShoppingLists(): Result<List<ShoppingList>> {
+        return try {
+            val token =
+                tokenManager.getToken() ?: return Result.failure(Exception("No token found"))
+
+            val response =
+                NetworkModule.getShoppingListApi(context).getAllShoppingLists("Bearer $token")
+            when {
+                response.isSuccessful -> Result.success(response.body() ?: emptyList())
+                response.code() == 401 -> {
+                    sessionManager.logout("Unauthorized: try to login again ")
+                    Result.failure(Exception("Unauthorized"))
+                }
+
+                else -> Result.failure(Exception("Error: ${response.code()}"))
+            }
+        } catch (e: Exception) {
+            //TODO maybe specify the error later
+            sessionManager.disconnected("No connection to the Server")
+            Result.failure(Exception("Network error: ${e.message}"))
+        }
+
+    }
+
     suspend fun getUncheckedItemsAmountList(): Result<Map<String, Int>> {
         return try {
             val token =

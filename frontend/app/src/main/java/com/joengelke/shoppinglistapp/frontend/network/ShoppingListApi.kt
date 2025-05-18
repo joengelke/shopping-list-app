@@ -8,7 +8,10 @@ import retrofit2.http.*
 
 interface ShoppingListApi {
     @GET("shoppinglist")
-    suspend fun getShoppingLists(@Header("Authorization") token: String): Response<List<ShoppingList>>
+    suspend fun getShoppingLists(@Header("Authorization") token: String): Response<List<ShoppingList>> // by userId in header
+
+    @GET("shoppinglist/all")
+    suspend fun getAllShoppingLists(@Header("Authorization") token: String): Response<List<ShoppingList>>
 
     @GET("shoppinglist/uncheckedItemsAmount")
     suspend fun getUncheckedItemsAmountList(@Header("Authorization") token: String): Response<Map<String, Int>>

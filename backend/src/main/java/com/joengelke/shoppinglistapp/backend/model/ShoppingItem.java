@@ -19,6 +19,7 @@ public class ShoppingItem {
     private Double amount;
     private String unit;
     private boolean checked;
+    private Instant checkedAt;
     private String note;
     private Instant editedAt;
     private String editedBy;
@@ -29,6 +30,7 @@ public class ShoppingItem {
         this.amount = amount;
         this.unit = unit;
         this.checked = false;
+        this.checkedAt = Instant.now();
         this.note = note;
         this.editedAt = Instant.now();
         this.editedBy = editedBy;

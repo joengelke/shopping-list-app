@@ -9,3 +9,12 @@ data class User(
 data class AddUserRequest(
     val username: String
 )
+
+data class ChangePasswordRequest(
+    val currentPassword: String,
+    val newPassword: String
+)
+
+data class ChangeUsernameRequest(
+    val newUsername: String
+)

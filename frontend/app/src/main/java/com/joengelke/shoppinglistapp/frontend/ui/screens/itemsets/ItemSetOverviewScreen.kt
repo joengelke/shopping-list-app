@@ -1,10 +1,9 @@
-package com.joengelke.shoppinglistapp.frontend.ui
+package com.joengelke.shoppinglistapp.frontend.ui.screens.itemsets
 
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
@@ -253,125 +252,113 @@ fun ItemSetContainer(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.Center
         ) {
-
-            if (!edit) {
-                Text(
-                    text = itemSet.name,
-                    fontSize = 20.sp,
-                    fontWeight = FontWeight.Bold,
-                    modifier = Modifier
-                        .padding(20.dp)
-                        .weight(1f)
-                )
-                IconButton(
-                    onClick = {
-                        edit = true
-                    }
-                ) {
-                    Icon(
-                        painter = painterResource(id = R.drawable.baseline_edit_24),
-                        contentDescription = "edit item set name"
-                    )
-                }
-                IconButton(
-                    onClick = {
-                        delete = true
-                    }
-                ) {
-                    Icon(
-                        painter = painterResource(id = R.drawable.baseline_delete_24),
-                        contentDescription = "delete item set"
-                    )
-                }
-            } else {
-                OutlinedTextField(
-                    value = name,
-                    onValueChange = {
-                        name = it
-                    },
-                    modifier = Modifier
-                        .padding(start = 12.dp, top = 4.dp, bottom = 4.dp, end = 8.dp)
-                        .weight(1f),
-                    colors = OutlinedTextFieldDefaults.colors(
-                        focusedBorderColor = MaterialTheme.colorScheme.primary,
-                        unfocusedBorderColor = MaterialTheme.colorScheme.primary
-                    )
-                )
-                IconButton(
-                    onClick = {
-                        onEdit(
-                            itemSet.copy(name = name),
+            when {
+                edit -> {
+                    OutlinedTextField(
+                        value = name,
+                        onValueChange = {
+                            name = it
+                        },
+                        modifier = Modifier
+                            .padding(start = 12.dp, top = 4.dp, bottom = 4.dp, end = 8.dp)
+                            .weight(1f),
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedBorderColor = MaterialTheme.colorScheme.primary,
+                            unfocusedBorderColor = MaterialTheme.colorScheme.primary
                         )
-                        edit = false
-                    }
-                ) {
-                    Icon(
-                        painter = painterResource(id = R.drawable.baseline_check_24),
-                        contentDescription = "save item set name"
                     )
-                }
-                IconButton(
-                    onClick = {
-                        edit = false
+                    IconButton(
+                        onClick = {
+                            onEdit(
+                                itemSet.copy(name = name),
+                            )
+                            edit = false
+                        }
+                    ) {
+                        Icon(
+                            painter = painterResource(id = R.drawable.baseline_check_24),
+                            contentDescription = "save item set name"
+                        )
                     }
-                ) {
-                    Icon(
-                        painter = painterResource(id = R.drawable.baseline_close_24),
-                        contentDescription = "cancel edit"
-                    )
+                    IconButton(
+                        onClick = {
+                            edit = false
+                        }
+                    ) {
+                        Icon(
+                            painter = painterResource(id = R.drawable.baseline_close_24),
+                            contentDescription = "cancel edit"
+                        )
+                    }
                 }
 
+                delete -> {
+                    Text(
+                        text = "Are you sure?",
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 20.sp,
+                        color = MaterialTheme.colorScheme.onSurface,
+                        modifier = Modifier
+                            .padding(20.dp)
+                            .weight(1f),
+                    )
+
+                    IconButton(
+                        onClick = {
+                            delete = false
+                            onDelete(itemSet.id)
+                        }
+                    ) {
+                        Icon(
+                            painter = painterResource(id = R.drawable.baseline_check_24),
+                            contentDescription = "confirm delete"
+                        )
+                    }
+                    IconButton(
+                        onClick = {
+                            delete = false
+                        }
+                    ) {
+                        Icon(
+                            painter = painterResource(id = R.drawable.baseline_close_24),
+                            contentDescription = "decline delete",
+                            tint = MaterialTheme.colorScheme.error
+                        )
+                    }
+                }
+
+                else -> {
+                    Text(
+                        text = itemSet.name,
+                        fontSize = 20.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.onSurface,
+                        modifier = Modifier
+                            .padding(20.dp)
+                            .weight(1f)
+                    )
+                    IconButton(
+                        onClick = {
+                            edit = true
+                        }
+                    ) {
+                        Icon(
+                            painter = painterResource(id = R.drawable.baseline_edit_24),
+                            contentDescription = "edit item set name"
+                        )
+                    }
+                    IconButton(
+                        onClick = {
+                            delete = true
+                        }
+                    ) {
+                        Icon(
+                            painter = painterResource(id = R.drawable.baseline_delete_24),
+                            contentDescription = "delete item set"
+                        )
+                    }
+                }
             }
         }
-    }
-    if (delete) {
-        BasicAlertDialog(
-            onDismissRequest = { delete = false },
-            content = {
-                Surface(
-                    shape = RoundedCornerShape(16.dp),
-                    modifier = Modifier
-                        .wrapContentSize()
-                        .padding(16.dp)
-                ) {
-                    Column(
-                        modifier = Modifier
-                            .padding(16.dp)
-                    ) {
-                        Text(
-                            text = "Delete Item Set?",
-                            style = MaterialTheme.typography.titleLarge,
-                            modifier = Modifier
-                                .padding(bottom = 8.dp)
-                        )
-                        Row(
-                            horizontalArrangement = Arrangement.spacedBy(16.dp),
-                            modifier = Modifier
-                                .fillMaxWidth()
-                        ) {
-                            Button(
-                                onClick = {
-                                    delete = false
-                                },
-                                modifier = Modifier
-                                    .weight(1f)
-                            ) {
-                                Text("Cancel")
-                            }
-                            Button(
-                                onClick = {
-                                    delete = false
-                                    onDelete(itemSet.id)
-                                },
-                                modifier = Modifier
-                                    .weight(1f)
-                            ) {
-                                Text("Delete")
-                            }
-                        }
-                    }
-                }
-            }
-        )
     }
 }

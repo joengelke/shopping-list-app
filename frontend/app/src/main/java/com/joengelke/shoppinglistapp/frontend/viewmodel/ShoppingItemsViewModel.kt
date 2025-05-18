@@ -4,22 +4,60 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.joengelke.shoppinglistapp.frontend.models.ItemSetItem
 import com.joengelke.shoppinglistapp.frontend.models.ShoppingItem
+import com.joengelke.shoppinglistapp.frontend.repository.SettingsRepository
 import com.joengelke.shoppinglistapp.frontend.repository.ShoppingItemRepository
+import com.joengelke.shoppinglistapp.frontend.ui.common.ShoppingItemsSortCategory
+import com.joengelke.shoppinglistapp.frontend.ui.common.SortDirection
 import dagger.hilt.android.lifecycle.HiltViewModel
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
+import java.time.Instant
+import java.time.format.DateTimeParseException
 import javax.inject.Inject
 
 @HiltViewModel
 class ShoppingItemsViewModel @Inject constructor(
     private val shoppingItemRepository: ShoppingItemRepository,
+    private val settingsRepository: SettingsRepository
 ) : ViewModel() {
 
     private val _shoppingItems = MutableStateFlow<List<ShoppingItem>>(emptyList())
     val shoppingItems: StateFlow<List<ShoppingItem>> = _shoppingItems.asStateFlow()
+
+    private val shoppingItemsSortOption = settingsRepository.shoppingItemsSortOptionFlow
+
+    val sortedShoppingItems: StateFlow<List<ShoppingItem>> = combine(
+        _shoppingItems,
+        shoppingItemsSortOption
+    ) { items, sortOption ->
+        val comparator = when (sortOption.category) {
+            ShoppingItemsSortCategory.ALPHABETICAL -> compareBy<ShoppingItem> { it.name.lowercase() }
+
+            ShoppingItemsSortCategory.CHECKED_AT -> compareBy<ShoppingItem> {
+                it.checkedAt.let(Instant::parse) ?: Instant.MIN
+            }
+
+            ShoppingItemsSortCategory.EDITED_AT -> compareBy<ShoppingItem> {
+                it.editedAt.let(Instant::parse) ?: Instant.MIN
+            }
+        }
+
+        if (sortOption.direction == SortDirection.ASCENDING) {
+            items.sortedWith(comparator)
+        } else {
+            items.sortedWith(comparator.reversed())
+        }
+    }.stateIn(
+        viewModelScope,
+        SharingStarted.WhileSubscribed(5000),
+        emptyList()
+    )
+
+    // undo function
+    private val maxUndoSize = 5
+    private val undoStack = ArrayDeque<String>(maxUndoSize)
+    private val _isUndoAvailable = MutableStateFlow(false)
+    val isUndoAvailable: StateFlow<Boolean> = _isUndoAvailable.asStateFlow()
 
     fun loadShoppingItems(
         shoppingListId: String,
@@ -76,11 +114,20 @@ class ShoppingItemsViewModel @Inject constructor(
         viewModelScope.launch {
             val result = shoppingItemRepository.updateCheckedStatus(itemId, checked)
             result.onSuccess { updatedItem ->
+                if (checked) {
+                    pushToUndoStack(updatedItem.id)
+                }
                 _shoppingItems.value = _shoppingItems.value.map {
                     if (it.id == updatedItem.id) updatedItem else it
                 }
             }
         }
+    }
+
+    fun undoLastCheckedItem() {
+        val lastCheckedItemId = undoStack.removeLastOrNull() ?: return
+        updateCheckedStatus(lastCheckedItemId, false)
+        _isUndoAvailable.value = undoStack.isNotEmpty()
     }
 
     fun updateItem(shoppingItem: ShoppingItem) {
@@ -92,6 +139,14 @@ class ShoppingItemsViewModel @Inject constructor(
                 }
             }
         }
+    }
+
+    private fun pushToUndoStack(itemId: String) {
+        if (undoStack.size >= maxUndoSize) {
+            undoStack.removeFirst() // Remove oldest item
+        }
+        undoStack.addLast(itemId)
+        _isUndoAvailable.value = undoStack.isNotEmpty()
     }
 
     fun deleteItem(shoppingListId: String, shoppingItemId: String) {
@@ -154,5 +209,11 @@ class ShoppingItemsViewModel @Inject constructor(
                 }
             }
         }
+    }
+
+    private fun parseDate(dateString: String): Instant = try {
+        Instant.parse(dateString)
+    } catch (e: DateTimeParseException) {
+        Instant.MIN
     }
 }

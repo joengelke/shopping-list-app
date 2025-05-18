@@ -1,4 +1,4 @@
-package com.joengelke.shoppinglistapp.frontend.ui
+package com.joengelke.shoppinglistapp.frontend.ui.screens.shoppinglist
 
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.text.KeyboardOptions

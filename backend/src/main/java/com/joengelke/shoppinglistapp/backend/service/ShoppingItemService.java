@@ -54,6 +54,10 @@ public class ShoppingItemService {
 
         shoppingItem.setChecked(checked);
 
+        if(!checked) {
+           shoppingItem.setCheckedAt(Instant.now());
+        }
+
         shoppingItem.setEditedAt(Instant.now());
 
         shoppingItem.setEditedBy(username);
@@ -107,6 +111,9 @@ public class ShoppingItemService {
         ShoppingItem shoppingItem = shoppingItemRepository.findById(itemId)
                 .orElseThrow(() -> new NoSuchElementException("Item not found with itemId: " + itemId));
         shoppingItem.setChecked(checked);
+        if(!checked) {
+            shoppingItem.setCheckedAt(Instant.now());
+        }
         return shoppingItemRepository.save(shoppingItem);
     }
 

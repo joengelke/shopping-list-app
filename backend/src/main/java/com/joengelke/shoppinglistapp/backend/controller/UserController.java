@@ -1,5 +1,8 @@
 package com.joengelke.shoppinglistapp.backend.controller;
 
+import com.joengelke.shoppinglistapp.backend.dto.ChangePasswordRequest;
+import com.joengelke.shoppinglistapp.backend.dto.ChangeUsernameRequest;
+import com.joengelke.shoppinglistapp.backend.dto.UserResponse;
 import com.joengelke.shoppinglistapp.backend.model.User;
 import com.joengelke.shoppinglistapp.backend.service.UserService;
 import org.springframework.http.ResponseEntity;
@@ -8,6 +11,7 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/user")
@@ -20,15 +24,16 @@ public class UserController {
     }
 
     @GetMapping("")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<?> getAllUsers() {
-        List<User> userList = userService.getAllUsers();
+        List<UserResponse> userList = userService.getAllUsers();
         return ResponseEntity.ok(userList);
     }
 
     @PutMapping("/{userId}/add-role")
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<?> addRoleToUser(@PathVariable String userId, @RequestParam String role) {
-        User user = userService.addRoleToUser(userId, role);
+        UserResponse user = userService.addRoleToUser(userId, role);
         return ResponseEntity.ok(user);
     }
 
@@ -39,10 +44,32 @@ public class UserController {
             @RequestParam String role,
             @RequestHeader("Authorization") String header) {
         try {
-            User user = userService.removeRoleFromUser(userId, role, header);
+            UserResponse user = userService.removeRoleFromUser(userId, role, header);
             return ResponseEntity.ok(user);
         } catch (ResponseStatusException e) {
             return ResponseEntity.status(e.getStatusCode()).body(e.getReason());
         }
     }
+
+    @PutMapping("/username")
+    public ResponseEntity<?> changeUsername(@RequestBody ChangeUsernameRequest request, @RequestHeader("Authorization") String header) {
+        try {
+            UserResponse user = userService.changeUsername(request.getNewUsername(), header);
+            return ResponseEntity.ok(user);
+        } catch (ResponseStatusException e) {
+            return ResponseEntity.status(e.getStatusCode()).body(e.getReason());
+        }
+    }
+
+    @PutMapping("/password")
+    public ResponseEntity<?> changePassword(@RequestBody ChangePasswordRequest request, @RequestHeader("Authorization") String header) {
+        try {
+            UserResponse user = userService.changePassword(request.getCurrentPassword(), request.getNewPassword(), header);
+            return ResponseEntity.ok(user);
+        } catch (ResponseStatusException e) {
+            return ResponseEntity.status(e.getStatusCode()).body(e.getReason());
+        }
+    }
+
+
 }

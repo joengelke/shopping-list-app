@@ -24,7 +24,7 @@ import javax.net.ssl.X509TrustManager
  */
 @Module
 @InstallIn(SingletonComponent::class)
-object NetworkModule{
+object NetworkModule {
 
     private var localRetrofit: Retrofit? = null
     private var publicRetrofit: Retrofit? = null
@@ -37,7 +37,8 @@ object NetworkModule{
     private var itemSetApi: ItemSetApi? = null
     private var userApi: UserApi? = null
 
-    private var serverURL = "https://192.168.1.60:8443/api/" // dev server on .38 (.23 WiFi) raspberryPi on .60
+    private var serverURL = "https://shopit.ddnss.de:8443/api/"
+         //"https://192.168.1.38:8443/api/" // dev server on .38 (.23 WiFi) raspberryPi on .60
 
     // checks if device is in local network or not
     // !!! just for local networks starting with 192.168.1. !!!
@@ -45,11 +46,12 @@ object NetworkModule{
         val ip =
             NetworkInterface.getNetworkInterfaces()
                 .asSequence()
+                .filter { it.name.startsWith("wlan") || it.name.startsWith("eth") }
                 .flatMap { it.inetAddresses.asSequence() }
                 .filter { !it.isLoopbackAddress && it is Inet4Address }
                 .map { it.hostAddress }
                 .firstOrNull() ?: ""
-        return (ip.startsWith("192.168.1."))
+        return (ip.startsWith("192.168.188."))
     }
 
     // custom certificate handling
@@ -92,6 +94,8 @@ object NetworkModule{
     }
 
     private fun getRetrofit(context: Context): Retrofit {
+        return createRetrofitInstance(context, serverURL)
+        /*
         return if (isInLocalServer()) {
             if (localRetrofit == null) {
                 localRetrofit = createRetrofitInstance(
@@ -107,6 +111,8 @@ object NetworkModule{
             }
             publicRetrofit!!
         }
+
+         */
     }
 
     // Updates all Retrofit API interfaces
@@ -120,15 +126,19 @@ object NetworkModule{
     }
 
     fun getAuthApi(context: Context): AuthApi {
+        /*
         // checks if api was created before and if the connection changed
         if (authApi == null || lastUsedBaseUrl != currentBaseUrl) {
             updateApis(context)
             lastUsedBaseUrl = currentBaseUrl
         }
         return authApi!!
+         */
+        return createRetrofitInstance(context, serverURL).create(AuthApi::class.java)
     }
 
     fun getShoppingListApi(context: Context): ShoppingListApi {
+        /*
         // checks if api was created before and if the connection changed
         currentBaseUrl =
             if (isInLocalServer()) serverURL else "https://dlmdla.ddnss.de:8443/api/"
@@ -137,32 +147,43 @@ object NetworkModule{
             lastUsedBaseUrl = currentBaseUrl
         }
         return shoppingListApi!!
+         */
+        return createRetrofitInstance(context, serverURL).create(ShoppingListApi::class.java)
     }
 
     fun getShoppingItemApi(context: Context): ShoppingItemApi {
+        /*
         // checks if api was created before and if the connection changed
         if (shoppingItemApi == null || lastUsedBaseUrl != currentBaseUrl) {
             updateApis(context)
             lastUsedBaseUrl = currentBaseUrl
         }
         return shoppingItemApi!!
+         */
+        return createRetrofitInstance(context, serverURL).create(ShoppingItemApi::class.java)
     }
 
     fun getItemSetApi(context: Context): ItemSetApi {
+        /*
         // checks if api was created before and if the connection changed
         if (itemSetApi == null || lastUsedBaseUrl != currentBaseUrl) {
             updateApis(context)
             lastUsedBaseUrl = currentBaseUrl
         }
         return itemSetApi!!
+         */
+        return createRetrofitInstance(context, serverURL).create(ItemSetApi::class.java)
     }
 
     fun getUserApi(context: Context): UserApi {
+        /*
         // checks if api was created before and if the connection changed
         if (itemSetApi == null || lastUsedBaseUrl != currentBaseUrl) {
             updateApis(context)
             lastUsedBaseUrl = currentBaseUrl
         }
         return userApi!!
+         */
+        return createRetrofitInstance(context, serverURL).create(UserApi::class.java)
     }
 }

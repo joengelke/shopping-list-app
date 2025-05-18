@@ -18,7 +18,6 @@ class ItemSetsViewModel @Inject constructor(
     private val itemSetRepository: ItemSetRepository,
 ) : ViewModel() {
 
-
     private val _itemSets = MutableStateFlow<List<ItemSet>>(emptyList())
     val itemSets: StateFlow<List<ItemSet>> = _itemSets.asStateFlow()
 

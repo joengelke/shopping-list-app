@@ -28,4 +28,15 @@ sealed class Routes(val route: String) {
             "itemSetCreate/$shoppingListId:$itemSetId"
     }
 
+    data object SettingsOverview : Routes("settingsOverview")
+    data object SettingsUser : Routes("settingsUser")
+    data object SettingsUserUsername : Routes("settingsUserUsername")
+    data object SettingsUserPassword : Routes("settingsUserPassword")
+    data object SettingsAdmin : Routes("settingsAdmin")
+    data object SettingsAdminUsers : Routes("settingsAdminUsers")
+    data object SettingsAdminShoppingLists : Routes("settingsAdminShoppingLists")
+    data object SettingsAdminShoppingItems: Routes("settingsAdminShoppingItems/{shoppingListId}") {
+        fun createRoute(shoppingListId: String) = "settingsAdminShoppingItems/$shoppingListId"
+    }
+
 }

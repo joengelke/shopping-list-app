@@ -1,5 +1,6 @@
 package com.joengelke.shoppinglistapp.backend.controller;
 
+import com.joengelke.shoppinglistapp.backend.dto.UserResponse;
 import com.joengelke.shoppinglistapp.backend.model.ItemSet;
 import com.joengelke.shoppinglistapp.backend.model.ShoppingItem;
 import com.joengelke.shoppinglistapp.backend.model.ShoppingList;
@@ -7,6 +8,7 @@ import com.joengelke.shoppinglistapp.backend.model.User;
 import com.joengelke.shoppinglistapp.backend.service.ShoppingListService;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.web.bind.annotation.*;
 
@@ -36,6 +38,7 @@ public class ShoppingListController {
     }
 
     @GetMapping("/all")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<?> getAllShoppingLists() {
         List<ShoppingList> shoppingLists = shoppingListService.getAllShoppingLists();
         return ResponseEntity.ok(shoppingLists);
@@ -55,14 +58,14 @@ public class ShoppingListController {
 
     @GetMapping("/{shoppingListId}/user")
     public ResponseEntity<?> getShoppingListUser(@PathVariable String shoppingListId) {
-        List<User> users = shoppingListService.getShoppingListUser(shoppingListId);
+        List<UserResponse> users = shoppingListService.getShoppingListUser(shoppingListId);
         return ResponseEntity.ok(users);
     }
 
     @PostMapping("/{shoppingListId}/user")
     public ResponseEntity<?> addUserToShoppingList(@PathVariable String shoppingListId, @RequestBody User user) {
         try {
-            User addedUser = shoppingListService.addUserToShoppingList(shoppingListId, user.getUsername());
+            UserResponse addedUser = shoppingListService.addUserToShoppingList(shoppingListId, user.getUsername());
             return ResponseEntity.ok(addedUser);
         } catch (UsernameNotFoundException e) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body(e.getMessage());
@@ -138,5 +141,15 @@ public class ShoppingListController {
     public ResponseEntity<?> deleteItemSetById(@PathVariable String shoppingListId, @PathVariable String itemSetId) {
         shoppingListService.deleteItemSetById(shoppingListId, itemSetId);
         return ResponseEntity.ok(Map.of("message", "Item set deleted successfully"));
+    }
+
+    /*
+    USER CHANGES
+     */
+
+    @DeleteMapping("/user/{userId}")
+    public ResponseEntity<?> deleteUser(@PathVariable String userId) {
+        shoppingListService.removeUserFromAllShoppingLists(userId);
+        return ResponseEntity.ok(Map.of("message", "User successfully deleted!"));
     }
 }

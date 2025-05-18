@@ -6,6 +6,7 @@ import com.joengelke.shoppinglistapp.backend.model.ItemSet;
 import com.joengelke.shoppinglistapp.backend.model.ShoppingItem;
 import com.joengelke.shoppinglistapp.backend.model.ShoppingList;
 import com.joengelke.shoppinglistapp.backend.model.User;
+import com.joengelke.shoppinglistapp.backend.repository.UserRepository;
 import jakarta.annotation.PreDestroy;
 import lombok.Getter;
 import lombok.Setter;
@@ -19,6 +20,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.scheduling.annotation.EnableScheduling;
 import org.springframework.scheduling.annotation.Scheduled;
+import org.springframework.security.crypto.password.PasswordEncoder;
 
 import java.io.File;
 import java.io.FileReader;
@@ -41,6 +43,10 @@ public class BackendApplication {
     private boolean loadDB;
     @Autowired
     private MongoTemplate mongoTemplate;
+    @Autowired
+    private UserRepository userRepository;
+    @Autowired
+    private PasswordEncoder passwordEncoder;
 
     public static void main(String[] args) {
         SpringApplication.run(BackendApplication.class, args);
@@ -66,6 +72,8 @@ public class BackendApplication {
             if (loadDB) {
                 loadBackup();
             }
+
+            setupInitialAdmin();
         };
     }
 
@@ -135,7 +143,6 @@ public class BackendApplication {
                     mongoTemplate.insertAll(backupData.getItemSets());
 
                     System.out.println("Backup loaded successfully!");
-
                 } else {
                     System.out.println("No backup file found to load.");
                 }
@@ -166,6 +173,21 @@ public class BackendApplication {
             backupData += "}";
 
             writer.write(backupData);
+        }
+    }
+
+    private void setupInitialAdmin() {
+        if (userRepository.findByRolesContaining("ADMIN").isEmpty()) {
+            User admin = new User();
+            admin.setUsername("admin");
+            admin.setEmail("admin@example.com");
+            admin.setPassword(passwordEncoder.encode("admin")); // Replace with your password hashing
+            admin.setRoles(List.of("ADMIN", "USER"));
+            userRepository.save(admin);
+
+            System.out.println("Initial admin user created: username=admin, password=admin");
+        } else {
+            System.out.println("Admin user already exists, skipping creation.");
         }
     }
 

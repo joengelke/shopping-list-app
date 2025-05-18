@@ -15,7 +15,7 @@ android {
         minSdk = 30
         targetSdk = 35
         versionCode = 1
-        versionName = "1.0"
+        versionName = "0.0.1"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
@@ -38,6 +38,9 @@ android {
     }
     buildFeatures {
         compose = true
+    }
+    androidResources{
+        generateLocaleConfig = true
     }
 }
 
@@ -64,6 +67,7 @@ dependencies {
     implementation(libs.jwtdecode)
     implementation(libs.accompanist.swiperefresh)
     implementation(libs.androidx.ui.text.google.fonts)
+    implementation(libs.androidx.appcompat)
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)

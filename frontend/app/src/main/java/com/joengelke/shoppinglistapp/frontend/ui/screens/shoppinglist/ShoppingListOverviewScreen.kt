@@ -1,4 +1,4 @@
-package com.joengelke.shoppinglistapp.frontend.ui
+package com.joengelke.shoppinglistapp.frontend.ui.screens.shoppinglist
 
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -21,6 +21,7 @@ import androidx.navigation.NavHostController
 import com.joengelke.shoppinglistapp.frontend.R
 import com.joengelke.shoppinglistapp.frontend.models.ShoppingList
 import com.joengelke.shoppinglistapp.frontend.navigation.Routes
+import com.joengelke.shoppinglistapp.frontend.ui.components.ConfirmationDialog
 import com.joengelke.shoppinglistapp.frontend.viewmodel.AuthViewModel
 import com.joengelke.shoppinglistapp.frontend.viewmodel.ShoppingListViewModel
 import kotlinx.coroutines.launch
@@ -34,7 +35,6 @@ fun ShoppingListOverviewScreen(
 ) {
     val shoppingLists by shoppingListViewModel.shoppingLists.collectAsState()
     val uncheckedItemsAmount by shoppingListViewModel.uncheckedItemsAmount.collectAsState()
-    var isMenuExpanded by remember { mutableStateOf(false) }
 
     var refreshing by remember { mutableStateOf(false) }
     val state = rememberPullToRefreshState()
@@ -48,15 +48,13 @@ fun ShoppingListOverviewScreen(
                     refreshing = false
                 }
             )
+            shoppingListViewModel.loadUncheckedItemsAmount()
         }
     }
 
     LaunchedEffect(Unit) {
-        shoppingListViewModel.loadShoppingLists(onSuccess = {}, onFailure = { refreshing = false })
-        shoppingListViewModel.loadUncheckedItemsAmount()
+        onRefresh()
     }
-
-
 
     Scaffold(
         topBar = {
@@ -77,55 +75,38 @@ fun ShoppingListOverviewScreen(
                             modifier = Modifier
                                 .weight(1f)
                         )
-                        IconButton(
-                            onClick = {
-                                // TODO settings
-                            }
-                        ) {
-                            Icon(
-                                painter = painterResource(id = R.drawable.baseline_settings_24),
-                                contentDescription = "open settings",
-                                tint = MaterialTheme.colorScheme.onPrimary
-                            )
-                        }
-                        IconButton(
-                            onClick = {
-                                authViewModel.logout()
-                                navController.navigate("login") {
-                                    // Clear back stack
-                                    popUpTo("shoppingListOverview") {
-                                        inclusive = true
-                                    }
-                                }
-                            }
-                        ) {
-                            Icon(
-                                painter = painterResource(id = R.drawable.baseline_logout_24),
-                                contentDescription = "logout",
-                                tint = MaterialTheme.colorScheme.onPrimary
-                            )
-                        }
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
                     containerColor = MaterialTheme.colorScheme.primary
                 ),
                 actions = {
-                    DropdownMenu(
-                        expanded = isMenuExpanded,
-                        onDismissRequest = { isMenuExpanded = false }
+                    IconButton(
+                        onClick = {
+                            navController.navigate("settingsOverview")
+                        }
                     ) {
-                        DropdownMenuItem(
-                            text = { Text("Logout") },
-                            onClick = {
-                                authViewModel.logout()
-                                navController.navigate("login") {
-                                    // Clear back stack
-                                    popUpTo("shoppingListOverview") {
-                                        inclusive = true
-                                    }
+                        Icon(
+                            painter = painterResource(id = R.drawable.baseline_settings_24),
+                            contentDescription = "open settings",
+                            tint = MaterialTheme.colorScheme.onPrimary
+                        )
+                    }
+                    IconButton(
+                        onClick = {
+                            authViewModel.logout()
+                            navController.navigate("login") {
+                                // Clear back stack
+                                popUpTo("shoppingListOverview") {
+                                    inclusive = true
                                 }
                             }
+                        }
+                    ) {
+                        Icon(
+                            painter = painterResource(id = R.drawable.baseline_logout_24),
+                            contentDescription = "logout",
+                            tint = MaterialTheme.colorScheme.onPrimary
                         )
                     }
                 }
@@ -141,7 +122,9 @@ fun ShoppingListOverviewScreen(
                 onRefresh = onRefresh
             ) {
                 LazyColumn(
-                    modifier = Modifier.fillMaxSize().padding(8.dp)
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(8.dp)
                 ) {
                     items(shoppingLists) { shoppingList ->
                         ShoppingListContainer(
@@ -160,6 +143,7 @@ fun ShoppingListOverviewScreen(
 
                             },
                             onDelete = { shoppingListId ->
+                                //
                                 shoppingListViewModel.deleteShoppingList(shoppingListId)
                             },
                         )
@@ -194,6 +178,7 @@ fun ShoppingListContainer(
 ) {
     var isMenuExpanded by remember { mutableStateOf(false) }
     var showEditModal by remember { mutableStateOf(false) }
+    var deleteShoppingList by remember { mutableStateOf(false) }
 
     //Container for each list
     Card(
@@ -216,13 +201,13 @@ fun ShoppingListContainer(
     ) {
         Row(
             modifier = Modifier
-                .fillMaxWidth(),
+                .fillMaxWidth()
+                .padding(start = 16.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
             Column(
                 modifier = Modifier
                     .weight(1f)
-                    .padding(horizontal = 16.dp)
             ) {
                 Text(
                     text = shoppingList.name,
@@ -255,41 +240,42 @@ fun ShoppingListContainer(
                     })
                     DropdownMenuItem(
                         text = { Text("Delete") },
-                        onClick = { onDelete(shoppingList.id) })
+                        onClick = {
+                            deleteShoppingList = true
+                        }
+                    )
                 }
             }
         }
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(bottom = 16.dp),
+                .padding(start = 16.dp, bottom = 12.dp),
             verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(4.dp)
         ) {
-            val allItemsAmount = shoppingList.itemIds.size
-            if (allItemsAmount > 0) {
-                Column(
-                    modifier = Modifier
-                        .weight(0.8f)
-                        .padding(horizontal = 16.dp)
-                ) {
-                    LinearProgressIndicator(
-                        progress = { (allItemsAmount - uncheckedItemsAmount.toFloat()) / allItemsAmount },
-                        color = MaterialTheme.colorScheme.primary,
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(16.dp)
-                            .padding(top = 4.dp)
-                    )
-                }
-                Column(
-                    modifier = Modifier
-                        .weight(0.2f)
-                        .padding(horizontal = 16.dp),
-                    horizontalAlignment = Alignment.End
-                ) {
-                    Text(text = "$uncheckedItemsAmount/${shoppingList.itemIds.size}")
-                }
-            }
+            Icon(
+                painter = painterResource(id = R.drawable.baseline_shopping_cart_24),
+                contentDescription = "items in list",
+                tint = MaterialTheme.colorScheme.primary
+            )
+            Text(
+                text = "$uncheckedItemsAmount",
+                style = MaterialTheme.typography.titleLarge,
+                color = MaterialTheme.colorScheme.onSurface
+            )
+            /*
+            Icon(
+                painter = painterResource(id = R.drawable.baseline_person_24),
+                contentDescription = "open settings",
+                tint = MaterialTheme.colorScheme.primary
+            )
+            Text(
+                text = "${shoppingList.userIds.size}",
+                style = MaterialTheme.typography.titleLarge,
+                color = MaterialTheme.colorScheme.onSurface
+            )
+             */
         }
     }
 
@@ -301,6 +287,22 @@ fun ShoppingListContainer(
             },
             onDismiss = {
                 showEditModal = false
+            }
+        )
+    }
+
+    if (deleteShoppingList) {
+        ConfirmationDialog(
+            text = "Delete Shopping List?",
+            acceptText = "Delete",
+            onDismiss = {
+                deleteShoppingList = false
+                isMenuExpanded = true
+            },
+            onCancel = { deleteShoppingList = false },
+            onAccept = {
+                deleteShoppingList = false
+                onDelete(shoppingList.id)
             }
         )
     }

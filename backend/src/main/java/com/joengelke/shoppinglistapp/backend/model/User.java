@@ -24,7 +24,6 @@ public class User {
         this.username = username;
         this.password = password;
         this.roles = new ArrayList<String>(List.of("USER"));
-
     }
     public User(){}
 }

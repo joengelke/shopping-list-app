@@ -7,6 +7,7 @@ data class ShoppingItem(
     val amount: Double,
     val unit: String,
     val checked: Boolean,
+    val checkedAt: String,
     val note: String,
     val editedAt: String,
     val editedBy: String

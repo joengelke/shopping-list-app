@@ -1,0 +1,65 @@
+package com.joengelke.shoppinglistapp.frontend.viewmodel
+
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
+import com.joengelke.shoppinglistapp.frontend.repository.SettingsRepository
+import com.joengelke.shoppinglistapp.frontend.ui.common.ShoppingItemsSortCategory
+import com.joengelke.shoppinglistapp.frontend.ui.common.ShoppingItemsSortOptions
+import com.joengelke.shoppinglistapp.frontend.ui.common.SortDirection
+import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.launch
+import javax.inject.Inject
+
+@HiltViewModel
+class SettingsViewModel @Inject constructor(
+    private val settingsRepository: SettingsRepository
+): ViewModel() {
+
+    private val _darkMode = MutableStateFlow(false)
+    val darkMode: StateFlow<Boolean> = _darkMode.asStateFlow()
+
+    private val _language = MutableStateFlow("en")
+    val language: StateFlow<String> = _language.asStateFlow()
+
+    private val _shoppingItemsSortOption = MutableStateFlow(
+        ShoppingItemsSortOptions(
+            category = ShoppingItemsSortCategory.ALPHABETICAL,
+            direction = SortDirection.ASCENDING
+        )
+    )
+    val shoppingItemsSortOption: StateFlow<ShoppingItemsSortOptions> = _shoppingItemsSortOption.asStateFlow()
+
+    init {
+        viewModelScope.launch {
+            settingsRepository.darkModeFlow.collect { _darkMode.value = it }
+        }
+        viewModelScope.launch {
+            settingsRepository.languageFlow.collect { _language.value = it }
+        }
+        viewModelScope.launch {
+            settingsRepository.shoppingItemsSortOptionFlow.collect { _shoppingItemsSortOption.value = it }
+        }
+    }
+
+    fun toggleDarkMode() {
+        viewModelScope.launch {
+            val newValue = !_darkMode.value
+            settingsRepository.setDarkMode(newValue)
+        }
+    }
+
+    fun setLanguage(language: String) {
+        viewModelScope.launch {
+            settingsRepository.setLanguage(language)
+        }
+    }
+
+    fun setShoppingItemsSortOption(option: ShoppingItemsSortOptions) {
+        viewModelScope.launch {
+            settingsRepository.setShoppingItemsSortOption(option)
+        }
+    }
+}

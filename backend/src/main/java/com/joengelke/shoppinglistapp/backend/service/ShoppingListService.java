@@ -1,5 +1,6 @@
 package com.joengelke.shoppinglistapp.backend.service;
 
+import com.joengelke.shoppinglistapp.backend.dto.UserResponse;
 import com.joengelke.shoppinglistapp.backend.model.*;
 import com.joengelke.shoppinglistapp.backend.repository.ShoppingListRepository;
 import com.joengelke.shoppinglistapp.backend.security.JwtTokenProvider;
@@ -42,6 +43,9 @@ public class ShoppingListService {
         if (shoppingList.getItemIds() == null) {
             shoppingList.setItemIds(new ArrayList<>());
         }
+        if (shoppingList.getItemSetIds() == null) {
+            shoppingList.setItemSetIds(new ArrayList<>());
+        }
         if (shoppingList.getUserIds() == null) {
             shoppingList.setUserIds(List.of(user.getId()));
         }
@@ -72,14 +76,14 @@ public class ShoppingListService {
         return shoppingListRepository.save(shoppingList);
     }
 
-    public List<User> getShoppingListUser(String listId) {
+    public List<UserResponse> getShoppingListUser(String listId) {
         ShoppingList shoppingList = shoppingListRepository.findById(listId)
                 .orElseThrow(() -> new NoSuchElementException("Shopping list not found"));
 
         return userService.getAllUserByIds(shoppingList.getUserIds());
     }
 
-    public User addUserToShoppingList(String listId, String username) {
+    public UserResponse addUserToShoppingList(String listId, String username) {
         ShoppingList shoppingList = shoppingListRepository.findById(listId)
                 .orElseThrow(() -> new NoSuchElementException("Shopping list not found"));
 
@@ -90,7 +94,7 @@ public class ShoppingListService {
             shoppingListRepository.save(shoppingList);
         }
 
-        return user;
+        return new UserResponse(user);
     }
 
     public void removeUserFromShoppingList(String listId, String userId) {
@@ -101,6 +105,17 @@ public class ShoppingListService {
             shoppingList.getUserIds().remove(userId);
             shoppingListRepository.save(shoppingList);
         }
+    }
+
+    public void removeUserFromAllShoppingLists(String userId) {
+        List<ShoppingList> allLists = shoppingListRepository.findAll();
+
+        for (ShoppingList list : allLists) {
+            list.getUserIds().remove(userId);
+        }
+
+        shoppingListRepository.saveAll(allLists);
+        userService.deleteUser(userId);
     }
 
     public void deleteShoppingList(String listId) {
@@ -162,7 +177,10 @@ public class ShoppingListService {
         } else {
             // add one item amount
             if (shoppingItem.isChecked()) {
+                shoppingItem.setAmount(0.0);
+                shoppingItem.setUnit("");
                 shoppingItem.setChecked(false);
+                shoppingItem.setCheckedAt(Instant.now());
             } else {
                 shoppingItem.setAmount(shoppingItem.getAmount() + 1);
             }
@@ -196,9 +214,10 @@ public class ShoppingListService {
 
         List<ItemSetItem> newItemSetItems = new ArrayList<>(); // final itemSetItem list to use for
         for (ItemSetItem setItem : itemSet.getItemList()) {
+            // in my frontend not used since itemSetItems will be created later manually
             if (!shoppingList.getItemIds().contains(setItem.getId())) {
                 //create new shoppingItem, add new ItemSetItem with new shoppingItem id
-                ShoppingItem shoppingItem = shoppingItemService.createItem(header, new ShoppingItem(setItem.getName(), "", 0.0, "", "", ""), false);
+                ShoppingItem shoppingItem = shoppingItemService.createItem(header, new ShoppingItem(setItem.getName(), "", 0.0, "", "", ""), true);
                 shoppingList.getItemIds().add(shoppingItem.getId());
                 newItemSetItems.add(new ItemSetItem(shoppingItem.getId(), setItem.getTmpId(), setItem.getName(), setItem.getAmount(), setItem.getUnit()));
             } else {

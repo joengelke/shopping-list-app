@@ -1,4 +1,4 @@
-package com.joengelke.shoppinglistapp.frontend.ui
+package com.joengelke.shoppinglistapp.frontend.ui.screens.shoppingitems
 
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.background
@@ -61,6 +61,7 @@ fun ShoppingItemsCreateScreen(
             amount = 0.0,
             unit = "",
             checked = true,
+            checkedAt = "",
             note = "",
             editedAt = "",
             editedBy = ""
