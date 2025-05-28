@@ -12,9 +12,9 @@ import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavHostController
 import com.joengelke.shoppinglistapp.frontend.R
@@ -52,9 +52,8 @@ fun SettingsUserUsernameScreen(
                         horizontalArrangement = Arrangement.Center
                     ) {
                         Text(
-                            text = "Change Username",
-                            fontSize = 24.sp,
-                            fontWeight = FontWeight.Bold,
+                            text = stringResource(R.string.change_username),
+                            style = MaterialTheme.typography.headlineSmall.copy(fontWeight = FontWeight.Bold),
                             color = MaterialTheme.colorScheme.onPrimary,
                             modifier = Modifier.weight(1f)
                         )
@@ -95,11 +94,11 @@ fun SettingsUserUsernameScreen(
                             saved = false
                             usernameTaken = false
                         },
-                        label = { Text("New Username") },
+                        label = { Text(stringResource(R.string.new_username)) },
                         supportingText = {
                             if (usernameTaken) {
                                 Text(
-                                    text = "Username already taken",
+                                    text = stringResource(R.string.username_already_taken),
                                     color = MaterialTheme.colorScheme.error
                                 )
                             }
@@ -133,7 +132,8 @@ fun SettingsUserUsernameScreen(
                                     usernameTaken = true
                                 },
                                 onSuccess = {
-                                    Toast.makeText(context, "Username changed\nPlease login again", Toast.LENGTH_SHORT).show()
+                                    Toast.makeText(context,
+                                        context.getString(R.string.username_changed_please_login_again), Toast.LENGTH_SHORT).show()
                                     authViewModel.logout()
                                     navController.navigate("login") {
                                         // Clear back stack
@@ -152,7 +152,7 @@ fun SettingsUserUsernameScreen(
                             contentColor = MaterialTheme.colorScheme.onPrimary
                         )
                     ) {
-                        Text("Save and logout")
+                        Text(stringResource(R.string.save_and_logout))
                     }
                 }
             }

@@ -14,6 +14,7 @@ class SettingsRepository @Inject constructor(
 
     val darkModeFlow = SettingsDataStore.darkModeFlow(context)
     val languageFlow = SettingsDataStore.languageFlow(context)
+    val fontScaleFlow = SettingsDataStore.fontScaleFlow(context)
     val shoppingItemsSortOptionFlow = SettingsDataStore.shoppingItemsSortOptionFlow(context)
 
     suspend fun setDarkMode(enabled: Boolean) {
@@ -22,6 +23,10 @@ class SettingsRepository @Inject constructor(
 
     suspend fun setLanguage(lang: String) {
         SettingsDataStore.setLanguage(context, lang)
+    }
+
+    suspend fun setFontScale(scale: Float) {
+        SettingsDataStore.setFontScale(context, scale)
     }
 
     suspend fun setShoppingItemsSortOption(option: ShoppingItemsSortOptions) {

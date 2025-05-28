@@ -3,6 +3,7 @@ package com.joengelke.shoppinglistapp.frontend.datastore
 import android.content.Context
 import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
+import androidx.datastore.preferences.core.floatPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
 import com.joengelke.shoppinglistapp.frontend.ui.common.ShoppingItemsSortCategory
@@ -16,6 +17,7 @@ object SettingsDataStore {
 
     private val DARK_MODE_KEY = booleanPreferencesKey("dark_mode")
     private val LANGUAGE_KEY = stringPreferencesKey("language")
+    private val FONT_SCALE_KEY = floatPreferencesKey("font_scale")
     private val SHOPPING_ITEMS_SORT_OPTION_KEY = stringPreferencesKey("shopping_items_sort_option")
 
     suspend fun setDarkMode(context: Context, isDarkMode: Boolean) {
@@ -27,6 +29,12 @@ object SettingsDataStore {
     suspend fun setLanguage(context: Context, languageCode: String) {
         context.dataStore.edit { preferences ->
             preferences[LANGUAGE_KEY] = languageCode
+        }
+    }
+
+    suspend fun setFontScale(context: Context, scale: Float) {
+        context.dataStore.edit { preferences ->
+            preferences[FONT_SCALE_KEY] = scale
         }
     }
 
@@ -45,19 +53,28 @@ object SettingsDataStore {
         context.dataStore.data.map { prefs -> prefs[LANGUAGE_KEY] ?: "en" }
     }
 
+    val fontScaleFlow: (Context) -> Flow<Float> = { context ->
+        context.dataStore.data.map { prefs -> prefs[FONT_SCALE_KEY] ?: 1.0f }
+    }
+
     val shoppingItemsSortOptionFlow: (Context) -> Flow<ShoppingItemsSortOptions> = { context ->
         context.dataStore.data.map { prefs ->
             val raw = prefs[SHOPPING_ITEMS_SORT_OPTION_KEY]
             val parts = raw?.split("|")
 
-            val category = parts?.getOrNull(0)?.let { runCatching { ShoppingItemsSortCategory.valueOf(it) }.getOrNull() }
-            val direction = parts?.getOrNull(1)?.let { runCatching { SortDirection.valueOf(it) }.getOrNull() }
+            val category = parts?.getOrNull(0)
+                ?.let { runCatching { ShoppingItemsSortCategory.valueOf(it) }.getOrNull() }
+            val direction =
+                parts?.getOrNull(1)?.let { runCatching { SortDirection.valueOf(it) }.getOrNull() }
 
             if (category != null && direction != null) {
                 ShoppingItemsSortOptions(category, direction)
             } else {
                 // fallback
-                ShoppingItemsSortOptions(ShoppingItemsSortCategory.ALPHABETICAL, SortDirection.ASCENDING)
+                ShoppingItemsSortOptions(
+                    ShoppingItemsSortCategory.ALPHABETICAL,
+                    SortDirection.ASCENDING
+                )
             }
         }
     }

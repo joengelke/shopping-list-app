@@ -11,12 +11,15 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavHostController
+import com.joengelke.shoppinglistapp.frontend.R
 import com.joengelke.shoppinglistapp.frontend.viewmodel.ShoppingListViewModel
 
 
@@ -29,6 +32,8 @@ fun ShoppingListCreateScreen(
     var errorMessage by remember { mutableStateOf<String?>(null) }
     val focusRequester = remember { FocusRequester() }
 
+    val context = LocalContext.current
+
     LaunchedEffect(Unit) {
         focusRequester.requestFocus()
     }
@@ -40,7 +45,9 @@ fun ShoppingListCreateScreen(
         verticalArrangement = Arrangement.Center,
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        Text(text = "Create Shopping List", style = MaterialTheme.typography.headlineMedium)
+        Text(
+            text = stringResource(R.string.create_shopping_list),
+            style = MaterialTheme.typography.headlineMedium)
 
         Spacer(modifier = Modifier.height(16.dp))
 
@@ -48,7 +55,7 @@ fun ShoppingListCreateScreen(
         OutlinedTextField(
             value = shoppingListName,
             onValueChange = { shoppingListName = it },
-            label = { Text("Shopping List Name") },
+            label = { Text(stringResource(R.string.shopping_list_name)) },
             isError = errorMessage != null,
             keyboardOptions = KeyboardOptions(
                 capitalization = KeyboardCapitalization.Sentences,
@@ -59,6 +66,7 @@ fun ShoppingListCreateScreen(
                 .focusRequester(focusRequester)
         )
 
+        // TODO restructure error Message
         errorMessage?.let {
             Spacer(modifier = Modifier.height(8.dp))
             Text(text = it, color = MaterialTheme.colorScheme.error)
@@ -77,11 +85,11 @@ fun ShoppingListCreateScreen(
                         }
                     )
                 } else {
-                    errorMessage = "Please enter a name"
+                    errorMessage = context.getString(R.string.please_enter_a_name)
                 }
             }
         ) {
-            Text(text = "Create shopping list")
+            Text(text = stringResource(R.string.create_shopping_list))
         }
     }
 }

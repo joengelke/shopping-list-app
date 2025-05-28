@@ -2,4 +2,12 @@
 <resources>
     <string name="item">Item</string>
     <string name="amount">Amount</string>
+    <string name="new_item">New Item</string>
+    <string name="item_name">Item name</string>
+    <string name="enter_item_name">Enter item name</string>
+    <string name="hide_items">Hide %1$s Items</string>
+    <string name="show_items">Show %1$s Items</string>
+    <string name="added_time_ago_toast">Added %1$s</string>
+    <string name="unit">Unit</string>
+    <string name="note">Note</string>
 </resources>

@@ -3,6 +3,7 @@ package com.joengelke.shoppinglistapp.frontend
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
@@ -22,6 +23,7 @@ import dagger.hilt.android.AndroidEntryPoint
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
+        enableEdgeToEdge()
         super.onCreate(savedInstanceState)
         setContent {
             val authViewModel: AuthViewModel = hiltViewModel()
@@ -39,8 +41,12 @@ fun ShoppingListApp(authViewModel: AuthViewModel, settingsViewModel: SettingsVie
     val context = LocalContext.current
 
     val darkMode by settingsViewModel.darkMode.collectAsState()
+    val fontScale by settingsViewModel.fontScale.collectAsState()
 
-    AppTheme(darkTheme = darkMode) {
+    AppTheme(
+        darkTheme = darkMode,
+        fontScale = fontScale
+    ) {
         Surface(
             modifier = Modifier.fillMaxSize()
         ) {

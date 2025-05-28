@@ -11,10 +11,11 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavHostController
+import com.joengelke.shoppinglistapp.frontend.R
 import com.joengelke.shoppinglistapp.frontend.ui.components.SettingsContainer
 import com.joengelke.shoppinglistapp.frontend.viewmodel.UserViewModel
 
@@ -47,9 +48,8 @@ fun SettingsAdminScreen(
                         horizontalArrangement = Arrangement.Center
                     ) {
                         Text(
-                            text = "Admin Settings",
-                            fontSize = 24.sp,
-                            fontWeight = FontWeight.Bold,
+                            text = stringResource(R.string.admin_settings),
+                            style = MaterialTheme.typography.headlineSmall.copy(fontWeight = FontWeight.Bold),
                             color = MaterialTheme.colorScheme.onPrimary,
                             modifier = Modifier.weight(1f)
                         )
@@ -78,7 +78,7 @@ fun SettingsAdminScreen(
             ) {
                 item {
                     SettingsContainer(
-                        text = "All users",
+                        text = stringResource(R.string.admin_manage_users),
                         onClick = {
                             navController.navigate("settingsAdminUsers")
                         }
@@ -86,7 +86,7 @@ fun SettingsAdminScreen(
                 }
                 item {
                     SettingsContainer(
-                        text = "All shopping lists",
+                        text = stringResource(R.string.admin_manage_shopping_lists),
                         onClick = {
                             navController.navigate("settingsAdminShoppingLists")
                         }
@@ -94,7 +94,7 @@ fun SettingsAdminScreen(
                 }
                 item {
                     SettingsContainer(
-                        text = "All items",
+                        text = "All items (MAYBE DELETE)",
                         onClick = {
                             //TODO
                         }
@@ -102,7 +102,7 @@ fun SettingsAdminScreen(
                 }
                 item {
                     SettingsContainer(
-                        text = "All item sets",
+                        text = "All item sets (TODO OR DELETE)",
                         onClick = {
                             //TODO
                         }

@@ -9,8 +9,8 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavHostController
 import com.joengelke.shoppinglistapp.frontend.R
@@ -48,8 +48,7 @@ fun SettingsUserScreen(
                     ) {
                         Text(
                             text = currentUsername,
-                            fontSize = 24.sp,
-                            fontWeight = FontWeight.Bold,
+                            style = MaterialTheme.typography.headlineSmall.copy(fontWeight = FontWeight.Bold),
                             color = MaterialTheme.colorScheme.onPrimary,
                             modifier = Modifier.weight(1f)
                         )
@@ -78,7 +77,7 @@ fun SettingsUserScreen(
             ) {
                 item {
                     SettingsContainer(
-                        text = "Change Username",
+                        text = stringResource(R.string.change_username),
                         onClick = {
                             navController.navigate("settingsUserUsername")
                         }
@@ -86,7 +85,7 @@ fun SettingsUserScreen(
                 }
                 item {
                     SettingsContainer(
-                        text = "Change Password",
+                        text = stringResource(R.string.change_password),
                         onClick = {
                             navController.navigate("settingsUserPassword")
                         }
@@ -114,7 +113,7 @@ fun SettingsUserScreen(
                 }
                 item {
                     SettingsContainer(
-                        text = "Delete Account",
+                        text = stringResource(R.string.delete_account),
                         icon = {
                             Icon(
                                 painter = painterResource(id = R.drawable.baseline_delete_24),
@@ -131,8 +130,8 @@ fun SettingsUserScreen(
     )
     if (delete) {
         ConfirmationDialog(
-            text = "Delete User?",
-            acceptText = "Delete",
+            text = stringResource(R.string.delete_user),
+            acceptText = stringResource(R.string.delete),
             onDismiss = { delete = false },
             onCancel = { delete = false },
             onAccept = {

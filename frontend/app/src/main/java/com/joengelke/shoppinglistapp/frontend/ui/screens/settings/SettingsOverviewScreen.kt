@@ -18,15 +18,16 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavHostController
 import com.joengelke.shoppinglistapp.frontend.R
 import com.joengelke.shoppinglistapp.frontend.viewmodel.SettingsViewModel
 import com.joengelke.shoppinglistapp.frontend.viewmodel.UserViewModel
+import kotlin.math.roundToInt
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -45,9 +46,11 @@ fun SettingsOverviewScreen(
     // Settings:
     val darkMode by settingsViewModel.darkMode.collectAsState()
     val language by settingsViewModel.language.collectAsState()
+    val fontScale by settingsViewModel.fontScale.collectAsState()
 
-    var checked by remember { mutableStateOf(false) }
-    var slider by remember { mutableFloatStateOf(0.5f) }
+    val fontScales = listOf(0.8f, 0.9f, 1.0f, 1.1f, 1.2f)
+    val currentFontScaleIndex = fontScales.indexOfFirst { it == fontScale }.coerceAtLeast(0)
+
 
     val context = LocalContext.current
 
@@ -68,9 +71,8 @@ fun SettingsOverviewScreen(
                         horizontalArrangement = Arrangement.Center
                     ) {
                         Text(
-                            text = "Settings",
-                            fontSize = 24.sp,
-                            fontWeight = FontWeight.Bold,
+                            text = stringResource(R.string.settings),
+                            style = MaterialTheme.typography.headlineSmall.copy(fontWeight = FontWeight.Bold),
                             color = MaterialTheme.colorScheme.onPrimary,
                             modifier = Modifier.weight(1f)
                         )
@@ -102,8 +104,7 @@ fun SettingsOverviewScreen(
                         headlineContent = {
                             Text(
                                 text = if (isUser) if (isAdmin) "$currentUsername [ADMIN]" else "$currentUsername [USER]" else currentUsername,
-                                fontSize = 24.sp,
-                                fontWeight = FontWeight.Bold,
+                                style = MaterialTheme.typography.headlineSmall.copy(fontWeight = FontWeight.Bold),
                                 color = MaterialTheme.colorScheme.onSurface,
                                 modifier = Modifier.padding(vertical = 16.dp)
                             )
@@ -134,7 +135,7 @@ fun SettingsOverviewScreen(
                     ListItem(
                         headlineContent = {
                             Text(
-                                text = "General",
+                                text = stringResource(R.string.general),
                                 style = MaterialTheme.typography.headlineMedium
                             )
                         },
@@ -145,7 +146,7 @@ fun SettingsOverviewScreen(
                 }
                 item {
                     ListItem(
-                        headlineContent = { Text("Dark mode") },
+                        headlineContent = { Text(stringResource(R.string.dark_mode)) },
                         leadingContent = {
                             Icon(
                                 painter = painterResource(id = R.drawable.baseline_contrast_24),
@@ -162,7 +163,7 @@ fun SettingsOverviewScreen(
                 }
                 item {
                     ListItem(
-                        headlineContent = { Text(text = "Language") },
+                        headlineContent = { Text(text = stringResource(R.string.language)) },
                         leadingContent = {
                             Icon(
                                 painter = painterResource(id = R.drawable.baseline_language_24),
@@ -179,17 +180,45 @@ fun SettingsOverviewScreen(
                                 } else {
                                     Toast.makeText(
                                         context,
-                                        "Go to: Settings → System → App Languages → ShopIt",
+                                        context.getString(R.string.go_to_settings_system_app_languages_shopit),
                                         Toast.LENGTH_LONG
                                     ).show()
                                 }
                             }
                     )
                 }
+                item {
+                    ListItem(
+                        headlineContent = {
+                            Slider(
+                                value = currentFontScaleIndex.toFloat(),
+                                onValueChange = { index ->
+                                    settingsViewModel.setFontScale(fontScales[index.roundToInt()])
+                                },
+                                steps = fontScales.size - 2,
+                                valueRange = 0f..(fontScales.size - 1).toFloat(),
+                            )
+                        },
+                        leadingContent = {
+                            Icon(
+                                painter = painterResource(id = R.drawable.baseline_text_decrease_24),
+                                contentDescription = "Font size decrease",
+                                modifier = Modifier.size(20.dp)
+                            )
+                        },
+                        trailingContent = {
+                            Icon(
+                                painter = painterResource(id = R.drawable.baseline_text_increase_24),
+                                contentDescription = "Font size increase",
+                                modifier = Modifier.size(28.dp)
+                            )
+                        }
+                    )
+                }
                 if (isAdmin) {
                     item {
                         ListItem(
-                            headlineContent = { Text("Admin Settings") },
+                            headlineContent = { Text(stringResource(R.string.admin_settings)) },
                             supportingContent = {
                             },
                             leadingContent = {

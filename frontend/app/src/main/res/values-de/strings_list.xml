@@ -1,4 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="shopping_list">Einkaufsliste</string>
+    <string name="create_shopping_list">Erstelle Einkaufsliste</string>
+    <string name="shopping_list_name">Titel</string>
+    <string name="list_overview">Meine Einkaufslisten</string>
+    <string name="new_shopping_list">Neue Einkaufsliste</string>
+    <string name="delete_shopping_list_question">Einkaufsliste löschen?</string>
+    <string name="please_enter_a_name">Bitte Titel eingeben</string>
 </resources>

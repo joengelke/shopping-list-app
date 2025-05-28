@@ -4,6 +4,7 @@ import androidx.compose.material3.Typography
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.googlefonts.Font
 import androidx.compose.ui.text.googlefonts.GoogleFont
+import androidx.compose.ui.unit.sp
 import com.joengelke.shoppinglistapp.frontend.R
 
 val provider = GoogleFont.Provider(
@@ -45,5 +46,23 @@ val AppTypography = Typography(
     labelLarge = baseline.labelLarge.copy(fontFamily = bodyFontFamily),
     labelMedium = baseline.labelMedium.copy(fontFamily = bodyFontFamily),
     labelSmall = baseline.labelSmall.copy(fontFamily = bodyFontFamily),
+)
+
+fun Typography.scale(factor: Float): Typography = Typography(
+    displayLarge = displayLarge.copy(fontSize = (displayLarge.fontSize.value * factor).sp),
+    displayMedium = displayMedium.copy(fontSize = (displayMedium.fontSize.value * factor).sp),
+    displaySmall = displaySmall.copy(fontSize = (displaySmall.fontSize.value * factor).sp),
+    headlineLarge = headlineLarge.copy(fontSize = (headlineLarge.fontSize.value * factor).sp),
+    headlineMedium = headlineMedium.copy(fontSize = (headlineMedium.fontSize.value * factor).sp),
+    headlineSmall = headlineSmall.copy(fontSize = (headlineSmall.fontSize.value * factor).sp),
+    titleLarge = titleLarge.copy(fontSize = (titleLarge.fontSize.value * factor).sp),
+    titleMedium = titleMedium.copy(fontSize = (titleMedium.fontSize.value * factor).sp),
+    titleSmall = titleSmall.copy(fontSize = (titleSmall.fontSize.value * factor).sp),
+    bodyLarge = bodyLarge.copy(fontSize = (bodyLarge.fontSize.value * factor).sp),
+    bodyMedium = bodyMedium.copy(fontSize = (bodyMedium.fontSize.value * factor).sp),
+    bodySmall = bodySmall.copy(fontSize = (bodySmall.fontSize.value * factor).sp),
+    labelLarge = labelLarge.copy(fontSize = (labelLarge.fontSize.value * factor).sp),
+    labelMedium = labelMedium.copy(fontSize = (labelMedium.fontSize.value * factor).sp),
+    labelSmall = labelSmall.copy(fontSize = (labelSmall.fontSize.value * factor).sp),
 )
 

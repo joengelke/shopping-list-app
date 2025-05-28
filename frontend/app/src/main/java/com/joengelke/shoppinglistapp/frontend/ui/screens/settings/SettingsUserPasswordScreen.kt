@@ -10,11 +10,11 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavHostController
 import com.joengelke.shoppinglistapp.frontend.R
@@ -53,9 +53,8 @@ fun SettingsUserPasswordScreen(
                         horizontalArrangement = Arrangement.Center
                     ) {
                         Text(
-                            text = "Change Password",
-                            fontSize = 24.sp,
-                            fontWeight = FontWeight.Bold,
+                            text = stringResource(R.string.change_password),
+                            style = MaterialTheme.typography.headlineSmall.copy(fontWeight = FontWeight.Bold),
                             color = MaterialTheme.colorScheme.onPrimary,
                             modifier = Modifier.weight(1f)
                         )
@@ -95,12 +94,12 @@ fun SettingsUserPasswordScreen(
                             confirmed = false
                             incorrectCurrentPassword = false
                         },
-                        label = { Text("Current Password") },
+                        label = { Text(stringResource(R.string.current_password)) },
                         visualTransformation = if (currentPasswordVisible) VisualTransformation.None else PasswordVisualTransformation(),
                         supportingText = {
                             if (incorrectCurrentPassword) {
                                 Text(
-                                    text = "Wrong Password",
+                                    text = stringResource(R.string.wrong_password),
                                     color = MaterialTheme.colorScheme.error
                                 )
                             }
@@ -138,18 +137,18 @@ fun SettingsUserPasswordScreen(
                             confirmed = false
                             currentAndNewPasswordMatch = false
                         },
-                        label = { Text("New Password") },
+                        label = { Text(stringResource(R.string.new_password)) },
                         visualTransformation = if (newPasswordVisible) VisualTransformation.None else PasswordVisualTransformation(),
                         supportingText = {
                             if (!newPasswordsMatch) {
                                 Text(
-                                    text = "Password doesn't match",
+                                    text = stringResource(R.string.password_doesn_t_match),
                                     color = MaterialTheme.colorScheme.error
                                 )
                             }
                             if (currentAndNewPasswordMatch) {
                                 Text(
-                                    text = "Current and new password must be different",
+                                    text = stringResource(R.string.current_and_new_password_must_be_different),
                                     color = MaterialTheme.colorScheme.error
                                 )
                             }
@@ -188,18 +187,18 @@ fun SettingsUserPasswordScreen(
                             confirmed = false
                             currentAndNewPasswordMatch = false
                         },
-                        label = { Text("Confirm New Password") },
+                        label = { Text(stringResource(R.string.confirm_new_password)) },
                         visualTransformation = if (confirmNewPasswordVisible) VisualTransformation.None else PasswordVisualTransformation(),
                         supportingText = {
                             if (!newPasswordsMatch) {
                                 Text(
-                                    text = "Password doesn't match",
+                                    text = stringResource(R.string.password_doesn_t_match),
                                     color = MaterialTheme.colorScheme.error
                                 )
                             }
                             if (currentAndNewPasswordMatch) {
                                 Text(
-                                    text = "Current and new password must be different",
+                                    text = stringResource( R.string.current_and_new_password_must_be_different),
                                     color = MaterialTheme.colorScheme.error
                                 )
                             }
@@ -241,7 +240,8 @@ fun SettingsUserPasswordScreen(
                                 samePassword = { currentAndNewPasswordMatch = true },
                                 incorrectCurrentPassword = { incorrectCurrentPassword = true },
                                 onSuccess = {
-                                    Toast.makeText(context, "Password changed!", Toast.LENGTH_SHORT).show()
+                                    Toast.makeText(context,
+                                        context.getString(R.string.password_changed), Toast.LENGTH_SHORT).show()
                                     navController.popBackStack()
                                 }
                             )
@@ -254,7 +254,7 @@ fun SettingsUserPasswordScreen(
                             contentColor = MaterialTheme.colorScheme.onPrimary
                         )
                     ) {
-                        Text("Save and back")
+                        Text(stringResource(R.string.save_and_back))
                     }
                 }
             }

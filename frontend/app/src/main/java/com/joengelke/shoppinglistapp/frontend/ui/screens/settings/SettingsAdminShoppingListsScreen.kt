@@ -13,9 +13,9 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavHostController
 import com.joengelke.shoppinglistapp.frontend.R
@@ -64,9 +64,8 @@ fun SettingsAdminShoppingListsScreen(
                         horizontalArrangement = Arrangement.Center
                     ) {
                         Text(
-                            text = "Admin Shoppinglist Settings",
-                            fontSize = 24.sp,
-                            fontWeight = FontWeight.Bold,
+                            text = stringResource(R.string.admin_shopping_list_settings),
+                            style = MaterialTheme.typography.headlineSmall.copy(fontWeight = FontWeight.Bold),
                             color = MaterialTheme.colorScheme.onPrimary,
                             modifier = Modifier.weight(1f)
                         )
@@ -157,14 +156,13 @@ fun ShoppingListAdminContainer(
             if (!showConfirmation) {
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
-                    modifier = Modifier.padding(start = 8.dp).weight(1f)
+                    modifier = Modifier
+                        .padding(start = 8.dp)
+                        .weight(1f)
                 ) {
                     Text(
                         text = shoppingList.name,
-                        fontWeight = FontWeight.Bold,
-                        fontSize = 20.sp,
-                        modifier = Modifier
-                            .padding(start = 8.dp),
+                        style = MaterialTheme.typography.headlineSmall.copy(fontWeight = FontWeight.Bold),
                         color = MaterialTheme.colorScheme.onSurface
                     )
                 }
@@ -172,7 +170,7 @@ fun ShoppingListAdminContainer(
                     verticalAlignment = Alignment.CenterVertically,
                     modifier = Modifier
                         .weight(0.6f)
-                        .clickable{
+                        .clickable {
                             onShoppingListItems(shoppingList.id)
                         }
                 ) {
@@ -182,8 +180,7 @@ fun ShoppingListAdminContainer(
                     )
                     Text(
                         text = "${shoppingList.itemIds.size}",
-                        fontWeight = FontWeight.Bold,
-                        fontSize = 20.sp,
+                        style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
                         modifier = Modifier
                             .padding(start = 8.dp),
                         color = MaterialTheme.colorScheme.onSurface
@@ -193,7 +190,7 @@ fun ShoppingListAdminContainer(
                     verticalAlignment = Alignment.CenterVertically,
                     modifier = Modifier
                         .weight(0.6f)
-                        .clickable{
+                        .clickable {
                             onShoppingListUser(shoppingList.id)
                         }
                 ) {
@@ -203,8 +200,7 @@ fun ShoppingListAdminContainer(
                     )
                     Text(
                         text = "${shoppingList.userIds.size}",
-                        fontWeight = FontWeight.Bold,
-                        fontSize = 20.sp,
+                        style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),fontWeight = FontWeight.Bold,
                         modifier = Modifier
                             .padding(start = 8.dp),
                         color = MaterialTheme.colorScheme.onSurface
@@ -223,9 +219,8 @@ fun ShoppingListAdminContainer(
                 }
             } else {
                 Text(
-                    text = "Are you sure?",
-                    fontWeight = FontWeight.Bold,
-                    fontSize = 20.sp,
+                    text = stringResource(R.string.are_you_sure),
+                    style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
                     modifier = Modifier
                         .padding(start = 8.dp)
                         .weight(1f),

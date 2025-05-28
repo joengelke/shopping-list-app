@@ -1,4 +1,21 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">ShopIt</string>
+    <string name="register">Register</string>
+    <string name="already_have_an_account">Already have an account? Login</string>
+    <string name="don_t_have_an_account_registered">Don\'t have an account registered</string>
+    <string name="saved">%1$s saved</string>
+    <string name="cancel">Cancel</string>
+    <string name="save">Save</string>
+    <string name="create">Create</string>
+    <string name="are_you_sure">Are you sure?</string>
+    <string name="save_and_back">Save and back</string>
+    <string name="delete">Delete</string>
+    <string name="save_and_logout">Save and logout</string>
+    <string name="edit">Edit</string>
+    <string name="please_enter_a_list_name">Please enter a list name</string>
+    <string name="days_ago">%1$s days ago</string>
+    <string name="hours_ago">%1$s hours ago</string>
+    <string name="minutes_ago">%1$s minutes ago</string>
+    <string name="login">Login</string>
 </resources>

@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="item_set">Item Set</string>
+    <string name="save_item_set">Save Item Set?</string>
+    <string name="item_sets">Item Sets</string>
+    <string name="new_item_set">New Item Set</string>
+    <string name="item_set_name">Item Set name</string>
+</resources>

@@ -34,7 +34,6 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavHostController
@@ -102,8 +101,7 @@ fun ShoppingItemsOverviewScreen(
                     ) {
                         Text(
                             text = shoppingListName,
-                            fontSize = 24.sp,
-                            fontWeight = FontWeight.Bold,
+                            style = MaterialTheme.typography.headlineSmall.copy(fontWeight = FontWeight.Bold),
                             color = MaterialTheme.colorScheme.onPrimary,
                             modifier = Modifier.weight(1f)
                         )
@@ -166,7 +164,7 @@ fun ShoppingItemsOverviewScreen(
                         onDismissRequest = { isMenuExpanded = false }
                     ) {
                         DropdownMenuItem(
-                            text = { Text("Item Sets") },
+                            text = { Text(stringResource(R.string.item_sets)) },
                             onClick = {
                                 navController.navigate(
                                     Routes.ItemSetOverview.createRoute(
@@ -177,7 +175,7 @@ fun ShoppingItemsOverviewScreen(
                             }
                         )
                         DropdownMenuItem(
-                            text = { Text("Sorted by") },
+                            text = { Text(stringResource(R.string.sorted_by)) },
                             onClick = {
                                 showSorting = true
                                 isMenuExpanded = false
@@ -255,9 +253,11 @@ fun ShoppingItemsOverviewScreen(
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
                                 Text(
-                                    text = if (isCheckedItemsVisible) "Hide ${checkedItems.size} Items" else "Show ${checkedItems.size} Items",
-                                    fontSize = 12.sp,
-                                    fontWeight = FontWeight.Bold,
+                                    text = if (isCheckedItemsVisible) stringResource(
+                                        R.string.hide_items,
+                                        checkedItems.size
+                                    ) else stringResource(R.string.show_items, checkedItems.size),
+                                    style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold),
                                     modifier = Modifier.weight(1f)
                                 )
                                 Icon(
@@ -344,9 +344,9 @@ fun ShoppingItemContainer(
         val diff = Duration.between(editedAtInstant, now)
 
         return when {
-            diff.toDays() > 0 -> "${diff.toDays()} days ago"
-            diff.toHours() > 0 -> "${diff.toHours()} hours ago"
-            else -> "${diff.toMinutes()} minutes ago"
+            diff.toDays() > 0 -> context.getString(R.string.days_ago, diff.toDays().toString())
+            diff.toHours() > 0 -> context.getString(R.string.hours_ago, diff.toHours().toString())
+            else -> context.getString(R.string.minutes_ago, diff.toMinutes().toString())
         }
     }
 
@@ -374,7 +374,14 @@ fun ShoppingItemContainer(
         ) {
             Checkbox(
                 checked = shoppingItem.checked,
-                onCheckedChange = { isChecked -> onCheckedChange(shoppingItem.copy(checked = isChecked)) },
+                onCheckedChange = { isChecked ->
+                    onCheckedChange(
+                        shoppingItem.copy(
+                            checked = isChecked,
+                            checkedAt = shoppingItem.checkedAt ?: ""
+                        )
+                    )
+                },
                 colors = CheckboxDefaults.colors(
                     checkedColor = MaterialTheme.colorScheme.primary,
                     uncheckedColor = MaterialTheme.colorScheme.primary
@@ -382,12 +389,23 @@ fun ShoppingItemContainer(
             )
 
             // name and note
-            Column(modifier = Modifier.weight(1f)) {
-                Text(text = shoppingItem.name, fontWeight = FontWeight.Bold, fontSize = 20.sp)
+            Column(
+                modifier = Modifier
+                    .padding(end = 2.dp)
+                    .weight(1f)
+            ) {
+                Text(
+                    text = shoppingItem.name,
+                    style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
+                )
                 if (shoppingItem.note.isNotBlank()) {
-                    Text(text = shoppingItem.note, fontSize = 16.sp)
+                    Text(
+                        text = shoppingItem.note,
+                        style = MaterialTheme.typography.titleMedium,
+                    )
                 }
             }
+
 
             // category
             /*
@@ -405,8 +423,7 @@ fun ShoppingItemContainer(
                             if (it % 1 == 0.0) it.toInt().toString() else it.toString()
                         }
                     } ${shoppingItem.unit}",
-                    fontSize = 18.sp,
-                    fontWeight = FontWeight.Bold,
+                    style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
                     modifier = Modifier.padding(end = 10.dp)
                 )
             }
@@ -415,13 +432,15 @@ fun ShoppingItemContainer(
             if (shoppingItem.editedBy.isNotBlank()) {
                 Box(
                     modifier = Modifier
-                        .size(30.dp)
+                        .size(28.dp)
                         .background(getUsernameColor(shoppingItem.editedBy), shape = CircleShape)
-                        .padding(4.dp)
                         .clickable {
                             Toast.makeText(
                                 context,
-                                "Added ${getTimeAgo(shoppingItem.checkedAt)}",
+                                context.getString(
+                                    R.string.added_time_ago_toast,
+                                    getTimeAgo(shoppingItem.checkedAt)
+                                ),
                                 Toast.LENGTH_SHORT
                             ).show()
                         },
@@ -429,13 +448,11 @@ fun ShoppingItemContainer(
                 ) {
                     Text(
                         text = shoppingItem.editedBy.take(2).uppercase(),
-                        fontSize = 14.sp,
+                        style = MaterialTheme.typography.bodySmall.copy(fontWeight = FontWeight.Bold),
                         color = Color.White,
-                        fontWeight = FontWeight.Bold,
                         modifier = Modifier.align(Alignment.Center)
                     )
                 }
-
             }
         }
     }
@@ -480,7 +497,11 @@ fun ShoppingItemContainer(
                         },
                         modifier = Modifier.padding(8.dp)
                     ) {
-                        Text("Delete", fontSize = 20.sp, color = MaterialTheme.colorScheme.error)
+                        Text(
+                            stringResource(R.string.delete),
+                            style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold),
+                            color = MaterialTheme.colorScheme.error
+                        )
                     }
                     TextButton(
                         onClick = {
@@ -489,7 +510,10 @@ fun ShoppingItemContainer(
                         },
                         modifier = Modifier.padding(8.dp)
                     ) {
-                        Text("Edit", fontSize = 20.sp)
+                        Text(
+                            stringResource(R.string.edit),
+                            style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold),
+                        )
                     }
                 }
             }
@@ -550,7 +574,7 @@ fun EditShoppingItemModal(
                     onValueChange = {
                         name = it
                     },
-                    label = { Text("Name") },
+                    label = { Text(stringResource(R.string.item_name)) },
                     modifier = Modifier.weight(1f),
                     colors = OutlinedTextFieldDefaults.colors(
                         focusedBorderColor = MaterialTheme.colorScheme.primary,
@@ -579,7 +603,7 @@ fun EditShoppingItemModal(
                     label = { Text(stringResource(R.string.amount)) },
                     keyboardOptions = KeyboardOptions.Default.copy(keyboardType = KeyboardType.Number),
                     modifier = Modifier
-                        .weight(0.3f),
+                        .weight(0.25f),
                     colors = OutlinedTextFieldDefaults.colors(
                         focusedBorderColor = MaterialTheme.colorScheme.primary,
                         unfocusedBorderColor = MaterialTheme.colorScheme.primary
@@ -591,9 +615,9 @@ fun EditShoppingItemModal(
                         textState = newValue
                         unit = newValue.text
                     },
-                    label = { Text("Unit") },
+                    label = { Text(stringResource(R.string.unit)) },
                     modifier = Modifier
-                        .weight(0.2f)
+                        .weight(0.25f)
                         .onFocusChanged {
                             if (it.isFocused) {
                                 textState =
@@ -665,7 +689,7 @@ fun EditShoppingItemModal(
                     onValueChange = {
                         note = it
                     },
-                    label = { Text("Note") },
+                    label = { Text(stringResource(R.string.note)) },
                     modifier = Modifier.weight(1f),
                     colors = OutlinedTextFieldDefaults.colors(
                         focusedBorderColor = MaterialTheme.colorScheme.primary,
@@ -705,7 +729,7 @@ fun SortShoppingItemsModal(
                     .padding(16.dp)
             ) {
                 Text(
-                    text = "Sort Items by"
+                    text = stringResource(R.string.sort_items_by)
                 )
             }
             listOf(
@@ -725,9 +749,9 @@ fun SortShoppingItemsModal(
                     headlineContent = {
                         Text(
                             text = when (category) {
-                                ShoppingItemsSortCategory.ALPHABETICAL -> "Alphabetical"
-                                ShoppingItemsSortCategory.CHECKED_AT -> "Added to list"
-                                ShoppingItemsSortCategory.EDITED_AT -> "Edited"
+                                ShoppingItemsSortCategory.ALPHABETICAL -> stringResource(R.string.alphabetical)
+                                ShoppingItemsSortCategory.CHECKED_AT -> stringResource(R.string.sorted_added_to_list)
+                                ShoppingItemsSortCategory.EDITED_AT -> stringResource(R.string.sorted_edited)
                             }
                         )
                     },

@@ -24,6 +24,9 @@ class SettingsViewModel @Inject constructor(
     private val _language = MutableStateFlow("en")
     val language: StateFlow<String> = _language.asStateFlow()
 
+    private val _fontScale = MutableStateFlow(1.0f)
+    val fontScale: StateFlow<Float> = _fontScale.asStateFlow()
+
     private val _shoppingItemsSortOption = MutableStateFlow(
         ShoppingItemsSortOptions(
             category = ShoppingItemsSortCategory.ALPHABETICAL,
@@ -40,6 +43,9 @@ class SettingsViewModel @Inject constructor(
             settingsRepository.languageFlow.collect { _language.value = it }
         }
         viewModelScope.launch {
+            settingsRepository.fontScaleFlow.collect{ _fontScale.value = it }
+        }
+        viewModelScope.launch {
             settingsRepository.shoppingItemsSortOptionFlow.collect { _shoppingItemsSortOption.value = it }
         }
     }
@@ -54,6 +60,12 @@ class SettingsViewModel @Inject constructor(
     fun setLanguage(language: String) {
         viewModelScope.launch {
             settingsRepository.setLanguage(language)
+        }
+    }
+
+    fun setFontScale(scale: Float) {
+        viewModelScope.launch{
+            settingsRepository.setFontScale(scale)
         }
     }
 

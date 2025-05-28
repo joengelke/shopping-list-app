@@ -16,12 +16,12 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavHostController
@@ -65,9 +65,8 @@ fun ItemSetOverviewScreen(
                         horizontalArrangement = Arrangement.SpaceBetween
                     ) {
                         Text(
-                            text = "Item Sets",
-                            fontSize = 24.sp,
-                            fontWeight = FontWeight.Bold,
+                            text = stringResource(R.string.item_sets),
+                            style = MaterialTheme.typography.headlineSmall.copy(fontWeight = FontWeight.Bold),
                             color = MaterialTheme.colorScheme.onPrimary,
                             modifier = Modifier
                                 .weight(1f)
@@ -136,7 +135,7 @@ fun ItemSetOverviewScreen(
                                 showDialog = true
                             }
                         ) {
-                            Text("New Item Set")
+                            Text(stringResource(R.string.new_item_set))
                         }
                     }
                 }
@@ -169,7 +168,7 @@ fun ItemSetOverviewScreen(
                     OutlinedTextField(
                         value = itemSetName,
                         onValueChange = { itemSetName = it },
-                        placeholder = { Text("Name") },
+                        placeholder = { Text(stringResource(R.string.item_set_name)) },
                         singleLine = true,
                         modifier = Modifier
                             .fillMaxWidth()
@@ -192,7 +191,10 @@ fun ItemSetOverviewScreen(
                             itemSetName = ""
                         }
                     ) {
-                        Text("Cancel", fontSize = 20.sp)
+                        Text(
+                            stringResource(R.string.cancel),
+                            style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold),
+                        )
                     }
                     Spacer(modifier = Modifier.width(8.dp))
                     TextButton(
@@ -214,7 +216,10 @@ fun ItemSetOverviewScreen(
                             }
                         }
                     ) {
-                        Text("Create", fontSize = 20.sp)
+                        Text(
+                            stringResource(R.string.create),
+                            style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold),
+                        )
                     }
                 }
             }
@@ -294,9 +299,8 @@ fun ItemSetContainer(
 
                 delete -> {
                     Text(
-                        text = "Are you sure?",
-                        fontWeight = FontWeight.Bold,
-                        fontSize = 20.sp,
+                        text = stringResource(R.string.are_you_sure),
+                        style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),fontWeight = FontWeight.Bold,
                         color = MaterialTheme.colorScheme.onSurface,
                         modifier = Modifier
                             .padding(20.dp)
@@ -330,8 +334,7 @@ fun ItemSetContainer(
                 else -> {
                     Text(
                         text = itemSet.name,
-                        fontSize = 20.sp,
-                        fontWeight = FontWeight.Bold,
+                        style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
                         color = MaterialTheme.colorScheme.onSurface,
                         modifier = Modifier
                             .padding(20.dp)

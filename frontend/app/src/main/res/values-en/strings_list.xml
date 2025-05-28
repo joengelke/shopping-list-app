@@ -1,4 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="shopping_list">shopping list</string>
+    <string name="create_shopping_list">Create Shopping List</string>
+    <string name="shopping_list_name">Shopping List Name</string>
+    <string name="list_overview">List Overview</string>
+    <string name="new_shopping_list">New Shopping List</string>
+    <string name="delete_shopping_list_question">Delete Shopping List?</string>
+    <string name="please_enter_a_name">Please enter a name</string>
 </resources>

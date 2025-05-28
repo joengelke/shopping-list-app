@@ -15,12 +15,12 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavHostController
 import com.joengelke.shoppinglistapp.frontend.R
@@ -59,8 +59,7 @@ fun ItemSetCreateScreen(
                         if (itemSet != null) {
                             Text(
                                 text = itemSet.name,
-                                fontSize = 24.sp,
-                                fontWeight = FontWeight.Bold,
+                                style = MaterialTheme.typography.headlineSmall.copy(fontWeight = FontWeight.Bold),
                                 color = MaterialTheme.colorScheme.onPrimary,
                                 modifier = Modifier
                                     .weight(1f)
@@ -95,7 +94,7 @@ fun ItemSetCreateScreen(
                                     onSuccess = { itemSetName ->
                                         Toast.makeText(
                                             context,
-                                            "$itemSetName saved",
+                                            context.getString(R.string.saved, itemSetName),
                                             Toast.LENGTH_SHORT
                                         ).show()
                                     }
@@ -140,7 +139,7 @@ fun ItemSetCreateScreen(
                         }
 
                     ) {
-                        Text("New Item")
+                        Text(stringResource(R.string.new_item))
                     }
                 }
             }
@@ -162,7 +161,7 @@ fun ItemSetCreateScreen(
                             .padding(16.dp)
                     ) {
                         Text(
-                            text = "Save Item Set?",
+                            text = stringResource(R.string.save_item_set),
                             style = MaterialTheme.typography.titleLarge,
                             modifier = Modifier
                                 .padding(bottom = 8.dp)
@@ -180,7 +179,7 @@ fun ItemSetCreateScreen(
                                 modifier = Modifier
                                     .weight(1f)
                             ) {
-                                Text("Cancel")
+                                Text(stringResource(R.string.cancel))
                             }
                             Button(
                                 onClick = {
@@ -190,7 +189,7 @@ fun ItemSetCreateScreen(
                                         onSuccess = { itemSetName ->
                                             Toast.makeText(
                                                 context,
-                                                "$itemSetName saved",
+                                                context.getString(R.string.saved, itemSetName),
                                                 Toast.LENGTH_SHORT
                                             ).show()
                                             showDialog = false
@@ -202,7 +201,7 @@ fun ItemSetCreateScreen(
                                 modifier = Modifier
                                     .weight(1f)
                             ) {
-                                Text("Save")
+                                Text(stringResource(R.string.save))
                             }
                         }
                     }
@@ -255,7 +254,7 @@ fun ItemSetItemContainer(
                             itemSetItem.copy(name = newName)
                         )
                     },
-                    placeholder = { Text("Item name") },
+                    placeholder = { Text(stringResource(R.string.item_name)) },
                     singleLine = true,
                     modifier = Modifier.fillMaxWidth(),
                     keyboardOptions = KeyboardOptions(

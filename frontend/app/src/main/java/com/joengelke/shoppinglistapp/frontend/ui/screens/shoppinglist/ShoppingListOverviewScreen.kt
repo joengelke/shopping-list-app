@@ -7,15 +7,13 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material3.*
-import androidx.compose.material3.pulltorefresh.PullToRefreshBox
-import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavHostController
 import com.joengelke.shoppinglistapp.frontend.R
@@ -37,7 +35,6 @@ fun ShoppingListOverviewScreen(
     val uncheckedItemsAmount by shoppingListViewModel.uncheckedItemsAmount.collectAsState()
 
     var refreshing by remember { mutableStateOf(false) }
-    val state = rememberPullToRefreshState()
     val coroutineScope = rememberCoroutineScope()
     val onRefresh: () -> Unit = {
         refreshing = true
@@ -55,7 +52,6 @@ fun ShoppingListOverviewScreen(
     LaunchedEffect(Unit) {
         onRefresh()
     }
-
     Scaffold(
         topBar = {
             TopAppBar(
@@ -65,22 +61,41 @@ fun ShoppingListOverviewScreen(
                             .fillMaxWidth()
                             .padding(horizontal = 4.dp),
                         verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.Center
+                        horizontalArrangement = Arrangement.spacedBy(12.dp)
                     ) {
                         Text(
-                            text = "List Overview",
-                            fontSize = 24.sp,
-                            fontWeight = FontWeight.Bold,
+                            text = stringResource(R.string.list_overview),
+                            style = MaterialTheme.typography.headlineSmall.copy(fontWeight = FontWeight.Bold),
                             color = MaterialTheme.colorScheme.onPrimary,
-                            modifier = Modifier
-                                .weight(1f)
                         )
+                        
+                        if(refreshing) {
+                            CircularProgressIndicator(
+                                modifier = Modifier.size(24.dp),
+                                color = MaterialTheme.colorScheme.onPrimary,
+                                strokeWidth = 1.5.dp
+                            )
+                        }
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
                     containerColor = MaterialTheme.colorScheme.primary
                 ),
                 actions = {
+                    if(!refreshing) {
+                        IconButton(
+                            onClick = {
+                                onRefresh()
+                            }
+                        ) {
+                            Icon(
+                                painter = painterResource(id = R.drawable.baseline_refresh_24),
+                                contentDescription = "refresh lists",
+                                tint = MaterialTheme.colorScheme.onPrimary
+                            )
+                        }
+                    }
+
                     IconButton(
                         onClick = {
                             navController.navigate("settingsOverview")
@@ -113,13 +128,10 @@ fun ShoppingListOverviewScreen(
             )
         },
         content = { paddingValues ->
-            PullToRefreshBox(
+            Box(
                 modifier = Modifier
                     .fillMaxSize()
-                    .padding(paddingValues),
-                state = state,
-                isRefreshing = refreshing,
-                onRefresh = onRefresh
+                    .padding(paddingValues)
             ) {
                 LazyColumn(
                     modifier = Modifier
@@ -156,14 +168,14 @@ fun ShoppingListOverviewScreen(
                                 .fillMaxWidth(),
                             onClick = { navController.navigate("shoppingListCreate") },
                         ) {
-                            Text("New Shopping List")
+                            Text(stringResource(R.string.new_shopping_list))
                         }
                     }
                 }
             }
         },
         containerColor = MaterialTheme.colorScheme.background,
-        contentColor = MaterialTheme.colorScheme.onBackground
+        contentColor = MaterialTheme.colorScheme.onBackground,
     )
 }
 
@@ -211,8 +223,7 @@ fun ShoppingListContainer(
             ) {
                 Text(
                     text = shoppingList.name,
-                    fontSize = 24.sp,
-                    fontWeight = FontWeight.Bold,
+                    style = MaterialTheme.typography.headlineSmall.copy(fontWeight = FontWeight.Bold),
                     color = MaterialTheme.colorScheme.onSurface
                 )
             }
@@ -230,16 +241,16 @@ fun ShoppingListContainer(
                     onDismissRequest = { isMenuExpanded = false },
                     modifier = Modifier.align(Alignment.End)
                 ) {
-                    DropdownMenuItem(text = { Text("Edit") }, onClick = {
+                    DropdownMenuItem(text = { Text(stringResource(R.string.edit)) }, onClick = {
                         isMenuExpanded = false
                         showEditModal = true
                     })
-                    DropdownMenuItem(text = { Text("User Settings") }, onClick = {
+                    DropdownMenuItem(text = { Text(stringResource(R.string.user_settings)) }, onClick = {
                         isMenuExpanded = false
                         onAddUser()
                     })
                     DropdownMenuItem(
-                        text = { Text("Delete") },
+                        text = { Text(stringResource(R.string.delete)) },
                         onClick = {
                             deleteShoppingList = true
                         }
@@ -293,8 +304,8 @@ fun ShoppingListContainer(
 
     if (deleteShoppingList) {
         ConfirmationDialog(
-            text = "Delete Shopping List?",
-            acceptText = "Delete",
+            text = stringResource(R.string.delete_shopping_list_question),
+            acceptText = stringResource(R.string.delete),
             onDismiss = {
                 deleteShoppingList = false
                 isMenuExpanded = true
@@ -351,7 +362,7 @@ fun EditShoppingListModal(
                 horizontalArrangement = Arrangement.SpaceEvenly
             ) {
                 TextButton(onClick = onDismiss) {
-                    Text("Cancel")
+                    Text(stringResource(R.string.cancel))
                 }
                 TextButton(
                     onClick = {
@@ -359,7 +370,7 @@ fun EditShoppingListModal(
                         onDismiss()
                     }
                 ) {
-                    Text("Save")
+                    Text(stringResource(R.string.save))
                 }
             }
         }

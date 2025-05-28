@@ -311,6 +311,7 @@ fun AppTheme(
     darkTheme: Boolean = isSystemInDarkTheme(),
     // Dynamic color is available on Android 12+
     dynamicColor: Boolean = true,
+    fontScale: Float,
     content: @Composable() () -> Unit
 ) {
   val colorScheme = when {
@@ -325,7 +326,7 @@ fun AppTheme(
 
   MaterialTheme(
     colorScheme = colorScheme,
-    typography = AppTypography,
+    typography = AppTypography.scale(fontScale),
     content = content
   )
 }

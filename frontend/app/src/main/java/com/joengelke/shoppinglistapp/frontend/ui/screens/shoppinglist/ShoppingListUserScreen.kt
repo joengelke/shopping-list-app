@@ -11,9 +11,9 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavHostController
 import com.joengelke.shoppinglistapp.frontend.R
@@ -52,9 +52,8 @@ fun ShoppingListUserScreen(
                         horizontalArrangement = Arrangement.Center
                     ) {
                         Text(
-                            text = "User Settings",
-                            fontSize = 24.sp,
-                            fontWeight = FontWeight.Bold,
+                            text = stringResource(R.string.manage_users),
+                            style = MaterialTheme.typography.headlineSmall.copy(fontWeight = FontWeight.Bold),
                             color = MaterialTheme.colorScheme.onPrimary,
                             modifier = Modifier.weight(1f)
                         )
@@ -89,9 +88,8 @@ fun ShoppingListUserScreen(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Text(
-                        text = "Add new user:",
-                        fontSize = 24.sp,
-                        fontWeight = FontWeight.Bold,
+                        text = stringResource(R.string.add_new_user),
+                        style = MaterialTheme.typography.headlineSmall.copy(fontWeight = FontWeight.Bold),
                         color = MaterialTheme.colorScheme.primary,
                     )
                 }
@@ -108,7 +106,7 @@ fun ShoppingListUserScreen(
                             username = it
                             userNotFound = false
                         },
-                        placeholder = { Text("Username") },
+                        placeholder = { Text(stringResource(R.string.username)) },
                         modifier = Modifier
                             .weight(1f),
                         trailingIcon = {
@@ -164,7 +162,7 @@ fun ShoppingListUserScreen(
                         supportingText = {
                             if (userNotFound) {
                                 Text(
-                                    text = "Username doesn't exist",
+                                    text = stringResource(R.string.username_doesn_t_exist),
                                     color = MaterialTheme.colorScheme.error
                                 )
                             }
@@ -186,9 +184,8 @@ fun ShoppingListUserScreen(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Text(
-                        text = "User with access:",
-                        fontSize = 24.sp,
-                        fontWeight = FontWeight.Bold,
+                        text = stringResource(R.string.user_with_access),
+                        style = MaterialTheme.typography.headlineSmall.copy(fontWeight = FontWeight.Bold),
                         color = MaterialTheme.colorScheme.primary,
                     )
                 }
@@ -238,12 +235,11 @@ fun UserContainer(
             if (!showConfirmation) {
                 Text(
                     text = if (user.id == currentUserId) {
-                        "${user.username} (me)"
+                        stringResource(R.string.user_me, user.username)
                     } else {
                         user.username
                     },
-                    fontWeight = FontWeight.Bold,
-                    fontSize = 20.sp,
+                    style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold),
                     modifier = Modifier
                         .padding(start = 8.dp)
                         .weight(1f),
@@ -269,9 +265,8 @@ fun UserContainer(
                 }
             } else {
                 Text(
-                    text = "Are you sure?",
-                    fontWeight = FontWeight.Bold,
-                    fontSize = 20.sp,
+                    text = stringResource(R.string.are_you_sure),
+                    style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold),
                     modifier = Modifier
                         .padding(start = 8.dp)
                         .weight(1f),

@@ -1,4 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="user">User</string>
+    <string name="username">Username</string>
+    <string name="password">Password</string>
+    <string name="manage_users">Manage Users</string>
+    <string name="add_new_user">Add new user:</string>
+    <string name="username_doesn_t_exist">Username doesn\'t exist</string>
+    <string name="user_with_access">User with access:</string>
+    <string name="user_me">%1$s (me)</string>
 </resources>

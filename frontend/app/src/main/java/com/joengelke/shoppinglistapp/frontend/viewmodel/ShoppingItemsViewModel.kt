@@ -34,7 +34,8 @@ class ShoppingItemsViewModel @Inject constructor(
             ShoppingItemsSortCategory.ALPHABETICAL -> compareBy<ShoppingItem> { it.name.lowercase() }
 
             ShoppingItemsSortCategory.CHECKED_AT -> compareBy<ShoppingItem> {
-                it.checkedAt.let(Instant::parse) ?: Instant.MIN
+                it.checkedAt
+                //it.checkedAt.let(Instant::parse) ?: Instant.MIN
             }
 
             ShoppingItemsSortCategory.EDITED_AT -> compareBy<ShoppingItem> {

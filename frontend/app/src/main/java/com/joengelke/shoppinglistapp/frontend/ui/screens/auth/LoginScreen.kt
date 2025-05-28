@@ -6,7 +6,9 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
@@ -23,6 +25,8 @@ fun LoginScreen(navController: NavHostController, authViewModel: AuthViewModel, 
     var passwordVisible by remember { mutableStateOf(false) }
     var errorMessage by remember { mutableStateOf<String?>(null) }
 
+    val keyboardController = LocalSoftwareKeyboardController.current
+
     //TODO password+username standards
     Column(
         modifier = Modifier
@@ -31,7 +35,7 @@ fun LoginScreen(navController: NavHostController, authViewModel: AuthViewModel, 
         verticalArrangement = Arrangement.Center,
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        Text(text = "Login", style = MaterialTheme.typography.headlineMedium)
+        Text(text = stringResource(R.string.login), style = MaterialTheme.typography.headlineMedium)
 
         Spacer(modifier = Modifier.height(16.dp))
 
@@ -39,12 +43,12 @@ fun LoginScreen(navController: NavHostController, authViewModel: AuthViewModel, 
         OutlinedTextField(
             value = username,
             onValueChange = { username = it },
-            label = { Text("Username") })
+            label = { Text(stringResource(R.string.username)) })
         // Password TextField
         OutlinedTextField(
             value = password,
             onValueChange = { password = it },
-            label = { Text("Password") },
+            label = { Text(stringResource(R.string.password)) },
             visualTransformation = if (passwordVisible) VisualTransformation.None else PasswordVisualTransformation(),
             trailingIcon = {
                 if (password != "") {
@@ -71,6 +75,7 @@ fun LoginScreen(navController: NavHostController, authViewModel: AuthViewModel, 
         //Login button
         Button(
             onClick = {
+                keyboardController?.hide()
                 authViewModel.login(
                     username, password,
                     onSuccess = {
@@ -85,7 +90,7 @@ fun LoginScreen(navController: NavHostController, authViewModel: AuthViewModel, 
                 })
             }
         ) {
-            Text(text = "Login")
+            Text(text = stringResource(R.string.login))
         }
 
         errorMessage?.let {
@@ -97,7 +102,7 @@ fun LoginScreen(navController: NavHostController, authViewModel: AuthViewModel, 
 
         // Register button
         TextButton(onClick = { navController.navigate("register") }) {
-            Text(text = "Don't have an account registered")
+            Text(text = stringResource(R.string.don_t_have_an_account_registered))
         }
     }
 }

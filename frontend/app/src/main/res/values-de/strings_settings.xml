@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="settings">Einstellungen</string>
+    <string name="general">Allgemein</string>
+    <string name="dark_mode">Nachtmodus</string>
+    <string name="language">Sprache</string>
+    <string name="go_to_settings_system_app_languages_shopit">Gehe zu: Einstellungen → System → Sprachen -> App-Sprachen → ShopIt</string>
+    <string name="admin_settings">Admin Einstellungen</string>
+    <string name="change_password">Passwort ändern</string>
+    <string name="current_password">Aktuelles Passwort</string>
+    <string name="wrong_password">Falsches Passwort</string>
+    <string name="new_password">Neues Passwort</string>
+    <string name="password_doesn_t_match">Passwort stimmt nicht überein</string>
+    <string name="current_and_new_password_must_be_different">Aktuelles und neues Passwort muss sich unterscheiden</string>
+    <string name="confirm_new_password">Neues Passwort bestätigen</string>
+    <string name="password_changed">Passwort geändert</string>
+    <string name="change_username">Benutzername ändern</string>
+    <string name="delete_user">Benutzer löschen?</string>
+    <string name="delete_account">Account löschen</string>
+    <string name="new_username">Neuer Benutzername</string>
+    <string name="username_already_taken">Benutzername bereits vergeben</string>
+    <string name="username_changed_please_login_again">Benutzername geändert\n Bitte nochmal anmelden</string>
+    <string name="sorted_by">Sortiert nach</string>
+    <string name="sort_items_by">Sortiert nach</string>
+    <string name="alphabetical">Alphabetisch</string>
+    <string name="sorted_added_to_list">Hinzugefügt</string>
+    <string name="sorted_edited">Bearbeitet</string>
+    <string name="user_settings">Benutzer</string>
+    <string name="admin_manage_users">Benutzer verwalten</string>
+    <string name="admin_manage_shopping_lists">Einkaufslisten verwalten</string>
+    <string name="admin_items_settings">Alle Artikel</string>
+    <string name="admin_shopping_list_settings">Alle Einkaufslisten</string>
+    <string name="admin_user_settings">Alle Benutzer</string>
+</resources>

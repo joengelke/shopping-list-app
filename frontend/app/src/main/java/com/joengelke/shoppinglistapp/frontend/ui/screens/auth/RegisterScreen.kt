@@ -9,6 +9,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
@@ -36,7 +37,7 @@ fun RegisterScreen(navController: NavHostController, viewModel: AuthViewModel = 
         verticalArrangement = Arrangement.Center,
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        Text(text = "Register", style = MaterialTheme.typography.headlineMedium)
+        Text(text = stringResource(R.string.register), style = MaterialTheme.typography.headlineMedium)
 
         Spacer(modifier = Modifier.height(16.dp))
 
@@ -44,13 +45,13 @@ fun RegisterScreen(navController: NavHostController, viewModel: AuthViewModel = 
         OutlinedTextField(
             value = username,
             onValueChange = { username = it },
-            label = { Text("Username") })
+            label = { Text(text= stringResource(R.string.username)) })
 
         // Password TextField
         OutlinedTextField(
             value = password,
             onValueChange = { password = it },
-            label = { Text("Password") },
+            label = { Text(stringResource(R.string.password)) },
             visualTransformation = if (passwordVisible) VisualTransformation.None else PasswordVisualTransformation(),
             trailingIcon = {
                 if (password != "") {
@@ -89,7 +90,7 @@ fun RegisterScreen(navController: NavHostController, viewModel: AuthViewModel = 
                     })
             }
         ) {
-            Text(text = "Register")
+            Text(text = stringResource(R.string.register))
         }
 
         errorMessage?.let {
@@ -100,7 +101,7 @@ fun RegisterScreen(navController: NavHostController, viewModel: AuthViewModel = 
         Spacer(modifier = Modifier.height(8.dp))
 
         TextButton(onClick = { navController.popBackStack() }) {
-            Text(text = "Already have an account? Login")
+            Text(text = stringResource(R.string.already_have_an_account))
         }
     }
 }

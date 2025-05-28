@@ -28,6 +28,7 @@ import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardCapitalization
@@ -42,6 +43,7 @@ import com.joengelke.shoppinglistapp.frontend.models.ItemSetItem
 import com.joengelke.shoppinglistapp.frontend.models.ShoppingItem
 import com.joengelke.shoppinglistapp.frontend.viewmodel.ItemSetsViewModel
 import com.joengelke.shoppinglistapp.frontend.viewmodel.ShoppingItemsViewModel
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -108,6 +110,7 @@ fun ShoppingItemsCreateScreen(
     LaunchedEffect(Unit) {
         shoppingItemsViewModel.loadShoppingItems(shoppingListId, onSuccess = {})
         itemSetsViewModel.loadItemSets(shoppingListId, onSuccess = {})
+        delay(400)
         focusRequester.requestFocus()
         keyboardController?.show()
     }
@@ -134,7 +137,7 @@ fun ShoppingItemsCreateScreen(
                             onValueChange = { name = it },
                             placeholder = {
                                 Text(
-                                    "Enter item name",
+                                    stringResource(R.string.enter_item_name),
                                     color = MaterialTheme.colorScheme.onPrimary
                                 )
                             },
@@ -204,7 +207,7 @@ fun ShoppingItemsCreateScreen(
                 .fillMaxSize()
                 .padding(paddingValues)
                 .pointerInput(Unit) {
-                    detectTapGestures{ focusManager.clearFocus()}
+                    detectTapGestures { focusManager.clearFocus() }
                 }
         ) {
             AnimatedVisibility(name.isEmpty()) {
@@ -355,8 +358,7 @@ fun ItemContainer(
             }
             Text(
                 text = item.name,
-                fontWeight = FontWeight.Bold,
-                fontSize = 20.sp,
+                style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
                 modifier = Modifier
                     .padding(start = 8.dp)
                     .weight(1f)
@@ -368,8 +370,7 @@ fun ItemContainer(
                             text = item.amount.let {
                                 if (it % 1 == 0.0) it.toInt().toString() else it.toString()
                             },
-                            fontSize = 18.sp,
-                            fontWeight = FontWeight.Bold,
+                            style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
                             modifier = Modifier.padding(end = 10.dp)
                         )
                     }
@@ -513,8 +514,7 @@ fun ItemSetContainer(
             }
             Text(
                 text = itemSet.name,
-                fontSize = 20.sp,
-                fontWeight = FontWeight.Bold,
+                style = MaterialTheme.typography.titleLarge,
                 modifier = Modifier.weight(1f)
             )
             Icon(
@@ -606,8 +606,7 @@ fun ItemSetItemContainer(
             }
             Text(
                 text = itemSetItem.name,
-                fontWeight = FontWeight.Bold,
-                fontSize = 20.sp,
+                style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
                 modifier = Modifier
                     .padding(start = 8.dp)
                     .weight(1f)
@@ -620,8 +619,7 @@ fun ItemSetItemContainer(
                                 if (it % 1 == 0.0) it.toInt().toString() else it.toString()
                             }
                         }${shoppingItem.unit})",
-                        fontSize = 18.sp,
-                        fontWeight = FontWeight.Bold,
+                        style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
                         modifier = Modifier.padding(end = 10.dp)
                     )
                 }
