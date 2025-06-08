@@ -23,16 +23,13 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
-import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -222,7 +219,7 @@ fun ShoppingItemsOverviewScreen(
                             onCheckedChange = { updatedItem ->
                                 //visible = false
                                 shoppingItemsViewModel.updateCheckedStatus(
-                                    item.id,
+                                    item,
                                     updatedItem.checked
                                 )
                             },
@@ -273,7 +270,7 @@ fun ShoppingItemsOverviewScreen(
                                     item,
                                     onCheckedChange = { updatedItem ->
                                         shoppingItemsViewModel.updateCheckedStatus(
-                                            item.id,
+                                            item,
                                             updatedItem.checked
                                         )
                                     },
@@ -534,7 +531,9 @@ fun EditShoppingItemModal(
     var category by remember { mutableStateOf(shoppingItem.category) }
     var note by remember { mutableStateOf(shoppingItem.note) }
 
-    var textState by remember { mutableStateOf(TextFieldValue(unit)) }
+    var expandedUnitDropdown by remember { mutableStateOf(false) }
+    val units = listOf("", "ml", "l", "g", "kg", stringResource(R.string.pieces_short))
+
 
     val updatedShoppingItem = ShoppingItem(
         id = shoppingItem.id,
@@ -590,7 +589,6 @@ fun EditShoppingItemModal(
                 verticalAlignment = Alignment.CenterVertically,
                 modifier = Modifier.fillMaxWidth()
             ) {
-
                 OutlinedTextField(
                     value = amountText,
                     onValueChange = { newValue ->
@@ -603,36 +601,58 @@ fun EditShoppingItemModal(
                     label = { Text(stringResource(R.string.amount)) },
                     keyboardOptions = KeyboardOptions.Default.copy(keyboardType = KeyboardType.Number),
                     modifier = Modifier
-                        .weight(0.25f),
+                        .weight(0.3f),
                     colors = OutlinedTextFieldDefaults.colors(
                         focusedBorderColor = MaterialTheme.colorScheme.primary,
                         unfocusedBorderColor = MaterialTheme.colorScheme.primary
                     )
                 )
-                OutlinedTextField(
-                    value = textState,
-                    onValueChange = { newValue ->
-                        textState = newValue
-                        unit = newValue.text
-                    },
-                    label = { Text(stringResource(R.string.unit)) },
+                ExposedDropdownMenuBox(
+                    expanded = expandedUnitDropdown,
+                    onExpandedChange = { expandedUnitDropdown = !expandedUnitDropdown },
                     modifier = Modifier
-                        .weight(0.25f)
-                        .onFocusChanged {
-                            if (it.isFocused) {
-                                textState =
-                                    textState.copy(selection = TextRange(0, textState.text.length))
-                            }
+                        .weight(0.2f)
+                ) {
+                    OutlinedTextField(
+                        value = unit.ifEmpty { " " },
+                        onValueChange = {},
+                        label = { Text(stringResource(R.string.unit)) },
+                        readOnly = true,
+                        enabled = false,
+                        singleLine = true,
+                        trailingIcon = {
+                            ExposedDropdownMenuDefaults.TrailingIcon(expanded = expandedUnitDropdown)
                         },
-                    colors = OutlinedTextFieldDefaults.colors(
-                        focusedBorderColor = MaterialTheme.colorScheme.primary,
-                        unfocusedBorderColor = MaterialTheme.colorScheme.primary
+                        modifier = Modifier
+                            .menuAnchor(MenuAnchorType.PrimaryNotEditable, expandedUnitDropdown)
+                            .clickable {
+                                expandedUnitDropdown = true
+                            },
+                        colors = OutlinedTextFieldDefaults.colors(
+                            disabledBorderColor = MaterialTheme.colorScheme.primary,
+                            disabledTextColor = MaterialTheme.colorScheme.onSurface,
+                            disabledLabelColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                            disabledTrailingIconColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
                     )
-                )
-
+                    ExposedDropdownMenu(
+                        expanded = expandedUnitDropdown,
+                        onDismissRequest = { expandedUnitDropdown = false}
+                    ) {
+                        units.forEach { item ->
+                            DropdownMenuItem(
+                                text = { Text(item) },
+                                onClick = {
+                                    unit = item
+                                    expandedUnitDropdown = false
+                                }
+                            )
+                        }
+                    }
+                }
                 IconButton(
                     onClick = {
-                        if ((amount - 1) > 0) {
+                        if (amount >= 1) {
                             amount -= 1
                             amountText = amount.toString()
                         }
@@ -640,8 +660,13 @@ fun EditShoppingItemModal(
                     modifier = Modifier
                         .size(48.dp)
                         .clip(CircleShape)
-                        .background(MaterialTheme.colorScheme.primary)
-                        .padding(horizontal = 8.dp)
+                        .background(
+                            if (amount > 0) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.primary.copy(
+                                alpha = 0.2f
+                            )
+                        )
+                        .padding(horizontal = 8.dp),
+                    enabled = amount > 0,
                 ) {
                     Icon(
                         painter = painterResource(id = R.drawable.baseline_remove_24),

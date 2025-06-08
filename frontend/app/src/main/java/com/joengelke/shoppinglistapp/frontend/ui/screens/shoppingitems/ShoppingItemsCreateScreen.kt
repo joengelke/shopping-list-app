@@ -54,11 +54,12 @@ fun ShoppingItemsCreateScreen(
     shoppingItemsViewModel: ShoppingItemsViewModel = hiltViewModel(),
     itemSetsViewModel: ItemSetsViewModel = hiltViewModel()
 ) {
-    var name by remember { mutableStateOf("") }
+    var name by remember { mutableStateOf("") } // name value shown in OutlinedTextField
+    var filterName by remember { mutableStateOf("") } // actual name which filters all shoppingItems
     val newShoppingItem = listOf(
         ShoppingItem(
             id = "",
-            name = name,
+            name = filterName,
             category = "",
             amount = 0.0,
             unit = "",
@@ -73,28 +74,19 @@ fun ShoppingItemsCreateScreen(
     val shoppingItems by shoppingItemsViewModel.shoppingItems.collectAsState()
     val itemSets by itemSetsViewModel.itemSets.collectAsState()
 
-    /*
-    val ownSuggestionsList =
-        tmpOwnSuggestionsList.filter { it.name !in shoppingItems.map { it.name }.toSet()
-
-    val filteredOwnSuggestions =
-        ownSuggestionsList.filter { it.name.contains(name, ignoreCase = true) }
-
-     */
-
     // Filter items that start with the entered name
-    val filteredShoppingItems = shoppingItems.filter { it.name.contains(name, ignoreCase = true) }
+    val filteredShoppingItems =
+        shoppingItems.filter { it.name.contains(filterName, ignoreCase = true) }
 
     // own item name always first item (if it doesn't exists), then all suggestions are added
     val allItems =
-        if (name.isNotEmpty()) {
-            if (!filteredShoppingItems.any { it.name == name }) {
+        if (filterName.isNotEmpty()) {
+            if (!filteredShoppingItems.any { it.name == filterName }) {
                 newShoppingItem + filteredShoppingItems
             } else {
                 filteredShoppingItems
             }
         } else {
-            // TODO add other sorting parameters
             filteredShoppingItems.sortedBy { it.name }
         }
 
@@ -134,7 +126,10 @@ fun ShoppingItemsCreateScreen(
                     title = {
                         OutlinedTextField(
                             value = name,
-                            onValueChange = { name = it },
+                            onValueChange = {
+                                name = it
+                                filterName = it
+                            },
                             placeholder = {
                                 Text(
                                     stringResource(R.string.enter_item_name),
@@ -156,7 +151,7 @@ fun ShoppingItemsCreateScreen(
                                 if (name.isNotBlank()) {
                                     IconButton(
                                         onClick = { name = "" },
-                                        modifier = Modifier.padding(end =4.dp)
+                                        modifier = Modifier.padding(end = 4.dp)
                                     ) {
                                         Icon(
                                             imageVector = Icons.Default.Clear,
@@ -247,11 +242,13 @@ fun ShoppingItemsCreateScreen(
                                     shoppingListId,
                                     addItem
                                 )
+                                name = ""
                             },
                             removeOneItem = { itemId ->
                                 shoppingItemsViewModel.removeOneShoppingItem(
                                     itemId
                                 )
+                                name = ""
                             }
                         )
                     }
@@ -618,7 +615,7 @@ fun ItemSetItemContainer(
                             shoppingItem.amount.let {
                                 if (it % 1 == 0.0) it.toInt().toString() else it.toString()
                             }
-                        }${shoppingItem.unit})",
+                        }${if (shoppingItem.unit.isNotBlank()) " ${shoppingItem.unit}" else ""})",
                         style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
                         modifier = Modifier.padding(end = 10.dp)
                     )
@@ -629,7 +626,7 @@ fun ItemSetItemContainer(
                             itemSetItem.amount.let {
                                 if (it % 1 == 0.0) it.toInt().toString() else it.toString()
                             }
-                        }${itemSetItem.unit}",
+                        }${if (itemSetItem.unit.isNotBlank()) " ${itemSetItem.unit}" else ""}",
                         fontSize = 18.sp,
                         fontWeight = FontWeight.Bold,
                         modifier = Modifier.padding(end = 10.dp)

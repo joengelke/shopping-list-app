@@ -99,6 +99,8 @@ public class ShoppingItemService {
 
         shoppingItem.setChecked(newShoppingItem.isChecked());
 
+        shoppingItem.setCheckedAt(Instant.now());
+
         shoppingItem.setEditedAt(Instant.now());
 
         shoppingItem.setEditedBy(username);
@@ -113,6 +115,9 @@ public class ShoppingItemService {
         shoppingItem.setChecked(checked);
         if(!checked) {
             shoppingItem.setCheckedAt(Instant.now());
+        } else {
+            shoppingItem.setAmount(0.0);
+            shoppingItem.setUnit("");
         }
         return shoppingItemRepository.save(shoppingItem);
     }

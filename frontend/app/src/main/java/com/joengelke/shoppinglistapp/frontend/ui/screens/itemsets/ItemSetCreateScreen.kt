@@ -1,6 +1,7 @@
 package com.joengelke.shoppinglistapp.frontend.ui.screens.itemsets
 
 import android.widget.Toast
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -211,6 +212,7 @@ fun ItemSetCreateScreen(
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ItemSetItemContainer(
     itemSetId: String,
@@ -222,6 +224,9 @@ fun ItemSetItemContainer(
     var amount by remember { mutableDoubleStateOf(itemSetItem.amount) }
     var amountText by remember { mutableStateOf(amount.toString().replace(".0", "")) }
     var unit by remember { mutableStateOf(itemSetItem.unit) }
+
+    var expandedUnitDropdown by remember { mutableStateOf(false) }
+    val units = listOf("", "ml", "l", "g", "kg", stringResource(R.string.pieces_short))
 
     Card(
         modifier = Modifier
@@ -270,7 +275,7 @@ fun ItemSetItemContainer(
             }
             Column(
                 modifier = Modifier
-                    .weight(0.2f)
+                    .weight(0.18f)
                     .padding(horizontal = 4.dp)
             ) {
                 OutlinedTextField(
@@ -296,29 +301,57 @@ fun ItemSetItemContainer(
             }
             Column(
                 modifier = Modifier
-                    .weight(0.2f)
+                    .weight(0.24f)
                     .padding(horizontal = 4.dp)
             ) {
-                OutlinedTextField(
-                    value = unit,
-                    onValueChange = { newUnit ->
-                        unit = newUnit
-                        itemSetsViewModel.updateItemSetItem(
-                            itemSetId,
-                            itemSetItem.copy(unit = newUnit)
+                ExposedDropdownMenuBox(
+                    expanded = expandedUnitDropdown,
+                    onExpandedChange = { expandedUnitDropdown = !expandedUnitDropdown },
+                ) {
+                    OutlinedTextField(
+                        value = unit.ifEmpty { " " },
+                        onValueChange = { },
+                        readOnly = true,
+                        enabled = false,
+                        singleLine = true,
+                        trailingIcon = {
+                            ExposedDropdownMenuDefaults.TrailingIcon(expanded = expandedUnitDropdown)
+                        },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .menuAnchor(MenuAnchorType.PrimaryNotEditable, expandedUnitDropdown)
+                            .clickable {
+                                expandedUnitDropdown = true
+                            },
+                        colors = OutlinedTextFieldDefaults.colors(
+                            disabledBorderColor = MaterialTheme.colorScheme.primary,
+                            disabledTextColor = MaterialTheme.colorScheme.onSurface,
+                            disabledLabelColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                            disabledTrailingIconColor = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
-                    },
-                    singleLine = true,
-                    modifier = Modifier.fillMaxWidth(),
-                    colors = OutlinedTextFieldDefaults.colors(
-                        focusedBorderColor = MaterialTheme.colorScheme.primary,
-                        unfocusedBorderColor = MaterialTheme.colorScheme.primary
                     )
-                    //TODO dropdown with kg,g,st,ml,l
-                )
+                    ExposedDropdownMenu(
+                        expanded = expandedUnitDropdown,
+                        onDismissRequest = { expandedUnitDropdown = false}
+                    ) {
+                        units.forEach { item ->
+                            DropdownMenuItem(
+                                text = { Text(item) },
+                                onClick = {
+                                    unit = item
+                                    itemSetsViewModel.updateItemSetItem(
+                                        itemSetId,
+                                        itemSetItem.copy(unit = item)
+                                    )
+                                    expandedUnitDropdown = false
+                                }
+                            )
+                        }
+                    }
+                }
             }
             Column(
-                modifier = Modifier.weight(0.1f)
+                modifier = Modifier.weight(0.08f)
             ) {
                 IconButton(
                     onClick = {
@@ -326,7 +359,7 @@ fun ItemSetItemContainer(
                     }
                 ) {
                     Icon(
-                        painter = painterResource(id = R.drawable.baseline_remove_24),
+                        painter = painterResource(id = R.drawable.baseline_delete_24),
                         contentDescription = "Remove"
                     )
                 }

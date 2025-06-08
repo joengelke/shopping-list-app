@@ -7,5 +7,5 @@
     <string name="add_new_user">Neuen Benutzer hinzufügen:</string>
     <string name="username_doesn_t_exist">Benutzername exisitiert nicht</string>
     <string name="user_with_access">Benutzer mit Zugang:</string>
-    <string name="user_me">%1$s (me)</string>
+    <string name="user_me">%1$s (ich)</string>
 </resources>

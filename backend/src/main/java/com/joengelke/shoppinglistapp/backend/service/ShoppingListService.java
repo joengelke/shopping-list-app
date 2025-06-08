@@ -183,6 +183,7 @@ public class ShoppingListService {
                 shoppingItem.setCheckedAt(Instant.now());
             } else {
                 shoppingItem.setAmount(shoppingItem.getAmount() + 1);
+                shoppingItem.setCheckedAt(Instant.now());
             }
             createdOrUpdatedItem = shoppingItemService.updateItem(header, shoppingItem);
         }

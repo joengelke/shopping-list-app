@@ -10,4 +10,5 @@
     <string name="added_time_ago_toast">Hinzugefügt %1$s</string>
     <string name="unit">Einheit</string>
     <string name="note">Notiz</string>
+    <string name="pieces_short">St</string>
 </resources>

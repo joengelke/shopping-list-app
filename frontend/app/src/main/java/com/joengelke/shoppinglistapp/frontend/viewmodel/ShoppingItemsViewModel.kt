@@ -11,8 +11,9 @@ import com.joengelke.shoppinglistapp.frontend.ui.common.SortDirection
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
+import java.text.Collator
 import java.time.Instant
-import java.time.format.DateTimeParseException
+import java.util.Locale
 import javax.inject.Inject
 
 @HiltViewModel
@@ -31,7 +32,10 @@ class ShoppingItemsViewModel @Inject constructor(
         shoppingItemsSortOption
     ) { items, sortOption ->
         val comparator = when (sortOption.category) {
-            ShoppingItemsSortCategory.ALPHABETICAL -> compareBy<ShoppingItem> { it.name.lowercase() }
+            ShoppingItemsSortCategory.ALPHABETICAL -> {
+                val collator = Collator.getInstance(Locale.GERMAN)
+                compareBy<ShoppingItem> { collator.getCollationKey(it.name)}
+            }
 
             ShoppingItemsSortCategory.CHECKED_AT -> compareBy<ShoppingItem> {
                 it.checkedAt
@@ -56,7 +60,7 @@ class ShoppingItemsViewModel @Inject constructor(
 
     // undo function
     private val maxUndoSize = 5
-    private val undoStack = ArrayDeque<String>(maxUndoSize)
+    private val undoStack = ArrayDeque<ShoppingItem>(maxUndoSize)
     private val _isUndoAvailable = MutableStateFlow(false)
     val isUndoAvailable: StateFlow<Boolean> = _isUndoAvailable.asStateFlow()
 
@@ -111,12 +115,12 @@ class ShoppingItemsViewModel @Inject constructor(
         }
     }
 
-    fun updateCheckedStatus(itemId: String, checked: Boolean) {
+    fun updateCheckedStatus(shoppingItem: ShoppingItem, checked: Boolean) {
         viewModelScope.launch {
-            val result = shoppingItemRepository.updateCheckedStatus(itemId, checked)
+            val result = shoppingItemRepository.updateCheckedStatus(shoppingItem.id, checked)
             result.onSuccess { updatedItem ->
                 if (checked) {
-                    pushToUndoStack(updatedItem.id)
+                    pushToUndoStack(shoppingItem)
                 }
                 _shoppingItems.value = _shoppingItems.value.map {
                     if (it.id == updatedItem.id) updatedItem else it
@@ -126,8 +130,8 @@ class ShoppingItemsViewModel @Inject constructor(
     }
 
     fun undoLastCheckedItem() {
-        val lastCheckedItemId = undoStack.removeLastOrNull() ?: return
-        updateCheckedStatus(lastCheckedItemId, false)
+        val lastCheckedItem = undoStack.removeLastOrNull() ?: return
+        updateItem(lastCheckedItem.copy(checked = false))
         _isUndoAvailable.value = undoStack.isNotEmpty()
     }
 
@@ -142,11 +146,11 @@ class ShoppingItemsViewModel @Inject constructor(
         }
     }
 
-    private fun pushToUndoStack(itemId: String) {
+    private fun pushToUndoStack(shoppingItem: ShoppingItem) {
         if (undoStack.size >= maxUndoSize) {
             undoStack.removeFirst() // Remove oldest item
         }
-        undoStack.addLast(itemId)
+        undoStack.addLast(shoppingItem)
         _isUndoAvailable.value = undoStack.isNotEmpty()
     }
 
@@ -210,11 +214,5 @@ class ShoppingItemsViewModel @Inject constructor(
                 }
             }
         }
-    }
-
-    private fun parseDate(dateString: String): Instant = try {
-        Instant.parse(dateString)
-    } catch (e: DateTimeParseException) {
-        Instant.MIN
     }
 }
