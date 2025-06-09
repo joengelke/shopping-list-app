@@ -115,9 +115,9 @@ class ShoppingItemsViewModel @Inject constructor(
         }
     }
 
-    fun updateCheckedStatus(shoppingItem: ShoppingItem, checked: Boolean) {
+    fun updateCheckedStatus(shoppingListId: String, shoppingItem: ShoppingItem, checked: Boolean) {
         viewModelScope.launch {
-            val result = shoppingItemRepository.updateCheckedStatus(shoppingItem.id, checked)
+            val result = shoppingItemRepository.updateCheckedStatus(shoppingListId, shoppingItem.id, checked)
             result.onSuccess { updatedItem ->
                 if (checked) {
                     pushToUndoStack(shoppingItem)

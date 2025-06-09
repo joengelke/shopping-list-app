@@ -30,9 +30,9 @@ public class ShoppingItemController {
         return ResponseEntity.ok(updatedItem);
     }
 
-    @PatchMapping("/{id}/checked")
-    public ResponseEntity<?> updateCheckedStatus(@PathVariable String id, @RequestParam boolean checked) {
-        ShoppingItem shoppingItem = shoppingItemService.updateCheckedStatus(id, checked);
+    @PatchMapping("/{itemId}/checked")
+    public ResponseEntity<?> updateCheckedStatus(@PathVariable String shoppingListId, @PathVariable String itemId, @RequestParam boolean checked) {
+        ShoppingItem shoppingItem = shoppingItemService.updateCheckedStatus(shoppingListId, itemId, checked);
         return ResponseEntity.ok(shoppingItem);
     }
 

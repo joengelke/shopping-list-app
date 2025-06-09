@@ -102,14 +102,14 @@ class ShoppingItemRepository @Inject constructor(
     }
 
 
-    suspend fun updateCheckedStatus(itemId: String, checked: Boolean): Result<ShoppingItem> {
+    suspend fun updateCheckedStatus(shoppingListId: String, itemId: String, checked: Boolean): Result<ShoppingItem> {
         return try {
             val token =
                 tokenManager.getToken() ?: return Result.failure(Exception("No token found"))
 
             val response =
                 NetworkModule.getShoppingItemApi(context)
-                    .updateCheckedStatus("Bearer $token", itemId, checked)
+                    .updateCheckedStatus("Bearer $token", shoppingListId, itemId, checked)
             when {
                 response.isSuccessful -> response.body()?.let { Result.success(it) }
                     ?: Result.failure(Exception("Unexpected empty response"))

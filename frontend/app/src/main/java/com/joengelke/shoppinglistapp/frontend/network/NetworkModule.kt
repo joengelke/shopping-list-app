@@ -37,8 +37,10 @@ object NetworkModule {
     private var itemSetApi: ItemSetApi? = null
     private var userApi: UserApi? = null
 
-    private var serverURL = "https://shopit.ddnss.de:8443/api/"
+    private var serverURL = //"https://shopit.ddnss.de:8443/api/"
          //"https://192.168.1.38:8443/api/" // dev server on .38 (.23 WiFi) raspberryPi on .60
+        "https://217.25.168.37:8443/api/"
+
 
     // checks if device is in local network or not
     // !!! just for local networks starting with 192.168.1. !!!

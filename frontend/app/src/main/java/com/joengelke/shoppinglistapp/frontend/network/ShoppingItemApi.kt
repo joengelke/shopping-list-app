@@ -28,9 +28,10 @@ interface ShoppingItemApi {
     ): Response<ShoppingItem>
 
     // update checked status
-    @PATCH("shoppingitem/{itemId}/checked")
+    @PATCH("shoppingitem/{shoppingListId}/{itemId}/checked")
     suspend fun updateCheckedStatus(
         @Header("Authorization") token: String,
+        @Path("shoppingListId") shoppingListId: String,
         @Path("itemId") itemId: String,
         @Query("checked") checked: Boolean
     ): Response<ShoppingItem>

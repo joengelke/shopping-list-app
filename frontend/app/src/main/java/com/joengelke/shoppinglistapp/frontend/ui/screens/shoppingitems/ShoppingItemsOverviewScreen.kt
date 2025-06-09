@@ -219,6 +219,7 @@ fun ShoppingItemsOverviewScreen(
                             onCheckedChange = { updatedItem ->
                                 //visible = false
                                 shoppingItemsViewModel.updateCheckedStatus(
+                                    shoppingListId,
                                     item,
                                     updatedItem.checked
                                 )
@@ -270,6 +271,7 @@ fun ShoppingItemsOverviewScreen(
                                     item,
                                     onCheckedChange = { updatedItem ->
                                         shoppingItemsViewModel.updateCheckedStatus(
+                                            shoppingListId,
                                             item,
                                             updatedItem.checked
                                         )

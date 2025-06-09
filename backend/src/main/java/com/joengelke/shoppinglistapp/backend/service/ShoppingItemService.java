@@ -40,7 +40,6 @@ public class ShoppingItemService {
         if (shoppingItem.getCategory() == null) {
             shoppingItem.setCategory("");
         }
-
         if (shoppingItem.getUnit() == null) {
             shoppingItem.setUnit("");
         }
@@ -109,13 +108,14 @@ public class ShoppingItemService {
     }
 
     // just change checked status for better performance
-    public ShoppingItem updateCheckedStatus(String itemId, boolean checked) {
+    public ShoppingItem updateCheckedStatus(String shoppingListId, String itemId, boolean checked) {
         ShoppingItem shoppingItem = shoppingItemRepository.findById(itemId)
                 .orElseThrow(() -> new NoSuchElementException("Item not found with itemId: " + itemId));
         shoppingItem.setChecked(checked);
         if(!checked) {
             shoppingItem.setCheckedAt(Instant.now());
         } else {
+            //TODO analysing tool here
             shoppingItem.setAmount(0.0);
             shoppingItem.setUnit("");
         }
