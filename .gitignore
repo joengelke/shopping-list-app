@@ -22,9 +22,9 @@ app/build/
 *.ear
 
 # Node.js (if you use React in the frontend)
-frontend/node_modules/
-frontend/.next/
-frontend/.parcel-cache/
+frontend-android/node_modules/
+frontend-android/.next/
+frontend-android/.parcel-cache/
 frontend/build/
 
 # Java/Maven/Gradle
