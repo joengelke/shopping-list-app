@@ -64,3 +64,9 @@ mvnw.cmd
 # Ignore Gradle wrapper (if applicable)
 gradlew
 gradlew.bat
+
+# Node.js dependencies and Angular build output for frontend-web
+frontend-web/node_modules/
+frontend-web/dist/
+frontend-web/.angular/
+frontend-web/.vscode/
