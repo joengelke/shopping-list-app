@@ -25,7 +25,7 @@ app/build/
 frontend-android/node_modules/
 frontend-android/.next/
 frontend-android/.parcel-cache/
-frontend/build/
+frontend-android/build/
 
 # Java/Maven/Gradle
 backend/target/
