@@ -49,8 +49,9 @@ backend/*.swo
 backend/*.db
 
 # Ignore sensitive Android configuration files
-*.keystore
-*.jks
+*.crt
+*.pem
+*.p12
 
 # Ignore system files
 .DS_Store
