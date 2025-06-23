@@ -15,15 +15,17 @@ public class ShoppingItemActivity {
     @Id
     private String id;
     private String listId;
+    private String userId;
     private String itemId;
     private String name;
     private double amount;
     private String unit;
     private Instant timestamp;
-    private String actionType; // always checked for the beginning
+    private String actionType; // ITEM_CHECKED, ITEM_DELETED, ITEM_EDITED
 
-    public ShoppingItemActivity(String listId, String itemId, String name, double amount, String unit, Instant timestamp, String actionType) {
+    public ShoppingItemActivity(String listId, String userId, String itemId, String name, double amount, String unit, Instant timestamp, String actionType) {
         this.listId = listId;
+        this.userId = userId;
         this.itemId = itemId;
         this.name = name;
         this.amount = amount;

@@ -1,14 +1,14 @@
 package com.joengelke.shoppinglistapp.frontend.ui.screens.shoppingitems
 
 import android.widget.Toast
-import androidx.compose.foundation.ExperimentalFoundationApi
-import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.combinedClickable
+import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.BasicTextField
+import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
@@ -23,12 +23,16 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
@@ -530,17 +534,33 @@ fun EditShoppingItemModal(
     var amount by remember { mutableDoubleStateOf(shoppingItem.amount) }
     var amountText by remember { mutableStateOf(amount.toString().replace(".0", "")) }
     var unit by remember { mutableStateOf(shoppingItem.unit) }
-    var category by remember { mutableStateOf(shoppingItem.category) }
+    var tags by remember { mutableStateOf(shoppingItem.tags) }
     var note by remember { mutableStateOf(shoppingItem.note) }
 
     var expandedUnitDropdown by remember { mutableStateOf(false) }
-    val units = listOf("", "ml", "l", "g", "kg", stringResource(R.string.pieces_short))
+    val units = listOf(
+        "", "ml", "l", "g", "kg",
+        stringResource(R.string.teaspoon),
+        stringResource(R.string.tablespoon), stringResource(R.string.pieces_short)
+    )
 
+    var addTagIcon by remember { mutableStateOf(true) }
+    var tagInput by remember { mutableStateOf("") }
+
+    val focusRequester = remember { FocusRequester() }
+    val keyboardController = LocalSoftwareKeyboardController.current
+
+    LaunchedEffect(addTagIcon) {
+        if (!addTagIcon) {
+            focusRequester.requestFocus()
+            keyboardController?.show()
+        }
+    }
 
     val updatedShoppingItem = ShoppingItem(
         id = shoppingItem.id,
         name = name,
-        category = category,
+        tags = tags,
         amount = amount,
         unit = unit,
         checked = shoppingItem.checked,
@@ -639,7 +659,7 @@ fun EditShoppingItemModal(
                     )
                     ExposedDropdownMenu(
                         expanded = expandedUnitDropdown,
-                        onDismissRequest = { expandedUnitDropdown = false}
+                        onDismissRequest = { expandedUnitDropdown = false }
                     ) {
                         units.forEach { item ->
                             DropdownMenuItem(
@@ -702,15 +722,6 @@ fun EditShoppingItemModal(
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
                 modifier = Modifier.fillMaxWidth()
             ) {
-                /* Category Field
-                OutlinedTextField(
-                    value = category,
-                    onValueChange = {
-                        category = it
-                    },
-                    label = { Text("Category") },
-                    modifier = Modifier.weight(1f)
-                ) */
                 OutlinedTextField(
                     value = note,
                     onValueChange = {
@@ -723,6 +734,152 @@ fun EditShoppingItemModal(
                         unfocusedBorderColor = MaterialTheme.colorScheme.primary
                     )
                 )
+            }
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            FlowRow(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .border(
+                        width = 1.dp,
+                        color = MaterialTheme.colorScheme.primary,
+                        shape = RoundedCornerShape(4.dp)
+                    ),
+            ) {
+                tags.forEach { tag ->
+                    var confirmDelete by remember { mutableStateOf(false) }
+                    AssistChip(
+                        onClick = {},
+                        label = {
+                            if (!confirmDelete) {
+                                Text(tag)
+                            }
+                        },
+                        leadingIcon = {
+                            if (confirmDelete) {
+                                Icon(
+                                    painter = painterResource(id = R.drawable.baseline_check_24),
+                                    contentDescription = "delete tag",
+                                    tint = MaterialTheme.colorScheme.primary,
+                                    modifier = Modifier
+                                        .clickable {
+                                            tags = tags - tag
+                                            confirmDelete = false
+                                        }
+                                        .weight(1f)
+                                )
+                            }
+                        },
+                        trailingIcon = {
+                            if (!confirmDelete) {
+                                Icon(
+                                    painter = painterResource(id = R.drawable.baseline_close_24),
+                                    contentDescription = "delete tag",
+                                    tint = MaterialTheme.colorScheme.primary,
+                                    modifier = Modifier.clickable {
+                                        confirmDelete = true
+                                    }
+                                )
+                            } else {
+                                Icon(
+                                    painter = painterResource(id = R.drawable.baseline_close_24),
+                                    contentDescription = "confirm delete tag",
+                                    tint = MaterialTheme.colorScheme.error,
+                                    modifier = Modifier
+                                        .clickable {
+                                            confirmDelete = false
+                                        }
+                                        .weight(1f)
+                                )
+                            }
+
+                        },
+                        modifier = Modifier.padding(start = 8.dp)
+                    )
+                }
+
+                if (addTagIcon) {
+                    AssistChip(
+                        onClick = {
+                            addTagIcon = false
+                        },
+                        label = {
+                            Icon(
+                                painter = painterResource(id = R.drawable.baseline_add_24),
+                                contentDescription = "add tag",
+                                tint = MaterialTheme.colorScheme.primary
+                            )
+                        },
+                        modifier = Modifier.padding(horizontal = 8.dp)
+                    )
+                } else {
+                    //TODO: Modal doesn't scroll up correctly once focus was requested
+                    BasicTextField(
+                        value = tagInput,
+                        onValueChange = { tagInput = it },
+                        modifier = Modifier
+                            .focusRequester(focusRequester),
+                        keyboardOptions = KeyboardOptions.Default.copy(imeAction = ImeAction.Done),
+                        keyboardActions = KeyboardActions(
+                            onDone = {
+                                if (tagInput.isNotBlank()) {
+                                    tags = tags + tagInput
+                                    tagInput = ""
+                                    addTagIcon = true
+                                    keyboardController?.hide()
+                                }
+                            }
+                        ),
+                        decorationBox = { innerTextField ->
+                            Surface(
+                                shape = RoundedCornerShape(8.dp),
+                                border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline),
+                                tonalElevation = 1.dp,
+                                modifier = Modifier
+                                    .defaultMinSize(minHeight = 32.dp)
+                                    .padding(horizontal = 8.dp, vertical = 8.dp)
+                            ) {
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    modifier = Modifier.padding(
+                                        start = 16.dp,
+                                        end = 8.dp,
+                                        top = 4.dp,
+                                        bottom = 4.dp
+                                    )
+                                ) {
+                                    Box {
+                                        if (tagInput.isEmpty()) {
+                                            Text(
+                                                text = "<add tag>",
+                                                style = MaterialTheme.typography.bodyMedium,
+                                                color = MaterialTheme.colorScheme.outline
+                                            )
+                                        }
+                                        innerTextField()
+                                    }
+                                    Spacer(Modifier.width(4.dp))
+                                    Icon(
+                                        painter = painterResource(R.drawable.baseline_check_24),
+                                        contentDescription = "Add tag",
+                                        modifier = Modifier
+                                            .size(24.dp)
+                                            .clickable {
+                                                if (tagInput.isNotBlank()) {
+                                                    tags = tags + tagInput
+                                                    tagInput = ""
+                                                    addTagIcon = true
+                                                }
+                                            },
+                                        tint = MaterialTheme.colorScheme.primary
+                                    )
+                                }
+                            }
+
+                        }
+                    )
+                }
             }
         }
     }

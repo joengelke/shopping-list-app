@@ -60,7 +60,7 @@ fun ShoppingItemsCreateScreen(
         ShoppingItem(
             id = "",
             name = filterName,
-            category = "",
+            tags = emptyList(),
             amount = 0.0,
             unit = "",
             checked = true,
@@ -73,6 +73,7 @@ fun ShoppingItemsCreateScreen(
 
     val shoppingItems by shoppingItemsViewModel.shoppingItems.collectAsState()
     val itemSets by itemSetsViewModel.itemSets.collectAsState()
+    val tagSortedShoppingItems by shoppingItemsViewModel.tagSortedShoppingItems.collectAsState()
 
     // Filter items that start with the entered name
     val filteredShoppingItems =
@@ -95,8 +96,8 @@ fun ShoppingItemsCreateScreen(
     val focusManager = LocalFocusManager.current
 
     // Pager
-    val pagerState = rememberPagerState(pageCount = { 2 })
-    val tabTitles = listOf("Items", "Sets")
+    val pagerState = rememberPagerState(pageCount = { 3 })
+    val tabTitles = listOf("Items", "Sets", "Tags")
     val scope = rememberCoroutineScope()
 
     LaunchedEffect(Unit) {
@@ -235,6 +236,7 @@ fun ShoppingItemsCreateScreen(
             ) { page ->
                 when (page) {
                     0 -> {
+                        keyboardController?.show()
                         ShoppingItemPage(
                             allItems,
                             addOneItem = { addItem ->
@@ -254,6 +256,7 @@ fun ShoppingItemsCreateScreen(
                     }
 
                     1 -> {
+                        keyboardController?.hide()
                         ItemSetsPage(
                             shoppingItems,
                             itemSets,
@@ -278,6 +281,25 @@ fun ShoppingItemsCreateScreen(
                                 )
                             }
                         )
+                    }
+
+                    2 -> {
+                        keyboardController?.hide()
+                        ItemsTagPage(
+                            tagSortedShoppingItems,
+                            addOneItem = { addItem ->
+                                shoppingItemsViewModel.addOneShoppingItem(
+                                    shoppingListId,
+                                    addItem
+                                )
+                            },
+                            removeOneItem = { itemId ->
+                                shoppingItemsViewModel.removeOneShoppingItem(
+                                    itemId
+                                )
+                            }
+                        )
+
                     }
                 }
             }
@@ -647,4 +669,96 @@ fun ItemSetItemContainer(
             }
         }
     }
+}
+
+@Composable
+fun ItemsTagPage(
+    tagSortedShoppingItems: List<Pair<String, List<ShoppingItem>>>,
+    addOneItem: (ShoppingItem) -> Unit,
+    removeOneItem: (String) -> Unit
+) {
+    LazyColumn(
+        modifier = Modifier
+            .fillMaxSize()
+    ) {
+        items(tagSortedShoppingItems) { (tag, itemList) ->
+            ItemTagContainer(
+                tag,
+                itemList,
+                addOneItem = { item ->
+                    addOneItem(item)
+                },
+                removeOneItem = { itemId ->
+                    removeOneItem(itemId)
+                }
+            )
+        }
+    }
+}
+
+@Composable
+fun ItemTagContainer(
+    tag: String,
+    shoppingItemList: List<ShoppingItem>,
+    addOneItem: (ShoppingItem) -> Unit,
+    removeOneItem: (String) -> Unit
+) {
+    var tagFolded by remember { mutableStateOf(true) }
+    Card(
+        modifier = Modifier
+            .fillMaxWidth(),
+        elevation = CardDefaults.cardElevation(0.dp),
+        shape = RectangleShape,
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.secondary.copy(alpha = 0.25f),
+            contentColor = MaterialTheme.colorScheme.onSurface
+        )
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clickable { tagFolded = !tagFolded }
+                .padding(start = 2.dp, end = 16.dp, bottom = 8.dp, top = 8.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            IconButton(
+                onClick = {}
+            ) {
+                Icon(
+                    painter = painterResource(R.drawable.baseline_tag_24),
+                    contentDescription = "tag"
+                )
+            }
+            Text(
+                text = tag,
+                style = MaterialTheme.typography.titleLarge,
+                modifier = Modifier.weight(1f)
+            )
+            Icon(
+                imageVector = if (tagFolded) Icons.Default.KeyboardArrowUp else Icons.Default.KeyboardArrowDown,
+                contentDescription = "Open tag"
+            )
+        }
+    }
+    if (!tagFolded) {
+        Column(
+            modifier = Modifier.fillMaxSize()
+        ) {
+            shoppingItemList.forEach { item ->
+                ItemContainer(
+                    item = item,
+                    addOneItem = { addItem ->
+                        addOneItem(addItem)
+                    },
+                    removeOneItem = { itemId ->
+                        removeOneItem(itemId)
+                    }
+                )
+            }
+        }
+    }
+    HorizontalDivider(
+        thickness = 2.dp,
+        color = MaterialTheme.colorScheme.primary.copy(alpha = 0.5f)
+    )
 }

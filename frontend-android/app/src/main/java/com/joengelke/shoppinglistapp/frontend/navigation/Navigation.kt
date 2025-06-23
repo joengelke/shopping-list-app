@@ -79,7 +79,7 @@ fun Navigation(
                 }
             }
         ) {
-            LoginScreen(navController, authViewModel, onLoginSuccess = {
+            LoginScreen(navController, authViewModel, settingsViewModel, onLoginSuccess = {
                 navController.navigate(Routes.ShoppingListOverview.route) {
                     popUpTo(Routes.Login.route) {
                         inclusive = true

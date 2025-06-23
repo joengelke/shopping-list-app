@@ -3,7 +3,7 @@ package com.joengelke.shoppinglistapp.frontend.repository
 import android.content.Context
 import com.joengelke.shoppinglistapp.frontend.models.DeleteResponse
 import com.joengelke.shoppinglistapp.frontend.models.ItemSet
-import com.joengelke.shoppinglistapp.frontend.network.NetworkModule
+import com.joengelke.shoppinglistapp.frontend.network.RetrofitProvider
 import com.joengelke.shoppinglistapp.frontend.network.SessionManager
 import com.joengelke.shoppinglistapp.frontend.network.TokenManager
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -14,7 +14,8 @@ import javax.inject.Singleton
 class ItemSetRepository @Inject constructor(
     @ApplicationContext private val context: Context,
     private val sessionManager: SessionManager,
-    private val tokenManager: TokenManager
+    private val tokenManager: TokenManager,
+    private val retrofitProvider: RetrofitProvider
 ) {
 
     suspend fun getItemSetsByShoppingList(shoppingListId: String): Result<List<ItemSet>> {
@@ -22,7 +23,7 @@ class ItemSetRepository @Inject constructor(
             val token =
                 tokenManager.getToken() ?: return Result.failure(Exception("No token found"))
 
-            val response = NetworkModule.getItemSetApi(context).getItemSetsByShoppingList("Bearer $token", shoppingListId)
+            val response = retrofitProvider.getItemSetApi().getItemSetsByShoppingList("Bearer $token", shoppingListId)
             when {
                 response.isSuccessful ->  Result.success(response.body() ?: emptyList())
                 response.code() == 401 -> {
@@ -43,7 +44,7 @@ class ItemSetRepository @Inject constructor(
             val token =
                 tokenManager.getToken() ?: return Result.failure(Exception("No token found"))
 
-            val response = NetworkModule.getItemSetApi(context).createItemSet("Bearer $token", shoppingListId, itemSet)
+            val response = retrofitProvider.getItemSetApi().createItemSet("Bearer $token", shoppingListId, itemSet)
             when {
                 response.isSuccessful -> response.body()?.let { Result.success(it) }
                     ?: Result.failure(Exception("Unexpected empty response"))
@@ -70,7 +71,7 @@ class ItemSetRepository @Inject constructor(
                 itemList = itemSet.itemList.filter { it.name.isNotBlank() }
             )
 
-            val response = NetworkModule.getItemSetApi(context).updateItemSet("Bearer $token", shoppingListId, cleanedItemSet)
+            val response = retrofitProvider.getItemSetApi().updateItemSet("Bearer $token", shoppingListId, cleanedItemSet)
             when {
                 response.isSuccessful -> response.body()?.let { Result.success(it) }
                     ?: Result.failure(Exception("Unexpected empty response"))
@@ -93,7 +94,7 @@ class ItemSetRepository @Inject constructor(
                 tokenManager.getToken() ?: return Result.failure(Exception("No token found"))
 
             val response =
-                NetworkModule.getItemSetApi(context)
+                retrofitProvider.getItemSetApi()
                     .deleteItemSet("Bearer $token", shoppingListId, itemSetId)
             when {
                 response.isSuccessful -> response.body()?.let { Result.success(it) }

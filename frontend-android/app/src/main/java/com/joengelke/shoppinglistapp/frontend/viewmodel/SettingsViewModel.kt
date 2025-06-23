@@ -2,6 +2,7 @@ package com.joengelke.shoppinglistapp.frontend.viewmodel
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.joengelke.shoppinglistapp.frontend.network.RetrofitProvider
 import com.joengelke.shoppinglistapp.frontend.repository.SettingsRepository
 import com.joengelke.shoppinglistapp.frontend.ui.common.ShoppingItemsSortCategory
 import com.joengelke.shoppinglistapp.frontend.ui.common.ShoppingItemsSortOptions
@@ -15,8 +16,9 @@ import javax.inject.Inject
 
 @HiltViewModel
 class SettingsViewModel @Inject constructor(
-    private val settingsRepository: SettingsRepository
-): ViewModel() {
+    private val settingsRepository: SettingsRepository,
+    private val retrofitProvider: RetrofitProvider
+) : ViewModel() {
 
     private val _darkMode = MutableStateFlow(false)
     val darkMode: StateFlow<Boolean> = _darkMode.asStateFlow()
@@ -33,7 +35,11 @@ class SettingsViewModel @Inject constructor(
             direction = SortDirection.ASCENDING
         )
     )
-    val shoppingItemsSortOption: StateFlow<ShoppingItemsSortOptions> = _shoppingItemsSortOption.asStateFlow()
+    val shoppingItemsSortOption: StateFlow<ShoppingItemsSortOptions> =
+        _shoppingItemsSortOption.asStateFlow()
+
+    private val _serverUrl = MutableStateFlow("https://shopit.ddnss.de:8443/api/")
+    val serverUrl: StateFlow<String> = _serverUrl.asStateFlow()
 
     init {
         viewModelScope.launch {
@@ -43,10 +49,15 @@ class SettingsViewModel @Inject constructor(
             settingsRepository.languageFlow.collect { _language.value = it }
         }
         viewModelScope.launch {
-            settingsRepository.fontScaleFlow.collect{ _fontScale.value = it }
+            settingsRepository.fontScaleFlow.collect { _fontScale.value = it }
         }
         viewModelScope.launch {
-            settingsRepository.shoppingItemsSortOptionFlow.collect { _shoppingItemsSortOption.value = it }
+            settingsRepository.shoppingItemsSortOptionFlow.collect {
+                _shoppingItemsSortOption.value = it
+            }
+        }
+        viewModelScope.launch {
+            settingsRepository.serverUrlFlow.collect { _serverUrl.value = it }
         }
     }
 
@@ -64,7 +75,7 @@ class SettingsViewModel @Inject constructor(
     }
 
     fun setFontScale(scale: Float) {
-        viewModelScope.launch{
+        viewModelScope.launch {
             settingsRepository.setFontScale(scale)
         }
     }
@@ -72,6 +83,13 @@ class SettingsViewModel @Inject constructor(
     fun setShoppingItemsSortOption(option: ShoppingItemsSortOptions) {
         viewModelScope.launch {
             settingsRepository.setShoppingItemsSortOption(option)
+        }
+    }
+
+    fun setServerUrl(url: String) {
+        viewModelScope.launch {
+            settingsRepository.setServerUrl(url)
+            retrofitProvider.initialize()
         }
     }
 }

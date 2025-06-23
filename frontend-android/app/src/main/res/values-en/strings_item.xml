@@ -11,4 +11,6 @@
     <string name="unit">Unit</string>
     <string name="note">Note</string>
     <string name="pieces_short">pcs</string>
+    <string name="teaspoon">tsp</string>
+    <string name="tablespoon">tbsp</string>
 </resources>

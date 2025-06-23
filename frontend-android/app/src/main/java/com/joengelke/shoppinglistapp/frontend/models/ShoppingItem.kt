@@ -3,7 +3,7 @@ package com.joengelke.shoppinglistapp.frontend.models
 data class ShoppingItem(
     val id: String,
     val name: String,
-    val category: String,
+    val tags: List<String>,
     val amount: Double,
     val unit: String,
     val checked: Boolean,

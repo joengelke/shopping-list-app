@@ -3,7 +3,7 @@ package com.joengelke.shoppinglistapp.frontend.repository
 import android.content.Context
 import com.joengelke.shoppinglistapp.frontend.common.exception.UserException
 import com.joengelke.shoppinglistapp.frontend.models.*
-import com.joengelke.shoppinglistapp.frontend.network.NetworkModule
+import com.joengelke.shoppinglistapp.frontend.network.RetrofitProvider
 import com.joengelke.shoppinglistapp.frontend.network.SessionManager
 import com.joengelke.shoppinglistapp.frontend.network.TokenManager
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -14,7 +14,8 @@ import javax.inject.Singleton
 class UserRepository @Inject constructor(
     @ApplicationContext private val context: Context,
     private val sessionManager: SessionManager,
-    private val tokenManager: TokenManager
+    private val tokenManager: TokenManager,
+    private val retrofitProvider: RetrofitProvider
 ){
     suspend fun getAllUsers() : Result<List<User>> {
         return try {
@@ -22,7 +23,7 @@ class UserRepository @Inject constructor(
                 tokenManager.getToken() ?: return Result.failure(Exception("No token found"))
 
             val response =
-                NetworkModule.getUserApi(context)
+                retrofitProvider.getUserApi()
                     .getAllUsers(
                         "Bearer $token"
                     )
@@ -51,7 +52,7 @@ class UserRepository @Inject constructor(
                 tokenManager.getToken() ?: return Result.failure(Exception("No token found"))
 
             val response =
-                NetworkModule.getUserApi(context)
+                retrofitProvider.getUserApi()
                     .getShoppingListUser(
                         "Bearer $token",
                         shoppingListId
@@ -82,7 +83,7 @@ class UserRepository @Inject constructor(
                 tokenManager.getToken() ?: return Result.failure(Exception("No token found"))
 
             val response =
-                NetworkModule.getUserApi(context)
+                retrofitProvider.getUserApi()
                     .addUserToShoppingList(
                         "Bearer $token",
                         shoppingListId,
@@ -116,7 +117,7 @@ class UserRepository @Inject constructor(
                 tokenManager.getToken() ?: return Result.failure(Exception("No token found"))
 
             val response =
-                NetworkModule.getUserApi(context)
+                retrofitProvider.getUserApi()
                     .removeUserFromShoppingList(
                         "Bearer $token",
                         shoppingListId,
@@ -146,7 +147,7 @@ class UserRepository @Inject constructor(
                 tokenManager.getToken() ?: return Result.failure(Exception("No token found"))
 
             val response =
-                NetworkModule.getUserApi(context)
+                retrofitProvider.getUserApi()
                     .changeUsername(
                         "Bearer $token",
                         ChangeUsernameRequest(newUsername)
@@ -180,7 +181,7 @@ class UserRepository @Inject constructor(
                 tokenManager.getToken() ?: return Result.failure(Exception("No token found"))
 
             val response =
-                NetworkModule.getUserApi(context)
+                retrofitProvider.getUserApi()
                     .changePassword(
                         "Bearer $token",
                         ChangePasswordRequest(currentPassword, newPassword)
@@ -221,7 +222,7 @@ class UserRepository @Inject constructor(
                 tokenManager.getToken() ?: return Result.failure(Exception("No token found"))
 
             val response =
-                NetworkModule.getUserApi(context)
+                retrofitProvider.getUserApi()
                     .addRoleToUser(
                         "Bearer $token",
                         userId,
@@ -253,7 +254,7 @@ class UserRepository @Inject constructor(
                 tokenManager.getToken() ?: return Result.failure(Exception("No token found"))
 
             val response =
-                NetworkModule.getUserApi(context)
+                retrofitProvider.getUserApi()
                     .removeRoleFromUser(
                         "Bearer $token",
                         userId,
@@ -287,7 +288,7 @@ class UserRepository @Inject constructor(
                 tokenManager.getToken() ?: return Result.failure(Exception("No token found"))
 
             val response =
-                NetworkModule.getUserApi(context)
+                retrofitProvider.getUserApi()
                     .deleteUser(
                         "Bearer $token",
                         userId

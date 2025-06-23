@@ -2,7 +2,7 @@ package com.joengelke.shoppinglistapp.frontend.repository
 
 import android.content.Context
 import com.joengelke.shoppinglistapp.frontend.network.AuthRequest
-import com.joengelke.shoppinglistapp.frontend.network.NetworkModule
+import com.joengelke.shoppinglistapp.frontend.network.RetrofitProvider
 import com.joengelke.shoppinglistapp.frontend.network.SessionManager
 import com.joengelke.shoppinglistapp.frontend.network.TokenManager
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -13,13 +13,14 @@ import javax.inject.Singleton
 class AuthRepository @Inject constructor(
     @ApplicationContext private val context: Context,
     private val sessionManager: SessionManager,
-    private val tokenManager: TokenManager
+    private val tokenManager: TokenManager,
+    private val retrofitProvider: RetrofitProvider
 ) {
     // perform login
     suspend fun login(username: String, password: String): Result<String?> {
         //TODO change all Exceptions
         return try {
-            val response = NetworkModule.getAuthApi(context).login(AuthRequest(username, password))
+            val response = retrofitProvider.getAuthApi().login(AuthRequest(username, password))
             when {
                 response.isSuccessful -> {
                     val bearerToken = response.body()?.token
@@ -40,7 +41,7 @@ class AuthRepository @Inject constructor(
     suspend fun register(username: String, password: String): Result<String> {
         return try {
             val response =
-                NetworkModule.getAuthApi(context).register(AuthRequest(username, password))
+                retrofitProvider.getAuthApi().register(AuthRequest(username, password))
             when {
                 response.isSuccessful -> {
                     val message = response.body()?.username ?: "Registration successful"

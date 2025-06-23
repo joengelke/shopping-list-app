@@ -218,7 +218,7 @@ public class ShoppingListService {
             // in my frontend not used since itemSetItems will be created later manually
             if (!shoppingList.getItemIds().contains(setItem.getId())) {
                 //create new shoppingItem, add new ItemSetItem with new shoppingItem id
-                ShoppingItem shoppingItem = shoppingItemService.createItem(header, new ShoppingItem(setItem.getName(), "", 0.0, "", "", ""), true);
+                ShoppingItem shoppingItem = shoppingItemService.createItem(header, new ShoppingItem(setItem.getName(), Collections.emptyList(), 0.0, "", "", ""), true);
                 shoppingList.getItemIds().add(shoppingItem.getId());
                 newItemSetItems.add(new ItemSetItem(shoppingItem.getId(), setItem.getTmpId(), setItem.getName(), setItem.getAmount(), setItem.getUnit()));
             } else {
@@ -255,7 +255,7 @@ public class ShoppingListService {
                             header,
                             new ShoppingItem(
                                     itemSetItem.getName(),
-                                    "",
+                                    Collections.emptyList(),
                                     itemSetItem.getAmount(),
                                     itemSetItem.getUnit(),
                                     "",

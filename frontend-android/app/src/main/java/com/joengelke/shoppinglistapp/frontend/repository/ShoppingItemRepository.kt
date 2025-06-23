@@ -4,7 +4,7 @@ import android.content.Context
 import com.joengelke.shoppinglistapp.frontend.models.DeleteResponse
 import com.joengelke.shoppinglistapp.frontend.models.ItemSetItem
 import com.joengelke.shoppinglistapp.frontend.models.ShoppingItem
-import com.joengelke.shoppinglistapp.frontend.network.NetworkModule
+import com.joengelke.shoppinglistapp.frontend.network.RetrofitProvider
 import com.joengelke.shoppinglistapp.frontend.network.SessionManager
 import com.joengelke.shoppinglistapp.frontend.network.TokenManager
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -15,7 +15,8 @@ import javax.inject.Singleton
 class ShoppingItemRepository @Inject constructor(
     @ApplicationContext private val context: Context,
     private val sessionManager: SessionManager,
-    private val tokenManager: TokenManager
+    private val tokenManager: TokenManager,
+    private val retrofitProvider: RetrofitProvider
 ) {
 
     suspend fun getItemsByShoppingList(shoppingListId: String): Result<List<ShoppingItem>> {
@@ -23,7 +24,7 @@ class ShoppingItemRepository @Inject constructor(
             val token =
                 tokenManager.getToken() ?: return Result.failure(Exception("No token found"))
 
-            val response = NetworkModule.getShoppingItemApi(context)
+            val response = retrofitProvider.getShoppingItemApi()
                 .getItemsByShoppingList("Bearer $token", shoppingListId)
 
             when {
@@ -50,7 +51,7 @@ class ShoppingItemRepository @Inject constructor(
                 tokenManager.getToken() ?: return Result.failure(Exception("No token found"))
 
             val response =
-                NetworkModule.getShoppingItemApi(context).addOneItemToShoppingList(
+                retrofitProvider.getShoppingItemApi().addOneItemToShoppingList(
                     "Bearer $token",
                     shoppingListId,
                     shoppingItem
@@ -80,7 +81,7 @@ class ShoppingItemRepository @Inject constructor(
                 tokenManager.getToken() ?: return Result.failure(Exception("No token found"))
 
             val response =
-                NetworkModule.getShoppingItemApi(context).removeOneItemFromShoppingList(
+                retrofitProvider.getShoppingItemApi().removeOneItemFromShoppingList(
                     "Bearer $token",
                     shoppingItemId
                 )
@@ -108,7 +109,7 @@ class ShoppingItemRepository @Inject constructor(
                 tokenManager.getToken() ?: return Result.failure(Exception("No token found"))
 
             val response =
-                NetworkModule.getShoppingItemApi(context)
+                retrofitProvider.getShoppingItemApi()
                     .updateCheckedStatus("Bearer $token", shoppingListId, itemId, checked)
             when {
                 response.isSuccessful -> response.body()?.let { Result.success(it) }
@@ -133,7 +134,7 @@ class ShoppingItemRepository @Inject constructor(
                 tokenManager.getToken() ?: return Result.failure(Exception("No token found"))
 
             val response =
-                NetworkModule.getShoppingItemApi(context).updateItem("Bearer $token", updatedItem)
+                retrofitProvider.getShoppingItemApi().updateItem("Bearer $token", updatedItem)
             when {
                 response.isSuccessful -> response.body()?.let { Result.success(it) }
                     ?: Result.failure(Exception("Unexpected empty response"))
@@ -157,7 +158,7 @@ class ShoppingItemRepository @Inject constructor(
                 tokenManager.getToken() ?: return Result.failure(Exception("No token found"))
 
             val response =
-                NetworkModule.getShoppingItemApi(context)
+                retrofitProvider.getShoppingItemApi()
                     .deleteItem("Bearer $token", shoppingListId, itemId)
             when {
                 response.isSuccessful -> response.body()?.let { Result.success(it) }
@@ -186,7 +187,7 @@ class ShoppingItemRepository @Inject constructor(
                 tokenManager.getToken() ?: return Result.failure(Exception("No token found"))
 
             val response =
-                NetworkModule.getShoppingItemApi(context)
+                retrofitProvider.getShoppingItemApi()
                     .addItemSetItemToShoppingList("Bearer $token", itemSetItem)
             when {
                 response.isSuccessful -> response.body()?.let { Result.success(it) }
@@ -212,7 +213,7 @@ class ShoppingItemRepository @Inject constructor(
                 tokenManager.getToken() ?: return Result.failure(Exception("No token found"))
 
             val response =
-                NetworkModule.getShoppingItemApi(context)
+                retrofitProvider.getShoppingItemApi()
                     .addAllItemSetItemsToShoppingList("Bearer $token", itemSetId)
             when {
                 response.isSuccessful -> response.body()?.let { Result.success(it) }
@@ -237,7 +238,7 @@ class ShoppingItemRepository @Inject constructor(
                 tokenManager.getToken() ?: return Result.failure(Exception("No token found"))
 
             val response =
-                NetworkModule.getShoppingItemApi(context)
+                retrofitProvider.getShoppingItemApi()
                     .removeItemSetItemFromShoppingList("Bearer $token", itemSetItem)
             when {
                 response.isSuccessful -> response.body()?.let { Result.success(it) }
@@ -262,7 +263,7 @@ class ShoppingItemRepository @Inject constructor(
                 tokenManager.getToken() ?: return Result.failure(Exception("No token found"))
 
             val response =
-                NetworkModule.getShoppingItemApi(context)
+                retrofitProvider.getShoppingItemApi()
                     .removeAllItemSetItemsFromShoppingList("Bearer $token", itemSetId)
             when {
                 response.isSuccessful -> response.body()?.let { Result.success(it) }

@@ -226,7 +226,7 @@ fun ItemSetItemContainer(
     var unit by remember { mutableStateOf(itemSetItem.unit) }
 
     var expandedUnitDropdown by remember { mutableStateOf(false) }
-    val units = listOf("", "ml", "l", "g", "kg", stringResource(R.string.pieces_short))
+    val units = listOf("", "ml", "l", "g", "kg", "EL", "TL", stringResource(R.string.pieces_short))
 
     Card(
         modifier = Modifier
@@ -275,7 +275,7 @@ fun ItemSetItemContainer(
             }
             Column(
                 modifier = Modifier
-                    .weight(0.18f)
+                    .weight(0.225f)
                     .padding(horizontal = 4.dp)
             ) {
                 OutlinedTextField(
@@ -301,7 +301,7 @@ fun ItemSetItemContainer(
             }
             Column(
                 modifier = Modifier
-                    .weight(0.24f)
+                    .weight(0.175f)
                     .padding(horizontal = 4.dp)
             ) {
                 ExposedDropdownMenuBox(
@@ -314,9 +314,6 @@ fun ItemSetItemContainer(
                         readOnly = true,
                         enabled = false,
                         singleLine = true,
-                        trailingIcon = {
-                            ExposedDropdownMenuDefaults.TrailingIcon(expanded = expandedUnitDropdown)
-                        },
                         modifier = Modifier
                             .fillMaxWidth()
                             .menuAnchor(MenuAnchorType.PrimaryNotEditable, expandedUnitDropdown)
@@ -351,7 +348,7 @@ fun ItemSetItemContainer(
                 }
             }
             Column(
-                modifier = Modifier.weight(0.08f)
+                modifier = Modifier.weight(0.1f)
             ) {
                 IconButton(
                     onClick = {

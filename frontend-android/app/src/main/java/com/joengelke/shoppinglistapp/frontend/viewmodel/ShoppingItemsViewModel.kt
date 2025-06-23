@@ -58,6 +58,20 @@ class ShoppingItemsViewModel @Inject constructor(
         emptyList()
     )
 
+    val tagSortedShoppingItems: StateFlow<List<Pair<String, List<ShoppingItem>>>> =
+        shoppingItems
+            .map { items ->
+                items
+                    .flatMap { item -> item.tags.map { tag -> tag to item } }
+                    .groupBy({it.first}, {it.second})
+                    .toSortedMap()
+                    .toList()
+            }.stateIn(
+                viewModelScope,
+                SharingStarted.Eagerly,
+                emptyList()
+            )
+
     // undo function
     private val maxUndoSize = 5
     private val undoStack = ArrayDeque<ShoppingItem>(maxUndoSize)

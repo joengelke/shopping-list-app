@@ -16,6 +16,7 @@ class SettingsRepository @Inject constructor(
     val languageFlow = SettingsDataStore.languageFlow(context)
     val fontScaleFlow = SettingsDataStore.fontScaleFlow(context)
     val shoppingItemsSortOptionFlow = SettingsDataStore.shoppingItemsSortOptionFlow(context)
+    val serverUrlFlow = SettingsDataStore.serverUrlFlow(context)
 
     suspend fun setDarkMode(enabled: Boolean) {
         SettingsDataStore.setDarkMode(context, enabled)
@@ -31,5 +32,9 @@ class SettingsRepository @Inject constructor(
 
     suspend fun setShoppingItemsSortOption(option: ShoppingItemsSortOptions) {
         SettingsDataStore.setShoppingItemsSortOption(context, option)
+    }
+
+    suspend fun setServerUrl(url: String) {
+        SettingsDataStore.setServerUrl(context, url)
     }
 }

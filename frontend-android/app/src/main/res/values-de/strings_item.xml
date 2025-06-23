@@ -11,4 +11,6 @@
     <string name="unit">Einheit</string>
     <string name="note">Notiz</string>
     <string name="pieces_short">St</string>
+    <string name="teaspoon">TL</string>
+    <string name="tablespoon">EL</string>
 </resources>

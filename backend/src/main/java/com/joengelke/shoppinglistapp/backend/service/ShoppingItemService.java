@@ -2,7 +2,7 @@ package com.joengelke.shoppinglistapp.backend.service;
 
 import com.joengelke.shoppinglistapp.backend.model.ItemSetItem;
 import com.joengelke.shoppinglistapp.backend.model.ShoppingItem;
-import com.joengelke.shoppinglistapp.backend.model.ShoppingList;
+import com.joengelke.shoppinglistapp.backend.model.ShoppingItemActivity;
 import com.joengelke.shoppinglistapp.backend.repository.ShoppingItemRepository;
 import com.joengelke.shoppinglistapp.backend.security.JwtTokenProvider;
 import org.springframework.stereotype.Service;
@@ -19,11 +19,13 @@ public class ShoppingItemService {
     private final ShoppingItemRepository shoppingItemRepository;
     private final JwtTokenProvider jwtTokenProvider;
     private final ItemSetService itemSetService;
+    private final AnalyticsService analyticsService;
 
-    public ShoppingItemService(ShoppingItemRepository shoppingItemRepository, JwtTokenProvider jwtTokenProvider, ItemSetService itemSetService) {
+    public ShoppingItemService(ShoppingItemRepository shoppingItemRepository, JwtTokenProvider jwtTokenProvider, ItemSetService itemSetService, AnalyticsService analyticsService) {
         this.shoppingItemRepository = shoppingItemRepository;
         this.jwtTokenProvider = jwtTokenProvider;
         this.itemSetService = itemSetService;
+        this.analyticsService = analyticsService;
     }
 
     // creates one new item
@@ -37,8 +39,8 @@ public class ShoppingItemService {
         if (shoppingItem.getName() == null) {
             shoppingItem.setName("");
         }
-        if (shoppingItem.getCategory() == null) {
-            shoppingItem.setCategory("");
+        if (shoppingItem.getTags() == null) {
+            shoppingItem.setTags(new ArrayList<>());
         }
         if (shoppingItem.getUnit() == null) {
             shoppingItem.setUnit("");
@@ -70,7 +72,10 @@ public class ShoppingItemService {
     }
 
     public List<ShoppingItem> getAllItemsByIds(List<String> ids) {
-        return shoppingItemRepository.findAllById(ids);
+        return shoppingItemRepository.findAllById(ids)
+                .stream()
+                .map(this::updateDB)
+                .toList();
     }
 
     public ShoppingItem updateItem(String header, ShoppingItem newShoppingItem) {
@@ -83,8 +88,8 @@ public class ShoppingItemService {
         if (newShoppingItem.getName() != null) {
             shoppingItem.setName(newShoppingItem.getName());
         }
-        if (newShoppingItem.getCategory() != null) {
-            shoppingItem.setCategory(newShoppingItem.getCategory());
+        if (newShoppingItem.getTags() != null) {
+            shoppingItem.setTags(newShoppingItem.getTags());
         }
         if (newShoppingItem.getAmount() != null) {
             shoppingItem.setAmount(newShoppingItem.getAmount());
@@ -108,14 +113,17 @@ public class ShoppingItemService {
     }
 
     // just change checked status for better performance
-    public ShoppingItem updateCheckedStatus(String shoppingListId, String itemId, boolean checked) {
+    public ShoppingItem updateCheckedStatus(String shoppingListId, String itemId, boolean checked, String header) {
         ShoppingItem shoppingItem = shoppingItemRepository.findById(itemId)
                 .orElseThrow(() -> new NoSuchElementException("Item not found with itemId: " + itemId));
+
+        String userId = jwtTokenProvider.getUserIdFromToken(header.replace("Bearer ", ""));
+
         shoppingItem.setChecked(checked);
         if(!checked) {
             shoppingItem.setCheckedAt(Instant.now());
         } else {
-            //TODO analysing tool here
+            analyticsService.addItemAnalyticsEvent(shoppingListId, userId, shoppingItem, "checked");
             shoppingItem.setAmount(0.0);
             shoppingItem.setUnit("");
         }
@@ -152,7 +160,7 @@ public class ShoppingItemService {
 
         //update shoppingItem by itemSetItem values
         shoppingItem.setAmount(shoppingItem.getAmount() + itemSetItem.getAmount());
-        //shoppingItem.setUnit(itemSetItem.getUnit());
+        shoppingItem.setUnit(itemSetItem.getUnit());
         shoppingItem.setChecked(false);
         shoppingItem.setEditedAt(Instant.now());
         shoppingItem.setEditedBy(username);
@@ -225,4 +233,12 @@ public class ShoppingItemService {
         return shoppingItemRepository.saveAll(updatedItems);
     }
 
+    // HELP METHOD TO UPDATE DB AFTER ITEM CHANGE
+    private ShoppingItem updateDB(ShoppingItem item) {
+        // updates new tags variable
+        if(item.getTags() == null) {
+            item.setTags(List.of());
+        }
+        return item;
+    }
 }

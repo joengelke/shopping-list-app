@@ -19,6 +19,7 @@ object SettingsDataStore {
     private val LANGUAGE_KEY = stringPreferencesKey("language")
     private val FONT_SCALE_KEY = floatPreferencesKey("font_scale")
     private val SHOPPING_ITEMS_SORT_OPTION_KEY = stringPreferencesKey("shopping_items_sort_option")
+    private val SERVER_URL_KEY = stringPreferencesKey("server_url")
 
     suspend fun setDarkMode(context: Context, isDarkMode: Boolean) {
         context.dataStore.edit { preferences ->
@@ -42,6 +43,12 @@ object SettingsDataStore {
         val value = "${option.category.name}|${option.direction.name}"
         context.dataStore.edit { preferences ->
             preferences[SHOPPING_ITEMS_SORT_OPTION_KEY] = value
+        }
+    }
+
+    suspend fun setServerUrl(context: Context, url: String) {
+        context.dataStore.edit { preferences ->
+            preferences[SERVER_URL_KEY] = url
         }
     }
 
@@ -77,5 +84,9 @@ object SettingsDataStore {
                 )
             }
         }
+    }
+
+    val serverUrlFlow: (Context) -> Flow<String> = { context ->
+        context.dataStore.data.map { prefs -> prefs[SERVER_URL_KEY] ?: "https://shopit.ddnss.de:8443/api/"}
     }
 }
