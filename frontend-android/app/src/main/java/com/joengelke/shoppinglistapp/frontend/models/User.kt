@@ -3,7 +3,9 @@ package com.joengelke.shoppinglistapp.frontend.models
 data class User(
     val id: String,
     val username: String,
-    val roles: List<String>
+    val email: String,
+    val roles: List<String>,
+    val recipeIds: List<String>
 )
 
 data class AddUserRequest(

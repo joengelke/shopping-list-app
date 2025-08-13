@@ -7,4 +7,5 @@
     <string name="new_shopping_list">Neue Einkaufsliste</string>
     <string name="delete_shopping_list_question">Einkaufsliste löschen?</string>
     <string name="please_enter_a_name">Bitte Titel eingeben</string>
+    <string name="my_lists">Meine Listen</string>
 </resources>

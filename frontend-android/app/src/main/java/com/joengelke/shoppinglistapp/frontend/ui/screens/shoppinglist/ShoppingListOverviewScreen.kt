@@ -4,6 +4,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material3.*
@@ -19,6 +20,9 @@ import androidx.navigation.NavHostController
 import com.joengelke.shoppinglistapp.frontend.R
 import com.joengelke.shoppinglistapp.frontend.models.ShoppingList
 import com.joengelke.shoppinglistapp.frontend.navigation.Routes
+import com.joengelke.shoppinglistapp.frontend.ui.components.AppScaffold
+import com.joengelke.shoppinglistapp.frontend.ui.components.AppTopBar
+import com.joengelke.shoppinglistapp.frontend.ui.components.BottomNavigationBar
 import com.joengelke.shoppinglistapp.frontend.ui.components.ConfirmationDialog
 import com.joengelke.shoppinglistapp.frontend.viewmodel.AuthViewModel
 import com.joengelke.shoppinglistapp.frontend.viewmodel.ShoppingListViewModel
@@ -52,46 +56,31 @@ fun ShoppingListOverviewScreen(
     LaunchedEffect(Unit) {
         onRefresh()
     }
-    Scaffold(
+    AppScaffold(
         topBar = {
-            TopAppBar(
-                title = {
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(horizontal = 4.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(12.dp)
-                    ) {
-                        Text(
-                            text = stringResource(R.string.list_overview),
-                            style = MaterialTheme.typography.headlineSmall.copy(fontWeight = FontWeight.Bold),
-                            color = MaterialTheme.colorScheme.onPrimary,
-                        )
-                        
-                        if(refreshing) {
-                            CircularProgressIndicator(
-                                modifier = Modifier.size(24.dp),
-                                color = MaterialTheme.colorScheme.onPrimary,
-                                strokeWidth = 1.5.dp
-                            )
-                        }
-                    }
-                },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.primary
-                ),
+            AppTopBar(
+                title = stringResource(R.string.list_overview),
+                showNavigationIcon = false,
+                navController = navController,
                 actions = {
-                    if(!refreshing) {
-                        IconButton(
-                            onClick = {
+                    IconButton(
+                        onClick = {
+                            if (!refreshing) {
                                 onRefresh()
                             }
-                        ) {
+                        }
+                    ) {
+                        if (!refreshing) {
                             Icon(
                                 painter = painterResource(id = R.drawable.baseline_refresh_24),
                                 contentDescription = "refresh lists",
                                 tint = MaterialTheme.colorScheme.onPrimary
+                            )
+                        } else {
+                            CircularProgressIndicator(
+                                modifier = Modifier.size(24.dp),
+                                color = MaterialTheme.colorScheme.onPrimary,
+                                strokeWidth = 1.5.dp
                             )
                         }
                     }
@@ -127,6 +116,9 @@ fun ShoppingListOverviewScreen(
                 }
             )
         },
+        bottomBar = {
+            BottomNavigationBar(navController)
+        },
         content = { paddingValues ->
             Box(
                 modifier = Modifier
@@ -136,7 +128,6 @@ fun ShoppingListOverviewScreen(
                 LazyColumn(
                     modifier = Modifier
                         .fillMaxSize()
-                        .padding(8.dp)
                 ) {
                     items(shoppingLists) { shoppingList ->
                         ShoppingListContainer(
@@ -165,17 +156,19 @@ fun ShoppingListOverviewScreen(
                     item {
                         Button(
                             modifier = Modifier
-                                .fillMaxWidth(),
+                                .fillMaxWidth()
+                                .padding(horizontal = 8.dp, vertical = 12.dp),
                             onClick = { navController.navigate("shoppingListCreate") },
+                            elevation = ButtonDefaults.buttonElevation(
+                                defaultElevation = 6.dp
+                            ),
                         ) {
                             Text(stringResource(R.string.new_shopping_list))
                         }
                     }
                 }
             }
-        },
-        containerColor = MaterialTheme.colorScheme.background,
-        contentColor = MaterialTheme.colorScheme.onBackground,
+        }
     )
 }
 
@@ -196,7 +189,7 @@ fun ShoppingListContainer(
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(bottom = 4.dp)
+            .padding(start = 8.dp, end = 8.dp, top = 12.dp)
             .clickable {
                 // forward to items overview
                 navController.navigate(
@@ -207,9 +200,11 @@ fun ShoppingListContainer(
                 )
             },
         colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.primaryContainer,
-            contentColor = MaterialTheme.colorScheme.onPrimaryContainer
-        )
+            containerColor = MaterialTheme.colorScheme.surfaceVariant,
+            contentColor = MaterialTheme.colorScheme.primary
+        ),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+        shape = RoundedCornerShape(12.dp)
     ) {
         Row(
             modifier = Modifier
@@ -245,10 +240,12 @@ fun ShoppingListContainer(
                         isMenuExpanded = false
                         showEditModal = true
                     })
-                    DropdownMenuItem(text = { Text(stringResource(R.string.user_settings)) }, onClick = {
-                        isMenuExpanded = false
-                        onAddUser()
-                    })
+                    DropdownMenuItem(
+                        text = { Text(stringResource(R.string.user_settings)) },
+                        onClick = {
+                            isMenuExpanded = false
+                            onAddUser()
+                        })
                     DropdownMenuItem(
                         text = { Text(stringResource(R.string.delete)) },
                         onClick = {

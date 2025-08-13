@@ -2,10 +2,12 @@ package com.joengelke.shoppinglistapp.backend.service;
 
 import com.joengelke.shoppinglistapp.backend.dto.UserResponse;
 import com.joengelke.shoppinglistapp.backend.model.User;
+import com.joengelke.shoppinglistapp.backend.repository.RecipeRepository;
 import com.joengelke.shoppinglistapp.backend.repository.UserRepository;
 import com.joengelke.shoppinglistapp.backend.security.JwtTokenProvider;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
@@ -14,10 +16,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
 
-import java.util.HashSet;
-import java.util.List;
-import java.util.NoSuchElementException;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collectors;
 
 
@@ -49,8 +48,7 @@ public class UserService implements UserDetailsService {
     }
 
     public User createUser(String username, String password) {
-        User user = userRepository.save(new User(username, password));
-        return user;
+        return userRepository.save(new User(username, password));
     }
 
     public User getUserByUsername(String username) {
@@ -67,7 +65,7 @@ public class UserService implements UserDetailsService {
     }
 
     public List<UserResponse> getAllUserByIds(List<String> userIds) {
-        List<User> users =  userRepository.findAllById(userIds);
+        List<User> users = userRepository.findAllById(userIds);
 
         // Map each User to UserResponse
         return users.stream()
@@ -135,6 +133,49 @@ public class UserService implements UserDetailsService {
         user.setPassword(passwordEncoder.encode(newPassword));
         userRepository.save(user);
         return new UserResponse(user);
+    }
+
+    public UserResponse addRecipeToUser(String userId, String recipeId) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new NoSuchElementException("User not found"));
+
+        // Make sure the list is initialized
+        if (user.getRecipeIds() == null) {
+            user.setRecipeIds(new ArrayList<>());
+        }
+
+        if (!user.getRecipeIds().contains(recipeId)) {
+            user.getRecipeIds().add(recipeId);
+        }
+        userRepository.save(user);
+        return new UserResponse(user);
+    }
+
+    public void removeRecipeFromUser(String userId, String recipeId) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new NoSuchElementException("User not found"));
+
+        List<String> recipeIds = user.getRecipeIds();
+        if (recipeIds != null && recipeIds.contains(recipeId)) {
+            recipeIds.remove(recipeId);
+            user.setRecipeIds(recipeIds);
+            userRepository.save(user);
+        }
+    }
+
+    public void removeRecipeFromAllUsers(String recipeId) {
+        List<User> usersWithRecipe = userRepository.findByRecipeIdsContaining(recipeId);
+        for (User user : usersWithRecipe) {
+            user.getRecipeIds().remove(recipeId);
+        }
+        userRepository.saveAll(usersWithRecipe);
+    }
+
+    public List<String> getRecipeIdsByUserId(String userId) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new NoSuchElementException("User not found"));
+
+        return user.getRecipeIds();
     }
 
     public void deleteUser(String userId) {

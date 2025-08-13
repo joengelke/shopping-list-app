@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="my_recipes">My Recipes</string>
+    <string name="description">Description</string>
+    <string name="categories">Categories</string>
+    <string name="category"><![CDATA[<category>]]></string>
+    <string name="ingredients">Ingredients</string>
+    <string name="new_ingredient">New Ingredient</string>
+    <string name="instructions">Instructions</string>
+    <string name="step">Step %1$d</string>
+    <string name="exit_editing_mode_and_save">Exit editing mode and save?</string>
+    <string name="new_step">New Step</string>
+    <string name="add_ingredients_to">Add ingredients to:</string>
+    <string name="new_recipe_created">New recipe created</string>
+    <string name="export_to_recipes">Export to recipes</string>
+    <string name="recipe_already_exists">Recipe already exists</string>
+    <string name="add_new_recipe">Add new recipe:</string>
+    <string name="own">Own</string>
+    <string name="no_category">No category</string>
+    <string name="already_exists_in">%1$s already exists in %2$s</string>
+    <string name="added_to">%1$s added to %2$s</string>
+</resources>

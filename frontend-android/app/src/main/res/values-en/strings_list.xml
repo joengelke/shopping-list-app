@@ -7,4 +7,5 @@
     <string name="new_shopping_list">New Shopping List</string>
     <string name="delete_shopping_list_question">Delete Shopping List?</string>
     <string name="please_enter_a_name">Please enter a name</string>
+    <string name="my_lists">My Lists</string>
 </resources>

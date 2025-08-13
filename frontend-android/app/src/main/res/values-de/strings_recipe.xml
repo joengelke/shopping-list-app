@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="my_recipes">Meine Rezepte</string>
+    <string name="description">Beschreibung</string>
+    <string name="categories">Kategorien</string>
+    <string name="category"><![CDATA[<Kategorie>]]></string>
+    <string name="ingredients">Zutaten</string>
+    <string name="new_ingredient">Neue Zutat</string>
+    <string name="instructions">Zubereitung</string>
+    <string name="step">Schritt %1$d</string>
+    <string name="new_step">Neuer Schritt</string>
+    <string name="exit_editing_mode_and_save">Bearbeitungsmodus verlassen und speichern?</string>
+    <string name="add_ingredients_to">Zutaten hinzufügen zu:</string>
+    <string name="new_recipe_created">Neues Rezept erstellt</string>
+    <string name="export_to_recipes">Exportiere als Rezept</string>
+    <string name="recipe_already_exists">Rezept existiert bereits</string>
+    <string name="add_new_recipe">Neues Rezept:</string>
+    <string name="own">Eigenes</string>
+    <string name="no_category">Keine Kategorie</string>
+    <string name="already_exists_in">%1$s existiert bereits in %2$s</string>
+    <string name="added_to">%1$s zu %2$s hinzugefügt</string>
+</resources>

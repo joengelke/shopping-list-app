@@ -1,6 +1,5 @@
 package com.joengelke.shoppinglistapp.frontend.viewmodel
 
-import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.joengelke.shoppinglistapp.frontend.network.SessionManager
@@ -8,6 +7,7 @@ import com.joengelke.shoppinglistapp.frontend.network.TokenManager
 import com.joengelke.shoppinglistapp.frontend.repository.AuthRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import javax.inject.Inject
@@ -22,6 +22,24 @@ class AuthViewModel @Inject constructor(
 
     private val _isLoggedIn = MutableStateFlow(false)
     val isLoggedIn = _isLoggedIn.asStateFlow()
+
+    private val _credentials = MutableStateFlow<Pair<String, String>?>(null)
+    val credentials: StateFlow<Pair<String, String>?> = _credentials.asStateFlow()
+
+    private val _saveCredentials = MutableStateFlow(false)
+    val saveCredentials: StateFlow<Boolean> = _saveCredentials.asStateFlow()
+
+    init {
+        viewModelScope.launch {
+            authRepository.credentialsFlow.collect { credentials ->
+                _credentials.value = credentials
+            }
+        }
+        viewModelScope.launch {
+            authRepository.saveCredentialsFlow.collect { _saveCredentials.value = it }
+        }
+    }
+
 
     fun checkIfTokenIsValid() {
         viewModelScope.launch {
@@ -44,7 +62,7 @@ class AuthViewModel @Inject constructor(
                 onSuccess()
             }
             result.onFailure {
-                onError("Invalid credentials")
+                onError(it.message ?: "Unknown error")
             }
         }
     }
@@ -63,7 +81,6 @@ class AuthViewModel @Inject constructor(
                     onSuccess(message)
                 },
                 onFailure = { error ->
-                    Log.e(error.message, "Error during registration")
                     onError(error.message ?: "Unknown error")
                 }
             )
@@ -76,6 +93,12 @@ class AuthViewModel @Inject constructor(
         viewModelScope.launch {
             tokenManager.deleteToken()
             _isLoggedIn.value = false
+        }
+    }
+
+    fun setSaveCredentials(enabled: Boolean) {
+        viewModelScope.launch {
+            authRepository.setSaveCredentials(enabled)
         }
     }
 }

@@ -1,6 +1,11 @@
 package com.joengelke.shoppinglistapp.frontend.ui.screens.itemsets
 
+import android.content.Context
+import android.net.Uri
+import android.provider.OpenableColumns
 import android.widget.Toast
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -15,6 +20,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
@@ -27,7 +33,10 @@ import androidx.navigation.NavHostController
 import com.joengelke.shoppinglistapp.frontend.R
 import com.joengelke.shoppinglistapp.frontend.models.ItemSet
 import com.joengelke.shoppinglistapp.frontend.models.ItemSetItem
+import com.joengelke.shoppinglistapp.frontend.ui.components.ConfirmationDialog
 import com.joengelke.shoppinglistapp.frontend.viewmodel.ItemSetsViewModel
+import com.joengelke.shoppinglistapp.frontend.viewmodel.RecipeViewModel
+import java.io.File
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -35,18 +44,46 @@ fun ItemSetCreateScreen(
     navController: NavHostController,
     shoppingListId: String,
     itemSetId: String,
-    itemSetsViewModel: ItemSetsViewModel = hiltViewModel()
+    itemSetsViewModel: ItemSetsViewModel = hiltViewModel(),
+    recipeViewModel: RecipeViewModel = hiltViewModel()
 ) {
     val context = LocalContext.current
     val itemSets by itemSetsViewModel.itemSets.collectAsState()
     val itemSet = itemSets.find { it.id == itemSetId }
     val itemSetItems = itemSet?.itemList ?: emptyList()
 
+    var openItemSetExport by remember { mutableStateOf(false) }
     val hasUnsavedChanges by itemSetsViewModel.hasUnsavedChanges.collectAsState()
     var showDialog by remember { mutableStateOf(false) }
+    val keyboardController = LocalSoftwareKeyboardController.current
+
+    var addReceiptConfirm by remember { mutableStateOf(false) }
+
+    val launcher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.OpenDocument(),
+        onResult = { uri ->
+            uri?.let {
+                try {
+                    val fileName = getFileNameFromUri(context, uri)
+                    val tempFile = File(context.cacheDir, fileName!!)
+                    context.contentResolver.openInputStream(uri)?.use { input ->
+                        tempFile.outputStream().use { output -> input.copyTo(output) }
+
+                        itemSetsViewModel.setSelectedReceiptFile(tempFile)
+                    }
+                } catch (e: Exception) {
+                    e.printStackTrace()
+                }
+            }
+        }
+    )
 
     LaunchedEffect(shoppingListId) {
         itemSetsViewModel.loadItemSets(shoppingListId, onSuccess = {})
+    }
+
+    LaunchedEffect(itemSetId) {
+        itemSetsViewModel.clearSelectedReceiptFile()
     }
 
     Scaffold(
@@ -91,8 +128,9 @@ fun ItemSetCreateScreen(
                             onClick = {
                                 itemSetsViewModel.updateItemSet(
                                     shoppingListId,
-                                    itemSet ?: ItemSet("", "", emptyList()),
+                                    itemSet ?: ItemSet("", "", emptyList(), ""),
                                     onSuccess = { itemSetName ->
+                                        keyboardController?.hide()
                                         Toast.makeText(
                                             context,
                                             context.getString(R.string.saved, itemSetName),
@@ -106,6 +144,54 @@ fun ItemSetCreateScreen(
                                 painter = painterResource(id = R.drawable.baseline_save_24),
                                 contentDescription = "Save",
                                 tint = MaterialTheme.colorScheme.onPrimary
+                            )
+                        }
+                    }
+
+                    IconButton(
+                        onClick = {
+                            addReceiptConfirm = true
+                        }
+                    ) {
+                        Icon(
+                            painter = painterResource(id = R.drawable.baseline_insert_photo_24),
+                            contentDescription = "add receipt file",
+                            tint = MaterialTheme.colorScheme.onPrimary
+                        )
+                    }
+                    Box{
+                        IconButton(
+                            onClick = {
+                                openItemSetExport = !openItemSetExport
+                            }
+                        ) {
+                            Icon(
+                                painter = painterResource(id = R.drawable.baseline_library_add_24),
+                                contentDescription = "open export dropdown",
+                                tint = MaterialTheme.colorScheme.onPrimary
+                            )
+                        }
+                        DropdownMenu(
+                            expanded = openItemSetExport,
+                            onDismissRequest = { openItemSetExport = false}
+                        ) {
+                            DropdownMenuItem(
+                                text = {
+                                    Text(stringResource(R.string.export_to_recipes))
+                                },
+                                onClick = {
+                                    recipeViewModel.convertItemSetToRecipe(
+                                        itemSet!!,
+                                        onSuccess = {
+                                            Toast.makeText(context,
+                                                context.getString(R.string.new_recipe_created), Toast.LENGTH_SHORT).show()
+                                        },
+                                        onFailure = { message ->
+                                            Toast.makeText(context,
+                                                context.getString(R.string.recipe_already_exists), Toast.LENGTH_SHORT).show()
+                                        }
+                                    )
+                                }
                             )
                         }
                     }
@@ -137,13 +223,16 @@ fun ItemSetCreateScreen(
                             .padding(horizontal = 8.dp),
                         onClick = {
                             itemSetsViewModel.addEmptyItemSetItem(itemSetId)
-                        }
-
+                        },
+                        elevation = ButtonDefaults.buttonElevation(
+                            defaultElevation = 4.dp
+                        ),
                     ) {
                         Text(stringResource(R.string.new_item))
                     }
                 }
             }
+
         }
     )
 
@@ -186,7 +275,7 @@ fun ItemSetCreateScreen(
                                 onClick = {
                                     itemSetsViewModel.updateItemSet(
                                         shoppingListId,
-                                        itemSet ?: ItemSet("", "", emptyList()),
+                                        itemSet ?: ItemSet("", "", emptyList(), ""),
                                         onSuccess = { itemSetName ->
                                             Toast.makeText(
                                                 context,
@@ -207,6 +296,22 @@ fun ItemSetCreateScreen(
                         }
                     }
                 }
+            }
+        )
+    }
+    if (addReceiptConfirm) {
+        ConfirmationDialog(
+            text = if (itemSet?.receiptFileId?.isNotBlank() == true) stringResource(R.string.change_current_recipe_image) else stringResource(
+                R.string.add_a_new_recipe_image
+            ),
+            acceptText = if (itemSet?.receiptFileId?.isNotBlank() == true) stringResource(R.string.change_image) else stringResource(
+                R.string.new_image
+            ),
+            onDismiss = { addReceiptConfirm = false },
+            onCancel = { addReceiptConfirm = false },
+            onAccept = {
+                launcher.launch(arrayOf("image/*", "application/pdf"))
+                addReceiptConfirm = false
             }
         )
     }
@@ -329,7 +434,7 @@ fun ItemSetItemContainer(
                     )
                     ExposedDropdownMenu(
                         expanded = expandedUnitDropdown,
-                        onDismissRequest = { expandedUnitDropdown = false}
+                        onDismissRequest = { expandedUnitDropdown = false }
                     ) {
                         units.forEach { item ->
                             DropdownMenuItem(
@@ -367,4 +472,23 @@ fun ItemSetItemContainer(
         thickness = 1.dp,
         color = MaterialTheme.colorScheme.primary.copy(alpha = 0.3f)
     )
+}
+
+
+private fun getFileNameFromUri(context: Context, uri: Uri): String? {
+    var result: String? = null
+    if (uri.scheme == "content") {
+        context.contentResolver.query(uri, null, null, null, null)?.use { cursor ->
+            if (cursor.moveToFirst()) {
+                val nameIndex = cursor.getColumnIndex(OpenableColumns.DISPLAY_NAME)
+                if (nameIndex != -1) {
+                    result = cursor.getString(nameIndex)
+                }
+            }
+        }
+    }
+    if (result == null) {
+        result = uri.path?.substringAfterLast('/')
+    }
+    return result
 }

@@ -2,10 +2,7 @@ package com.joengelke.shoppinglistapp.backend;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
-import com.joengelke.shoppinglistapp.backend.model.ItemSet;
-import com.joengelke.shoppinglistapp.backend.model.ShoppingItem;
-import com.joengelke.shoppinglistapp.backend.model.ShoppingList;
-import com.joengelke.shoppinglistapp.backend.model.User;
+import com.joengelke.shoppinglistapp.backend.model.*;
 import com.joengelke.shoppinglistapp.backend.repository.UserRepository;
 import jakarta.annotation.PreDestroy;
 import lombok.Getter;
@@ -26,6 +23,7 @@ import java.io.File;
 import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.List;
 
 @Slf4j
@@ -37,8 +35,6 @@ public class BackendApplication {
     private boolean clearDB;
     @Value("${backupDB:false}")
     private boolean backupDB;
-    @Value("${backupRateDays:7}")
-    private int backupRateDays; // default backup every 7 days
     @Value("${loadDB:false}")
     private boolean loadDB;
     @Autowired
@@ -77,37 +73,28 @@ public class BackendApplication {
         };
     }
 
-    @Scheduled(fixedRateString = "#{${backupRateDays:7} * 24 * 60 * 60 * 1000}") // backupRateDays * 1 day
+    @Scheduled(cron = "0 0 * * * *") // backup at the beginning of every hour
     public void performBackup() {
         if (backupDB) {
             ObjectMapper objectMapper = new ObjectMapper();
             objectMapper.registerModule(new JavaTimeModule());
             try {
-                System.out.println("Starting backup every " + backupRateDays + " days");
+                System.out.println("Starting hourly backup");
 
                 // Fetch the shopping lists and items from MongoDB
                 List<User> users = mongoTemplate.findAll(User.class);
                 List<ShoppingList> shoppingLists = mongoTemplate.findAll(ShoppingList.class);
                 List<ShoppingItem> shoppingItems = mongoTemplate.findAll(ShoppingItem.class);
                 List<ItemSet> itemSets = mongoTemplate.findAll(ItemSet.class);
+                List<Recipe> recipes = mongoTemplate.findAll(Recipe.class);
 
                 //Latest backup path
                 String latestBackupFilePath = "backup/shopping_backup.json";  // Modify the path as needed
                 File latestBackupFile = new File(latestBackupFilePath);
                 latestBackupFile.getParentFile().mkdirs();  // Ensure the folder exists
 
-                // Archive backup path (timestamped file in history folder)
-                String timestamp = java.time.LocalDateTime.now()
-                        .format(java.time.format.DateTimeFormatter.ofPattern("dd.MM.yyyy_HH-mm-ss"));
-                String archiveBackupFilePath = "backup/history/shopping_backup_" + timestamp + ".json";
-                File archiveBackupFile = new File(archiveBackupFilePath);
-                archiveBackupFile.getParentFile().mkdirs();  // Ensure the folder exists
-
                 // Write the data to both the latest and archive backup files
-                writeBackupToFile(latestBackupFile, users, shoppingLists, shoppingItems, itemSets, objectMapper);
-                writeBackupToFile(archiveBackupFile, users, shoppingLists, shoppingItems, itemSets, objectMapper);
-
-                System.out.println("Backup completed. Latest: " + latestBackupFilePath + ", Archived: " + archiveBackupFilePath);
+                writeBackupToFile(latestBackupFile, users, shoppingLists, shoppingItems, itemSets, recipes, objectMapper);
             } catch (Exception e) {
                 throw new RuntimeException(e);
             }
@@ -131,16 +118,27 @@ public class BackendApplication {
                     FileReader fileReader = new FileReader(backupFile);
                     BackupData backupData = objectMapper.readValue(fileReader, BackupData.class);
 
+                    // Post-process to normalize data
+                    for (ShoppingItem item : backupData.getShoppingItems()) {
+                        if (item.getTags() == null) item.setTags(new ArrayList<>());
+                    }
+
+                    for (ItemSet itemSet : backupData.getItemSets()) {
+                        if (itemSet.getReceiptFileId() == null) itemSet.setReceiptFileId("");
+                    }
+
                     // Restore the shopping lists and items into MongoDB
                     mongoTemplate.dropCollection(User.class);
                     mongoTemplate.dropCollection(ShoppingList.class);  // Optionally clear existing data before restoring
                     mongoTemplate.dropCollection(ShoppingItem.class);
                     mongoTemplate.dropCollection(ItemSet.class);
+                    mongoTemplate.dropCollection(Recipe.class);
 
                     mongoTemplate.insertAll(backupData.getUsers());
                     mongoTemplate.insertAll(backupData.getShoppingLists());
                     mongoTemplate.insertAll(backupData.getShoppingItems());
                     mongoTemplate.insertAll(backupData.getItemSets());
+                    mongoTemplate.insertAll(backupData.getRecipes());
 
                     System.out.println("Backup loaded successfully!");
                 } else {
@@ -163,13 +161,15 @@ public class BackendApplication {
 
     // Helper method to write backup data to a file
     private void writeBackupToFile(File backupFile, List<User> users, List<ShoppingList> shoppingLists,
-                                   List<ShoppingItem> shoppingItems, List<ItemSet> itemSets, ObjectMapper objectMapper) throws IOException {
+                                   List<ShoppingItem> shoppingItems, List<ItemSet> itemSets, List<Recipe> recipes,
+                                   ObjectMapper objectMapper) throws IOException {
         try (FileWriter writer = new FileWriter(backupFile)) {
             String backupData = "{\n";
             backupData += "\"users\": " + objectMapper.writeValueAsString(users) + ",\n";
             backupData += "\"shoppingLists\": " + objectMapper.writeValueAsString(shoppingLists) + ",\n";
             backupData += "\"shoppingItems\": " + objectMapper.writeValueAsString(shoppingItems) + ",\n";
-            backupData += "\"itemSets\": " + objectMapper.writeValueAsString(itemSets) + "\n";
+            backupData += "\"itemSets\": " + objectMapper.writeValueAsString(itemSets) + ",\n";
+            backupData += "\"recipes\": " + objectMapper.writeValueAsString(recipes) + "\n";
             backupData += "}";
 
             writer.write(backupData);
@@ -199,5 +199,6 @@ public class BackendApplication {
         private List<ShoppingList> shoppingLists;
         private List<ShoppingItem> shoppingItems;
         private List<ItemSet> itemSets;
+        private List<Recipe> recipes;
     }
 }

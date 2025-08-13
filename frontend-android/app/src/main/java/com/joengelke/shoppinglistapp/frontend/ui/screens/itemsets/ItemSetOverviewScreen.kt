@@ -1,9 +1,14 @@
 package com.joengelke.shoppinglistapp.frontend.ui.screens.itemsets
 
+import android.content.Context
+import android.media.MediaScannerConnection
+import android.os.Environment
+import android.widget.Toast
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
@@ -15,6 +20,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
@@ -28,7 +34,10 @@ import androidx.navigation.NavHostController
 import com.joengelke.shoppinglistapp.frontend.R
 import com.joengelke.shoppinglistapp.frontend.models.ItemSet
 import com.joengelke.shoppinglistapp.frontend.navigation.Routes
+import com.joengelke.shoppinglistapp.frontend.utils.FileUtils.openFile
+import com.joengelke.shoppinglistapp.frontend.utils.JsonHelper.json
 import com.joengelke.shoppinglistapp.frontend.viewmodel.ItemSetsViewModel
+import java.io.File
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -37,6 +46,7 @@ fun ItemSetOverviewScreen(
     shoppingListId: String,
     itemSetsViewModel: ItemSetsViewModel = hiltViewModel()
 ) {
+    val context = LocalContext.current
     val itemSets by itemSetsViewModel.itemSets.collectAsState()
 
     var refreshing by remember { mutableStateOf(false) }
@@ -51,6 +61,24 @@ fun ItemSetOverviewScreen(
 
     var showDialog by remember { mutableStateOf(false) }
     val focusRequester = remember { FocusRequester() }
+
+    // upload itemSet
+    /*
+    val launcher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.GetContent()
+    ) { uri: Uri? ->
+        uri?.let {
+            try {
+                context.contentResolver.openInputStream(it)?.use { inputStream ->
+                    val jsonString = inputStream.bufferedReader().readText()
+                    itemSetsViewModel.uploadItemSet(shoppingListId, json.decodeFromString<ItemSet>(jsonString))
+                }
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
+        }
+    }
+     */
 
     LaunchedEffect(shoppingListId) {
         itemSetsViewModel.loadItemSets(shoppingListId, onSuccess = {})
@@ -83,6 +111,18 @@ fun ItemSetOverviewScreen(
                     }
                 },
                 actions = {
+                    /*
+                    IconButton(onClick = {
+                        launcher.launch("application/json")
+                    }) {
+                        Icon(
+                            painter = painterResource(id = R.drawable.baseline_upload_24),
+                            contentDescription = "Upload JSON file",
+                            tint = MaterialTheme.colorScheme.onPrimary
+                        )
+                    }
+
+                     */
                     // dropdown menu possible
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
@@ -102,7 +142,6 @@ fun ItemSetOverviewScreen(
                 LazyColumn(
                     modifier = Modifier
                         .fillMaxSize()
-                        .padding(8.dp)
                 ) {
                     items(itemSets) { itemSet ->
                         ItemSetContainer(
@@ -115,6 +154,15 @@ fun ItemSetOverviewScreen(
                                     )
                                 )
                             },
+                            onShowReceipt = {itemSetId ->
+                                itemSetsViewModel.getReceiptFile(
+                                    itemSetId,
+                                    onSuccess = { file ->
+                                        openFile(context, file)
+                                    }
+                                )
+                            },
+                            //onDownload = { downloadItemSet -> downloadItemSet(context, downloadItemSet) },
                             onEdit = { updatedItemSet ->
                                 itemSetsViewModel.updateItemSet(
                                     shoppingListId,
@@ -130,10 +178,14 @@ fun ItemSetOverviewScreen(
                     item {
                         Button(
                             modifier = Modifier
-                                .fillMaxWidth(),
+                                .fillMaxWidth()
+                                .padding(8.dp),
                             onClick = {
                                 showDialog = true
-                            }
+                            },
+                            elevation = ButtonDefaults.buttonElevation(
+                                defaultElevation = 6.dp
+                            ),
                         ) {
                             Text(stringResource(R.string.new_item_set))
                         }
@@ -201,7 +253,7 @@ fun ItemSetOverviewScreen(
                         modifier = Modifier.weight(1f),
                         onClick = {
                             if (itemSetName.isNotBlank()) {
-                                itemSetsViewModel.createItemSet(
+                                itemSetsViewModel.createEmptyItemSet(
                                     shoppingListId,
                                     itemSetName,
                                     onSuccess = { itemSet ->
@@ -232,6 +284,8 @@ fun ItemSetOverviewScreen(
 fun ItemSetContainer(
     itemSet: ItemSet,
     onEditItems: (String) -> Unit,
+    onShowReceipt: (String) -> Unit,
+    //onDownload: (ItemSet) -> Unit,
     onEdit: (ItemSet) -> Unit,
     onDelete: (String) -> Unit
 ) {
@@ -242,14 +296,16 @@ fun ItemSetContainer(
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(bottom = 4.dp)
+            .padding(start = 8.dp, end = 8.dp, top = 8.dp)
             .clickable {
                 onEditItems(itemSet.id)
             },
         colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.primaryContainer,
-            contentColor = MaterialTheme.colorScheme.onPrimaryContainer
-        )
+            containerColor = MaterialTheme.colorScheme.surfaceVariant,
+            contentColor = MaterialTheme.colorScheme.primary
+        ),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+        shape = RoundedCornerShape(12.dp)
     ) {
         Row(
             modifier = Modifier
@@ -292,7 +348,8 @@ fun ItemSetContainer(
                     ) {
                         Icon(
                             painter = painterResource(id = R.drawable.baseline_close_24),
-                            contentDescription = "cancel edit"
+                            contentDescription = "cancel edit",
+                            tint = MaterialTheme.colorScheme.error
                         )
                     }
                 }
@@ -340,6 +397,30 @@ fun ItemSetContainer(
                             .padding(20.dp)
                             .weight(1f)
                     )
+                    if (itemSet.receiptFileId.isNotBlank()) {
+                        IconButton(
+                            onClick = {
+                                onShowReceipt(itemSet.id)
+                            }
+                        ) {
+                            Icon(
+                                painter = painterResource(R.drawable.baseline_insert_photo_24),
+                                contentDescription = "show receipt file"
+                            )
+                        }
+                    }
+                    /*
+                    IconButton(
+                        onClick = {
+                            onDownload(itemSet)
+                        }
+                    ) {
+                        Icon(
+                            painter = painterResource(R.drawable.baseline_download_24),
+                            contentDescription = "download item set"
+                        )
+                    }
+                     */
                     IconButton(
                         onClick = {
                             edit = true
@@ -363,5 +444,35 @@ fun ItemSetContainer(
                 }
             }
         }
+    }
+}
+
+fun downloadItemSet(context: Context, itemSet: ItemSet) {
+    try {
+        // Create Downloads folder path
+        val downloadsDir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS)
+        if (!downloadsDir.exists()) downloadsDir.mkdirs()
+
+        // Define file
+        val safeName = itemSet.name.replace(Regex("[^a-zA-Z0-9-_]"), "_") // sanitize file name
+        val fileName = "ItemSet_$safeName.json"
+        val file = File(downloadsDir, fileName)
+
+        // Write file
+        file.writeText(json.encodeToString(itemSet))
+
+        // Notify media scanner so it shows up in file explorers
+        MediaScannerConnection.scanFile(
+            context,
+            arrayOf(file.absolutePath),
+            null,
+            null
+        )
+
+        Toast.makeText(context, "ItemSet downloaded to Downloads", Toast.LENGTH_SHORT).show()
+
+    } catch (e: Exception) {
+        e.printStackTrace()
+        Toast.makeText(context, "Download failed: ${e.localizedMessage}", Toast.LENGTH_SHORT).show()
     }
 }

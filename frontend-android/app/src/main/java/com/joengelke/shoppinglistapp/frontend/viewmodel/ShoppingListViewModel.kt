@@ -29,8 +29,8 @@ class ShoppingListViewModel @Inject constructor(
     val allShoppingLists: StateFlow<List<ShoppingList>> = _allShoppingLists.asStateFlow()
 
     fun loadShoppingLists(
-        onSuccess: () -> Unit,
-        onFailure: () -> Unit
+        onSuccess: () -> Unit = {},
+        onFailure: () -> Unit = {}
     ) {
         viewModelScope.launch {
             val result = shoppingListRepository.getShoppingLists()

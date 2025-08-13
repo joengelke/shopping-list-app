@@ -5,4 +5,8 @@
     <string name="item_sets">Sets</string>
     <string name="new_item_set">Neues Set</string>
     <string name="item_set_name">Setname</string>
+    <string name="change_current_recipe_image">Aktuelles Rezeptbild ändern?</string>
+    <string name="add_a_new_recipe_image">Neues Rezeptbild hinzufügen?</string>
+    <string name="change_image">Bild ändern</string>
+    <string name="new_image">Neues Bild</string>
 </resources>

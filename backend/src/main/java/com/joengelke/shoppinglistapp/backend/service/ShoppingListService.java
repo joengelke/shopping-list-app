@@ -4,8 +4,14 @@ import com.joengelke.shoppinglistapp.backend.dto.UserResponse;
 import com.joengelke.shoppinglistapp.backend.model.*;
 import com.joengelke.shoppinglistapp.backend.repository.ShoppingListRepository;
 import com.joengelke.shoppinglistapp.backend.security.JwtTokenProvider;
+import org.bson.types.ObjectId;
+import org.springframework.data.mongodb.gridfs.GridFsTemplate;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import org.springframework.web.multipart.MultipartFile;
+import org.springframework.web.server.ResponseStatusException;
 
+import java.io.IOException;
 import java.time.Instant;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -209,9 +215,24 @@ public class ShoppingListService {
         return itemSetService.getAllItemSetsByIds(shoppingList.getItemSetIds());
     }
 
-    public ItemSet createItemSet(String header, String listId, ItemSet itemSet) {
+    public ItemSet createItemSet(String header, String listId, ItemSet itemSet, MultipartFile receiptFile) {
         ShoppingList shoppingList = shoppingListRepository.findById(listId)
                 .orElseThrow(() -> new NoSuchElementException("Shopping list not found"));
+
+        // Only check names of ItemSets referenced by this shoppingList
+        List<String> itemSetIds = shoppingList.getItemSetIds();
+        if (itemSetIds != null && !itemSetIds.isEmpty()) {
+            List<ItemSet> existingSets = itemSetService.getAllItemSetsByIds(itemSetIds);
+            boolean nameExists = existingSets.stream()
+                    .anyMatch(existingSet -> existingSet.getName().equalsIgnoreCase(itemSet.getName()));
+
+            if (nameExists) {
+                throw new ResponseStatusException(
+                        HttpStatus.CONFLICT,
+                        "An ItemSet with that name already exists in this shopping list."
+                );
+            }
+        }
 
         List<ItemSetItem> newItemSetItems = new ArrayList<>(); // final itemSetItem list to use for
         for (ItemSetItem setItem : itemSet.getItemList()) {
@@ -227,7 +248,17 @@ public class ShoppingListService {
             }
         }
 
-        ItemSet newItemSet = itemSetService.createItemSet(new ItemSet(itemSet.getName(), newItemSetItems));
+        String receiptFileId = "";
+        if (receiptFile != null) {
+           receiptFileId = itemSetService.saveReceiptFile(receiptFile);
+        } else {
+            if (itemSet.getReceiptFileId() != null) {
+                // receipt file already exists so link the id from itemSet
+                receiptFileId = itemSet.getReceiptFileId();
+            }
+        }
+
+        ItemSet newItemSet = itemSetService.createItemSet(new ItemSet(itemSet.getName(), newItemSetItems, receiptFileId));
         if (shoppingList.getItemSetIds() == null) {
             shoppingList.setItemSetIds(new ArrayList<>());
         }
@@ -236,7 +267,7 @@ public class ShoppingListService {
         return newItemSet;
     }
 
-    public ItemSet updateItemSet(String header, String listId, ItemSet newItemSet) {
+    public ItemSet updateItemSet(String header, String listId, ItemSet newItemSet, MultipartFile receiptFile) {
         ShoppingList shoppingList = shoppingListRepository.findById(listId)
                 .orElseThrow(() -> new NoSuchElementException("Shopping list not found"));
 
@@ -268,6 +299,15 @@ public class ShoppingListService {
                 }
             }
         }
+
+        // Update receipt file
+        if (receiptFile != null) {
+            if (newItemSet.getReceiptFileId() != null) {
+                itemSetService.deleteReceiptFile(newItemSet.getReceiptFileId());
+            }
+            newItemSet.setReceiptFileId(itemSetService.saveReceiptFile(receiptFile));
+        }
+
         shoppingListRepository.save(shoppingList);
         return itemSetService.updateItemSet(newItemSet);
     }

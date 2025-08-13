@@ -6,20 +6,6 @@ import retrofit2.http.*
 
 interface UserApi {
 
-    @PUT("user/{userId}/add-role")
-    suspend fun addRoleToUser(
-        @Header("Authorization") token: String,
-        @Path("userId") userId: String,
-        @Query("role") role: String
-    ): Response<User>
-
-    @PUT("user/{userId}/remove-role")
-    suspend fun removeRoleFromUser(
-        @Header("Authorization") token: String,
-        @Path("userId") userId: String,
-        @Query("role") role: String
-    ): Response<User>
-
     @GET("user")
     suspend fun getAllUsers(
         @Header("Authorization") token: String
@@ -55,6 +41,20 @@ interface UserApi {
     suspend fun changePassword(
         @Header("Authorization") token: String,
         @Body request: ChangePasswordRequest
+    ): Response<User>
+
+    @PUT("user/{userId}/add-role")
+    suspend fun addRoleToUser(
+        @Header("Authorization") token: String,
+        @Path("userId") userId: String,
+        @Query("role") role: String
+    ): Response<User>
+
+    @PUT("user/{userId}/remove-role")
+    suspend fun removeRoleFromUser(
+        @Header("Authorization") token: String,
+        @Path("userId") userId: String,
+        @Query("role") role: String
     ): Response<User>
 
     @DELETE("shoppinglist/user/{userId}")

@@ -1,15 +1,19 @@
 package com.joengelke.shoppinglistapp.frontend.viewmodel
 
+import androidx.compose.runtime.State
+import androidx.compose.runtime.mutableStateOf
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.joengelke.shoppinglistapp.frontend.common.exception.AppException
 import com.joengelke.shoppinglistapp.frontend.models.ItemSet
 import com.joengelke.shoppinglistapp.frontend.models.ItemSetItem
 import com.joengelke.shoppinglistapp.frontend.repository.ItemSetRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+import java.io.File
 import java.util.UUID
 import javax.inject.Inject
 
@@ -21,8 +25,22 @@ class ItemSetsViewModel @Inject constructor(
     private val _itemSets = MutableStateFlow<List<ItemSet>>(emptyList())
     val itemSets: StateFlow<List<ItemSet>> = _itemSets.asStateFlow()
 
+    val alphabeticSortedItemSets: StateFlow<List<ItemSet>> =
+        itemSets
+            .map{ sets ->
+                sets.sortedBy { it.name.lowercase() }
+            }
+            .stateIn(
+                viewModelScope,
+                SharingStarted.WhileSubscribed(5000),
+                emptyList()
+            )
+
     private val _hasUnsavedChanges = MutableStateFlow(false)
     val hasUnsavedChanges: StateFlow<Boolean> = _hasUnsavedChanges.asStateFlow()
+
+    private val _selectedReceiptFile = mutableStateOf<File?>(null)
+    private val selectedReceiptFile: State<File?> = _selectedReceiptFile
 
     fun loadItemSets(
         shoppingListId: String,
@@ -37,7 +55,7 @@ class ItemSetsViewModel @Inject constructor(
         }
     }
 
-    fun createItemSet(
+    fun createEmptyItemSet(
         shoppingListId: String,
         itemSetName: String,
         onSuccess: (ItemSet) -> Unit
@@ -45,7 +63,8 @@ class ItemSetsViewModel @Inject constructor(
         viewModelScope.launch {
             val result = itemSetRepository.createItemSet(
                 shoppingListId,
-                ItemSet("", itemSetName, emptyList())
+                ItemSet("", itemSetName, emptyList(), ""),
+                null
             )
             result.onSuccess { itemSet ->
                 _itemSets.value += itemSet
@@ -60,13 +79,52 @@ class ItemSetsViewModel @Inject constructor(
         onSuccess: (String) -> Unit
     ) {
         viewModelScope.launch {
-            val result = itemSetRepository.updateItemSet(shoppingListId, itemSet)
+            val result =
+                itemSetRepository.updateItemSet(shoppingListId, itemSet, selectedReceiptFile.value)
             result.onSuccess { updatedItemSet ->
                 _itemSets.value = _itemSets.value.map {
                     if (it.id == updatedItemSet.id) updatedItemSet else it
                 }
                 onSuccess(updatedItemSet.name)
                 _hasUnsavedChanges.value = false
+            }
+        }
+    }
+
+    fun uploadItemSet(
+        shoppingListId: String,
+        itemSet: ItemSet,
+        onSuccess: () -> Unit = {},
+        itemSetNameExists: () -> Unit = {}
+    ) {
+        viewModelScope.launch {
+            val result = itemSetRepository.createItemSet(
+                shoppingListId,
+                ItemSet("", itemSet.name, itemSet.itemList, itemSet.receiptFileId),
+                null
+            )
+            result.onSuccess { uploadedItemSet ->
+                _itemSets.value += uploadedItemSet
+                onSuccess()
+            }
+            result.onFailure { e ->
+                when(e) {
+                    is AppException.ItemSetNameDuplicationException -> itemSetNameExists()
+                }
+            }
+        }
+    }
+
+    fun getReceiptFile(
+        itemSetId: String,
+        onSuccess: (File) -> Unit
+    ) {
+        viewModelScope.launch(Dispatchers.IO) { // Run in IO dispatcher (background)
+            val result = itemSetRepository.getReceiptFile(itemSetId)
+            result.onSuccess { receiptFile ->
+                withContext(Dispatchers.Main) { // Switch back to Main thread for UI callback
+                    onSuccess(receiptFile)
+                }
             }
         }
     }
@@ -116,6 +174,15 @@ class ItemSetsViewModel @Inject constructor(
             } else itemSet
         }
         _hasUnsavedChanges.value = true
+    }
+
+    fun setSelectedReceiptFile(file: File) {
+        _selectedReceiptFile.value = file
+        _hasUnsavedChanges.value = true
+    }
+
+    fun clearSelectedReceiptFile() {
+        _selectedReceiptFile.value = null
     }
 
     fun deleteItemSetItem(itemSetId: String, itemSetItem: ItemSetItem) {

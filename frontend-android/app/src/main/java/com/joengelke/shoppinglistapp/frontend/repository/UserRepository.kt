@@ -1,23 +1,20 @@
 package com.joengelke.shoppinglistapp.frontend.repository
 
-import android.content.Context
 import com.joengelke.shoppinglistapp.frontend.common.exception.UserException
 import com.joengelke.shoppinglistapp.frontend.models.*
 import com.joengelke.shoppinglistapp.frontend.network.RetrofitProvider
 import com.joengelke.shoppinglistapp.frontend.network.SessionManager
 import com.joengelke.shoppinglistapp.frontend.network.TokenManager
-import dagger.hilt.android.qualifiers.ApplicationContext
 import javax.inject.Inject
 import javax.inject.Singleton
 
 @Singleton
 class UserRepository @Inject constructor(
-    @ApplicationContext private val context: Context,
     private val sessionManager: SessionManager,
     private val tokenManager: TokenManager,
     private val retrofitProvider: RetrofitProvider
-){
-    suspend fun getAllUsers() : Result<List<User>> {
+) {
+    suspend fun getAllUsers(): Result<List<User>> {
         return try {
             val token =
                 tokenManager.getToken() ?: return Result.failure(Exception("No token found"))
@@ -46,7 +43,7 @@ class UserRepository @Inject constructor(
 
     suspend fun getShoppingListUser(
         shoppingListId: String
-    ) : Result<List<User>> {
+    ): Result<List<User>> {
         return try {
             val token =
                 tokenManager.getToken() ?: return Result.failure(Exception("No token found"))
@@ -111,7 +108,10 @@ class UserRepository @Inject constructor(
         }
     }
 
-    suspend fun removeUserFromShoppingList(shoppingListId: String, userId: String): Result<DeleteResponse> {
+    suspend fun removeUserFromShoppingList(
+        shoppingListId: String,
+        userId: String
+    ): Result<DeleteResponse> {
         return try {
             val token =
                 tokenManager.getToken() ?: return Result.failure(Exception("No token found"))
@@ -213,21 +213,12 @@ class UserRepository @Inject constructor(
         }
     }
 
-    suspend fun addRoleToUser(
-        userId: String,
-        role: String
-    ) : Result<User> {
+    suspend fun addRoleToUser(userId: String, role: String): Result<User> {
         return try {
             val token =
                 tokenManager.getToken() ?: return Result.failure(Exception("No token found"))
 
-            val response =
-                retrofitProvider.getUserApi()
-                    .addRoleToUser(
-                        "Bearer $token",
-                        userId,
-                        role
-                    )
+            val response =              retrofitProvider.getUserApi().addRoleToUser("Bearer $token", userId, role)
             when {
                 response.isSuccessful -> response.body()?.let { Result.success(it) }
                     ?: Result.failure(Exception("Unexpected empty response"))
@@ -245,21 +236,14 @@ class UserRepository @Inject constructor(
         }
     }
 
-    suspend fun removeRoleFromUser(
-        userId: String,
-        role: String
-    ) : Result<User> {
+    suspend fun removeRoleFromUser(userId: String, role: String): Result<User> {
         return try {
             val token =
                 tokenManager.getToken() ?: return Result.failure(Exception("No token found"))
 
             val response =
-                retrofitProvider.getUserApi()
-                    .removeRoleFromUser(
-                        "Bearer $token",
-                        userId,
-                        role
-                    )
+                retrofitProvider.getUserApi().removeRoleFromUser("Bearer $token", userId, role)
+
             when {
                 response.isSuccessful -> response.body()?.let { Result.success(it) }
                     ?: Result.failure(Exception("Unexpected empty response"))

@@ -13,6 +13,9 @@ import com.joengelke.shoppinglistapp.frontend.ui.screens.auth.LoginScreen
 import com.joengelke.shoppinglistapp.frontend.ui.screens.auth.RegisterScreen
 import com.joengelke.shoppinglistapp.frontend.ui.screens.itemsets.ItemSetCreateScreen
 import com.joengelke.shoppinglistapp.frontend.ui.screens.itemsets.ItemSetOverviewScreen
+import com.joengelke.shoppinglistapp.frontend.ui.screens.marketplace.MarketplaceOverviewScreen
+import com.joengelke.shoppinglistapp.frontend.ui.screens.recipes.RecipeViewScreen
+import com.joengelke.shoppinglistapp.frontend.ui.screens.recipes.RecipesOverviewScreen
 import com.joengelke.shoppinglistapp.frontend.ui.screens.settings.*
 import com.joengelke.shoppinglistapp.frontend.ui.screens.shoppingitems.ShoppingItemsCreateScreen
 import com.joengelke.shoppinglistapp.frontend.ui.screens.shoppingitems.ShoppingItemsOverviewScreen
@@ -39,7 +42,11 @@ fun Navigation(
     // checked for valid token to skip login
     val startDestination = if (isLoggedIn) Routes.ShoppingListOverview.route else Routes.Login.route
 
-    NavHost(navController, startDestination = startDestination) {
+
+    NavHost(
+        navController,
+        startDestination = startDestination
+    ) {
         composable(
             route = Routes.Login.route,
             enterTransition = {
@@ -307,15 +314,11 @@ fun Navigation(
                         scaleIn(tween(300)) + fadeIn(tween(300))
                     }
 
-                    Routes.SettingsAdmin.route -> {
+                    else -> {
                         slideIntoContainer(
                             AnimatedContentTransitionScope.SlideDirection.Right,
                             animationSpec = tween(300)
                         )
-                    }
-
-                    else -> {
-                        null
                     }
                 }
             },
@@ -538,6 +541,27 @@ fun Navigation(
         composable(Routes.SettingsAdminShoppingItems.route) { backStackEntry ->
             val shoppingListId = backStackEntry.arguments?.getString("shoppingListId") ?: ""
             SettingsAdminShoppingItemsScreen(navController, shoppingListId)
+        }
+
+        composable(Routes.SettingsAdminRecipes.route) {
+            SettingsAdminRecipesScreen(navController)
+        }
+
+        composable(
+            route = Routes.RecipesOverview.route,
+        ) {
+            RecipesOverviewScreen(navController)
+        }
+
+        composable(route = Routes.RecipeView.route) { backStackEntry ->
+            val recipeId = backStackEntry.arguments?.getString("recipeId") ?: ""
+            RecipeViewScreen(navController, recipeId)
+        }
+
+        composable(
+            route = Routes.MarketplaceOverview.route,
+        ) {
+            MarketplaceOverviewScreen(navController)
         }
     }
 }

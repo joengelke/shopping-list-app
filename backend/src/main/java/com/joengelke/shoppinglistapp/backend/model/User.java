@@ -19,11 +19,13 @@ public class User {
     private String password;
     private String email;
     private List<String> roles; // ["USER","ADMIN"]
+    private List<String> recipeIds;
 
     public User(String username, String password) {
         this.username = username;
         this.password = password;
         this.roles = new ArrayList<String>(List.of("USER"));
+        this.recipeIds = new ArrayList<>();
     }
     public User(){}
 }

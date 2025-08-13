@@ -5,8 +5,11 @@ import com.joengelke.shoppinglistapp.backend.dto.ChangeUsernameRequest;
 import com.joengelke.shoppinglistapp.backend.dto.UserResponse;
 import com.joengelke.shoppinglistapp.backend.model.User;
 import com.joengelke.shoppinglistapp.backend.service.UserService;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
 
@@ -70,6 +73,5 @@ public class UserController {
             return ResponseEntity.status(e.getStatusCode()).body(e.getReason());
         }
     }
-
 
 }

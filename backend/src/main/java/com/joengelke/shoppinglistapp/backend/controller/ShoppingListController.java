@@ -11,6 +11,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.util.List;
 import java.util.Map;
@@ -122,18 +124,24 @@ public class ShoppingListController {
     @PostMapping("/{shoppingListId}/itemset")
     public ResponseEntity<?> createItemSet(
             @PathVariable String shoppingListId,
-            @RequestBody ItemSet itemSet,
+            @RequestPart("itemSet") ItemSet itemSet,
+            @RequestPart(value= "receiptFile", required = false) MultipartFile receiptFile,
             @RequestHeader("Authorization") String header) {
-        ItemSet newItemSet = shoppingListService.createItemSet(header, shoppingListId, itemSet);
-        return ResponseEntity.ok(newItemSet);
+        try {
+            ItemSet newItemSet = shoppingListService.createItemSet(header, shoppingListId, itemSet, receiptFile);
+            return ResponseEntity.ok(newItemSet);
+        } catch (ResponseStatusException e) {
+            return ResponseEntity.status(e.getStatusCode()).body(e.getReason()); // code 409 if itemSet already exists
+        }
     }
 
     @PutMapping("/{shoppingListId}/itemset")
     public ResponseEntity<?> updateItemSet(
             @PathVariable String shoppingListId,
-            @RequestBody ItemSet itemSet,
+            @RequestPart("itemSet") ItemSet itemSet,
+            @RequestPart(value= "receiptFile", required = false) MultipartFile receiptFile,
             @RequestHeader("Authorization") String header) {
-        ItemSet updatedItemSet = shoppingListService.updateItemSet(header, shoppingListId, itemSet);
+        ItemSet updatedItemSet = shoppingListService.updateItemSet(header, shoppingListId, itemSet, receiptFile);
         return ResponseEntity.ok(updatedItemSet);
     }
 

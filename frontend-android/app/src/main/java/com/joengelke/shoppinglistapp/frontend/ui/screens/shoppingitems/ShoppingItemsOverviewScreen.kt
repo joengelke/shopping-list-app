@@ -42,8 +42,7 @@ import com.joengelke.shoppinglistapp.frontend.R
 import com.joengelke.shoppinglistapp.frontend.models.ShoppingItem
 import com.joengelke.shoppinglistapp.frontend.navigation.Routes
 import com.joengelke.shoppinglistapp.frontend.ui.common.ShoppingItemsSortCategory
-import com.joengelke.shoppinglistapp.frontend.ui.common.ShoppingItemsSortOptions
-import com.joengelke.shoppinglistapp.frontend.ui.common.SortDirection
+import com.joengelke.shoppinglistapp.frontend.ui.components.SortOptionsModal
 import com.joengelke.shoppinglistapp.frontend.viewmodel.SettingsViewModel
 import com.joengelke.shoppinglistapp.frontend.viewmodel.ShoppingItemsViewModel
 import kotlinx.coroutines.delay
@@ -263,7 +262,7 @@ fun ShoppingItemsOverviewScreen(
                                     modifier = Modifier.weight(1f)
                                 )
                                 Icon(
-                                    imageVector = if (isCheckedItemsVisible) Icons.Default.KeyboardArrowDown else Icons.Default.KeyboardArrowUp,
+                                    imageVector = if (!isCheckedItemsVisible) Icons.Default.KeyboardArrowDown else Icons.Default.KeyboardArrowUp,
                                     contentDescription = "Toggle Checked Items"
                                 )
                             }
@@ -299,6 +298,23 @@ fun ShoppingItemsOverviewScreen(
         }
     )
     if (showSorting) {
+        SortOptionsModal(
+            title = stringResource(R.string.sort_items_by),
+            currentSortOption = shoppingItemsSortOption,
+            availableCategories = ShoppingItemsSortCategory.entries,
+            getCategoryLabel = {
+                when (it) {
+                    ShoppingItemsSortCategory.ALPHABETICAL -> stringResource(R.string.alphabetical)
+                    ShoppingItemsSortCategory.CHECKED_AT -> stringResource(R.string.sorted_added_to_list)
+                    ShoppingItemsSortCategory.EDITED_AT -> stringResource(R.string.sorted_edited)
+                }
+            },
+            onChooseSortOption = { updatedOption ->
+                settingsViewModel.setShoppingItemsSortOption(updatedOption)
+            },
+            onDismiss = { showSorting = false }
+        )
+        /*
         SortShoppingItemsModal(
             shoppingItemsSortOption,
             onChooseSortOption = { option ->
@@ -306,6 +322,8 @@ fun ShoppingItemsOverviewScreen(
             },
             onDismiss = { showSorting = false }
         )
+
+         */
     }
 }
 
@@ -882,87 +900,5 @@ fun EditShoppingItemModal(
                 }
             }
         }
-    }
-}
-
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-fun SortShoppingItemsModal(
-    currentSortOption: ShoppingItemsSortOptions,
-    onChooseSortOption: (ShoppingItemsSortOptions) -> Unit,
-    onDismiss: () -> Unit,
-) {
-    val sheetState = rememberModalBottomSheetState()
-
-    ModalBottomSheet(
-        sheetState = sheetState,
-        onDismissRequest = { onDismiss() },
-        shape = RectangleShape,
-        modifier = Modifier.wrapContentHeight(),
-        dragHandle = null,
-        containerColor = MaterialTheme.colorScheme.surface
-    ) {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-        ) {
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(16.dp)
-            ) {
-                Text(
-                    text = stringResource(R.string.sort_items_by)
-                )
-            }
-            listOf(
-                ShoppingItemsSortCategory.ALPHABETICAL,
-                ShoppingItemsSortCategory.CHECKED_AT,
-                ShoppingItemsSortCategory.EDITED_AT
-            ).forEach { category ->
-                HorizontalDivider(
-                    thickness = 1.dp,
-                    color = MaterialTheme.colorScheme.primary.copy(alpha = 0.3f)
-                )
-
-                val isSelected = currentSortOption.category == category
-                val direction = currentSortOption.direction
-
-                ListItem(
-                    headlineContent = {
-                        Text(
-                            text = when (category) {
-                                ShoppingItemsSortCategory.ALPHABETICAL -> stringResource(R.string.alphabetical)
-                                ShoppingItemsSortCategory.CHECKED_AT -> stringResource(R.string.sorted_added_to_list)
-                                ShoppingItemsSortCategory.EDITED_AT -> stringResource(R.string.sorted_edited)
-                            }
-                        )
-                    },
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .clickable {
-                            val newDirection =
-                                if (isSelected && direction == SortDirection.ASCENDING) {
-                                    SortDirection.DESCENDING
-                                } else {
-                                    SortDirection.ASCENDING
-                                }
-                            onChooseSortOption(ShoppingItemsSortOptions(category, newDirection))
-                        },
-
-                    trailingContent = {
-                        if (isSelected) {
-                            Icon(
-                                painter = painterResource(id = if (direction == SortDirection.ASCENDING) R.drawable.baseline_arrow_upward_24 else R.drawable.baseline_arrow_downward_24),
-                                contentDescription = if (direction == SortDirection.ASCENDING) "Ascending" else "Descending"
-                            )
-                        }
-                    }
-
-                )
-            }
-        }
-
     }
 }

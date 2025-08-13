@@ -4,9 +4,10 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.joengelke.shoppinglistapp.frontend.network.RetrofitProvider
 import com.joengelke.shoppinglistapp.frontend.repository.SettingsRepository
+import com.joengelke.shoppinglistapp.frontend.ui.common.RecipesSortCategory
 import com.joengelke.shoppinglistapp.frontend.ui.common.ShoppingItemsSortCategory
-import com.joengelke.shoppinglistapp.frontend.ui.common.ShoppingItemsSortOptions
 import com.joengelke.shoppinglistapp.frontend.ui.common.SortDirection
+import com.joengelke.shoppinglistapp.frontend.ui.common.SortOptions
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -30,15 +31,24 @@ class SettingsViewModel @Inject constructor(
     val fontScale: StateFlow<Float> = _fontScale.asStateFlow()
 
     private val _shoppingItemsSortOption = MutableStateFlow(
-        ShoppingItemsSortOptions(
+        SortOptions(
             category = ShoppingItemsSortCategory.ALPHABETICAL,
             direction = SortDirection.ASCENDING
         )
     )
-    val shoppingItemsSortOption: StateFlow<ShoppingItemsSortOptions> =
+    val shoppingItemsSortOption: StateFlow<SortOptions<ShoppingItemsSortCategory>> =
         _shoppingItemsSortOption.asStateFlow()
 
-    private val _serverUrl = MutableStateFlow("https://shopit.ddnss.de:8443/api/")
+    private val _recipesSortOption = MutableStateFlow(
+        SortOptions(
+            category = RecipesSortCategory.ALPHABETICAL,
+            direction = SortDirection.ASCENDING
+        )
+    )
+    val recipesSortOption: StateFlow<SortOptions<RecipesSortCategory>> =
+        _recipesSortOption.asStateFlow()
+
+    private val _serverUrl = MutableStateFlow("https://shopit.mooo.com:8443/api/")
     val serverUrl: StateFlow<String> = _serverUrl.asStateFlow()
 
     init {
@@ -54,6 +64,11 @@ class SettingsViewModel @Inject constructor(
         viewModelScope.launch {
             settingsRepository.shoppingItemsSortOptionFlow.collect {
                 _shoppingItemsSortOption.value = it
+            }
+        }
+        viewModelScope.launch {
+            settingsRepository.recipesSortOptionFLow.collect {
+                _recipesSortOption.value = it
             }
         }
         viewModelScope.launch {
@@ -80,9 +95,15 @@ class SettingsViewModel @Inject constructor(
         }
     }
 
-    fun setShoppingItemsSortOption(option: ShoppingItemsSortOptions) {
+    fun setShoppingItemsSortOption(option: SortOptions<ShoppingItemsSortCategory>) {
         viewModelScope.launch {
             settingsRepository.setShoppingItemsSortOption(option)
+        }
+    }
+
+    fun setRecipesSortOption(option: SortOptions<RecipesSortCategory>) {
+        viewModelScope.launch {
+            settingsRepository.setRecipesSortOption(option)
         }
     }
 

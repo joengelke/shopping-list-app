@@ -38,5 +38,12 @@ sealed class Routes(val route: String) {
     data object SettingsAdminShoppingItems: Routes("settingsAdminShoppingItems/{shoppingListId}") {
         fun createRoute(shoppingListId: String) = "settingsAdminShoppingItems/$shoppingListId"
     }
+    data object SettingsAdminRecipes: Routes("settingsAdminRecipes")
+    data object RecipesOverview: Routes("recipesOverview")
+    data object RecipeView: Routes("recipeView/{recipeId}") {
+        fun createRoute(recipeId: String) = "recipeView/$recipeId"
+    }
+
+    data object MarketplaceOverview: Routes("marketplaceOverview")
 
 }

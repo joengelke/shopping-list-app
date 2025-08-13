@@ -1,6 +1,7 @@
 package com.joengelke.shoppinglistapp.frontend.ui.screens.shoppingitems
 
-import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.*
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectTapGestures
@@ -72,7 +73,7 @@ fun ShoppingItemsCreateScreen(
     )
 
     val shoppingItems by shoppingItemsViewModel.shoppingItems.collectAsState()
-    val itemSets by itemSetsViewModel.itemSets.collectAsState()
+    val itemSets by itemSetsViewModel.alphabeticSortedItemSets.collectAsState()
     val tagSortedShoppingItems by shoppingItemsViewModel.tagSortedShoppingItems.collectAsState()
 
     // Filter items that start with the entered name
@@ -97,10 +98,13 @@ fun ShoppingItemsCreateScreen(
 
     // Pager
     val pagerState = rememberPagerState(pageCount = { 3 })
-    val tabTitles = listOf("Items", "Sets", "Tags")
+    val tabTitles = listOf(stringResource(R.string.item), "Sets", "Tags")
     val scope = rememberCoroutineScope()
 
+    var contentVisible by remember { mutableStateOf(false) }
+
     LaunchedEffect(Unit) {
+        contentVisible = true
         shoppingItemsViewModel.loadShoppingItems(shoppingListId, onSuccess = {})
         itemSetsViewModel.loadItemSets(shoppingListId, onSuccess = {})
         delay(400)
@@ -198,108 +202,115 @@ fun ShoppingItemsCreateScreen(
             }
         },
     ) { paddingValues ->
-        Column(
+        AnimatedVisibility(
+            visible = contentVisible,
+            enter = scaleIn(tween(500)) + fadeIn(tween(500)),
+            exit = fadeOut() + slideOutVertically(targetOffsetY = { it / 4 }),
             modifier = Modifier
                 .fillMaxSize()
                 .padding(paddingValues)
-                .pointerInput(Unit) {
-                    detectTapGestures { focusManager.clearFocus() }
-                }
         ) {
-            AnimatedVisibility(name.isEmpty()) {
-                TabRow(
-                    selectedTabIndex = pagerState.currentPage,
-                    contentColor = MaterialTheme.colorScheme.primary,
-                    modifier = Modifier.fillMaxWidth(),
-                ) {
-                    tabTitles.forEachIndexed { index, title ->
-                        Tab(
-                            text = { Text(title, fontWeight = FontWeight.Bold) },
-                            selected = pagerState.currentPage == index,
-                            onClick = {
-                                scope.launch {
-                                    pagerState.animateScrollToPage(index)
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .pointerInput(Unit) {
+                        detectTapGestures { focusManager.clearFocus() }
+                    }
+            ) {
+                AnimatedVisibility(name.isEmpty()) {
+                    TabRow(
+                        selectedTabIndex = pagerState.currentPage,
+                        contentColor = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.fillMaxWidth(),
+                    ) {
+                        tabTitles.forEachIndexed { index, title ->
+                            Tab(
+                                text = { Text(title, fontWeight = FontWeight.Bold) },
+                                selected = pagerState.currentPage == index,
+                                onClick = {
+                                    scope.launch {
+                                        pagerState.animateScrollToPage(index)
+                                    }
                                 }
-                            }
-                        )
+                            )
+                        }
                     }
                 }
-            }
 
-            // Items and Sets pages
-            HorizontalPager(
-                state = pagerState,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .weight(1f),
-                userScrollEnabled = name.isEmpty()
-            ) { page ->
-                when (page) {
-                    0 -> {
-                        keyboardController?.show()
-                        ShoppingItemPage(
-                            allItems,
-                            addOneItem = { addItem ->
-                                shoppingItemsViewModel.addOneShoppingItem(
-                                    shoppingListId,
-                                    addItem
-                                )
-                                name = ""
-                            },
-                            removeOneItem = { itemId ->
-                                shoppingItemsViewModel.removeOneShoppingItem(
-                                    itemId
-                                )
-                                name = ""
-                            }
-                        )
-                    }
+                // Items and Sets pages
+                HorizontalPager(
+                    state = pagerState,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .weight(1f),
+                    userScrollEnabled = name.isEmpty()
+                ) { page ->
+                    when (page) {
+                        0 -> {
+                            ShoppingItemPage(
+                                allItems,
+                                addOneItem = { addItem ->
+                                    shoppingItemsViewModel.addOneShoppingItem(
+                                        shoppingListId,
+                                        addItem
+                                    )
+                                    name = ""
+                                },
+                                removeOneItem = { itemId ->
+                                    shoppingItemsViewModel.removeOneShoppingItem(
+                                        itemId
+                                    )
+                                    name = ""
+                                }
+                            )
+                        }
 
-                    1 -> {
-                        keyboardController?.hide()
-                        ItemSetsPage(
-                            shoppingItems,
-                            itemSets,
-                            addItemSetItemToShoppingList = { addItemSetItem ->
-                                shoppingItemsViewModel.addItemSetItemToShoppingList(
-                                    addItemSetItem
-                                )
-                            },
-                            removeItemSetItemFromShoppingList = { removeItemSetItem ->
-                                shoppingItemsViewModel.removeItemSetItemFromShoppingList(
-                                    removeItemSetItem
-                                )
-                            },
-                            addAllItemSetItemsToShoppingList = { itemSetId ->
-                                shoppingItemsViewModel.addAllItemSetItemsToShoppingList(
-                                    itemSetId
-                                )
-                            },
-                            removeAllItemSetItemsFromShoppingList = { itemSetId ->
-                                shoppingItemsViewModel.removeAllItemSetItemsFromShoppingList(
-                                    itemSetId
-                                )
-                            }
-                        )
-                    }
+                        1 -> {
+                            keyboardController?.hide()
+                            ItemSetsPage(
+                                shoppingItems,
+                                itemSets,
+                                addItemSetItemToShoppingList = { addItemSetItem ->
+                                    shoppingItemsViewModel.addItemSetItemToShoppingList(
+                                        addItemSetItem
+                                    )
+                                },
+                                removeItemSetItemFromShoppingList = { removeItemSetItem ->
+                                    shoppingItemsViewModel.removeItemSetItemFromShoppingList(
+                                        removeItemSetItem
+                                    )
+                                },
+                                addAllItemSetItemsToShoppingList = { itemSetId ->
+                                    shoppingItemsViewModel.addAllItemSetItemsToShoppingList(
+                                        itemSetId
+                                    )
+                                },
+                                removeAllItemSetItemsFromShoppingList = { itemSetId ->
+                                    shoppingItemsViewModel.removeAllItemSetItemsFromShoppingList(
+                                        itemSetId
+                                    )
+                                }
+                            )
+                        }
 
-                    2 -> {
-                        keyboardController?.hide()
-                        ItemsTagPage(
-                            tagSortedShoppingItems,
-                            addOneItem = { addItem ->
-                                shoppingItemsViewModel.addOneShoppingItem(
-                                    shoppingListId,
-                                    addItem
-                                )
-                            },
-                            removeOneItem = { itemId ->
-                                shoppingItemsViewModel.removeOneShoppingItem(
-                                    itemId
-                                )
-                            }
-                        )
+                        2 -> {
+                            keyboardController?.hide()
+                            ItemsTagPage(
+                                tagSortedShoppingItems,
+                                addOneItem = { addItem ->
+                                    shoppingItemsViewModel.addOneShoppingItem(
+                                        shoppingListId,
+                                        addItem
+                                    )
+                                },
+                                removeOneItem = { itemId ->
+                                    shoppingItemsViewModel.removeOneShoppingItem(
+                                        itemId
+                                    )
+                                }
+                            )
 
+                        }
                     }
                 }
             }
@@ -337,8 +348,6 @@ fun ItemContainer(
     addOneItem: (ShoppingItem) -> Unit,
     removeOneItem: (String) -> Unit
 ) {
-    var isAdded by remember { mutableStateOf(false) }
-
     Card(
         modifier = Modifier
             .fillMaxWidth(),
@@ -367,7 +376,6 @@ fun ItemContainer(
             IconButton(
                 onClick = {
                     addOneItem(item)
-                    isAdded = true
                 }
             ) {
                 Icon(

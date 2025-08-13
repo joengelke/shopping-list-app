@@ -11,6 +11,7 @@ import okhttp3.OkHttpClient
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
 import java.net.Inet4Address
+import java.net.InetAddress
 import java.security.KeyStore
 import java.security.cert.CertificateFactory
 import javax.inject.Inject
@@ -64,9 +65,11 @@ class RetrofitProvider @Inject constructor(
         }
 
         return OkHttpClient.Builder()
-            .dns { hostname ->
-                Dns.SYSTEM.lookup(hostname).filterIsInstance<Inet4Address>()
-            }
+            .dns(object : Dns {
+                override fun lookup(hostname: String): List<InetAddress> {
+                    return Dns.SYSTEM.lookup(hostname).filterIsInstance<Inet4Address>()
+                }
+            })
             .sslSocketFactory(sslContext.socketFactory, trustManager)
             .hostnameVerifier { hostname, _ -> hostname == ip }
             .build()
@@ -90,5 +93,9 @@ class RetrofitProvider @Inject constructor(
 
     fun getUserApi(): UserApi {
         return retrofit!!.create(UserApi::class.java)
+    }
+
+    fun getRecipeApi(): RecipeApi{
+        return retrofit!!.create(RecipeApi::class.java)
     }
 }

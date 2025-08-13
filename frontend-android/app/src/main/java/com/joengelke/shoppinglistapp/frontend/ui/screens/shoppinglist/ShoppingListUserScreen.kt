@@ -220,6 +220,9 @@ fun UserContainer(
         modifier = Modifier
             .fillMaxWidth()
             .padding(bottom = 4.dp),
+        elevation = CardDefaults.cardElevation(
+            defaultElevation = 4.dp
+        ),
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.primaryContainer,
             contentColor = MaterialTheme.colorScheme.onPrimaryContainer

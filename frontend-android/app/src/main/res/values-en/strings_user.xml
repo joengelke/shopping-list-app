@@ -8,4 +8,5 @@
     <string name="username_doesn_t_exist">Username doesn\'t exist</string>
     <string name="user_with_access">User with access:</string>
     <string name="user_me">%1$s (me)</string>
+    <string name="wrong_username_or_password">Wrong Username or Password</string>
 </resources>

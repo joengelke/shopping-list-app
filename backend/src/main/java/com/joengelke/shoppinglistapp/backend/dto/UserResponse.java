@@ -13,11 +13,13 @@ public class UserResponse {
     private String username;
     private String email;
     private List<String> roles;
+    private List<String> recipeIds;
 
     public UserResponse(User user) {
         this.id = user.getId();
         this.username = user.getUsername();
         this.email = user.getEmail();
         this.roles = user.getRoles();
+        this.recipeIds = user.getRecipeIds();
     }
 }

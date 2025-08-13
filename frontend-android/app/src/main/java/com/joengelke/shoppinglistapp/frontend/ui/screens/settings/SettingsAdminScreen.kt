@@ -94,9 +94,9 @@ fun SettingsAdminScreen(
                 }
                 item {
                     SettingsContainer(
-                        text = "All items (MAYBE DELETE)",
+                        text = "Manage Recipes",
                         onClick = {
-                            //TODO
+                            navController.navigate("settingsAdminRecipes")
                         }
                     )
                 }

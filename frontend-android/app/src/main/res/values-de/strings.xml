@@ -18,4 +18,7 @@
     <string name="hours_ago">vor %1$s Stunden</string>
     <string name="minutes_ago">vor %1$s Minuten</string>
     <string name="login">Anmelden</string>
+    <string name="network_error_maybe_try_another_server_bottom_left">Netzwerkfehler\nAnderen Server probieren (unten links klicken)</string>
+    <string name="remember_login_data">Anmeldedaten merken</string>
+    <string name="loading">Lädt…</string>
 </resources>
