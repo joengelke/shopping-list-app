@@ -255,7 +255,7 @@ fun ItemSetOverviewScreen(
                             if (itemSetName.isNotBlank()) {
                                 itemSetsViewModel.createEmptyItemSet(
                                     shoppingListId,
-                                    itemSetName,
+                                    itemSetName.trim(),
                                     onSuccess = { itemSet ->
                                         navController.navigate(
                                             Routes.ItemSetCreate.createRoute(

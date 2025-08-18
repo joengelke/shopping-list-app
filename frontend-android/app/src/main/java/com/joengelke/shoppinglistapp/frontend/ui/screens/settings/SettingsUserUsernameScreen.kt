@@ -127,7 +127,7 @@ fun SettingsUserUsernameScreen(
                         onClick = {
                             saved = true
                             userViewModel.changeUsername(
-                                newUsername = newUsername,
+                                newUsername = newUsername.trim(),
                                 usernameTaken = {
                                     usernameTaken = true
                                 },

@@ -170,7 +170,7 @@ fun ShoppingItemsCreateScreen(
                             keyboardOptions = KeyboardOptions(
                                 capitalization = KeyboardCapitalization.Sentences,
                                 keyboardType = KeyboardType.Text,
-                                imeAction = ImeAction.Done
+                                imeAction = ImeAction.Search
                             ),
                             colors = OutlinedTextFieldDefaults.colors(
                                 focusedBorderColor = MaterialTheme.colorScheme.onPrimary,
@@ -375,7 +375,7 @@ fun ItemContainer(
             // Add item button
             IconButton(
                 onClick = {
-                    addOneItem(item)
+                    addOneItem(item.copy(name = item.name.trim()))
                 }
             ) {
                 Icon(

@@ -19,3 +19,8 @@ enum class Visibility {
     SHARED,
     PRIVATE
 }
+
+enum class RecipeSource {
+    LOCAL,
+    MARKETPLACE
+}

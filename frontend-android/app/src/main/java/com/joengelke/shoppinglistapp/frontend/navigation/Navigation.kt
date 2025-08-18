@@ -9,6 +9,7 @@ import androidx.compose.runtime.getValue
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
+import com.joengelke.shoppinglistapp.frontend.models.RecipeSource
 import com.joengelke.shoppinglistapp.frontend.ui.screens.auth.LoginScreen
 import com.joengelke.shoppinglistapp.frontend.ui.screens.auth.RegisterScreen
 import com.joengelke.shoppinglistapp.frontend.ui.screens.itemsets.ItemSetCreateScreen
@@ -555,7 +556,8 @@ fun Navigation(
 
         composable(route = Routes.RecipeView.route) { backStackEntry ->
             val recipeId = backStackEntry.arguments?.getString("recipeId") ?: ""
-            RecipeViewScreen(navController, recipeId)
+            val source = RecipeSource.valueOf(backStackEntry.arguments?.getString("source")?: "LOCAL")
+            RecipeViewScreen(navController, recipeId, source)
         }
 
         composable(

@@ -1,5 +1,7 @@
 package com.joengelke.shoppinglistapp.frontend.navigation
 
+import com.joengelke.shoppinglistapp.frontend.models.RecipeSource
+
 sealed class Routes(val route: String) {
     data object Login : Routes("login")
     data object Register : Routes("register")
@@ -40,8 +42,8 @@ sealed class Routes(val route: String) {
     }
     data object SettingsAdminRecipes: Routes("settingsAdminRecipes")
     data object RecipesOverview: Routes("recipesOverview")
-    data object RecipeView: Routes("recipeView/{recipeId}") {
-        fun createRoute(recipeId: String) = "recipeView/$recipeId"
+    data object RecipeView: Routes("recipeView/{recipeId}/{source}") {
+        fun createRoute(recipeId: String, source: RecipeSource) = "recipeView/$recipeId/${source.name}"
     }
 
     data object MarketplaceOverview: Routes("marketplaceOverview")

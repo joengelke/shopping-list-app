@@ -21,4 +21,7 @@
     <string name="network_error_maybe_try_another_server_bottom_left">Network error.\nMaybe try another Server (bottom left)</string>
     <string name="remember_login_data">Remember login data</string>
     <string name="loading">Loading...</string>
+    <string name="appwidget_text">EXAMPLE</string>
+    <string name="add_widget">Add widget</string>
+    <string name="app_widget_description">This is an app widget description</string>
 </resources>

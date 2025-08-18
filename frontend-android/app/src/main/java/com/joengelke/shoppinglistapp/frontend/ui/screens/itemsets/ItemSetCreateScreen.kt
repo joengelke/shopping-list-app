@@ -361,7 +361,7 @@ fun ItemSetItemContainer(
                         name = newName
                         itemSetsViewModel.updateItemSetItem(
                             itemSetId,
-                            itemSetItem.copy(name = newName)
+                            itemSetItem.copy(name = newName.trim())
                         )
                     },
                     placeholder = { Text(stringResource(R.string.item_name)) },

@@ -209,18 +209,9 @@ fun ShoppingItemsOverviewScreen(
                     modifier = Modifier.fillMaxSize()
                 ) {
                     items(uncheckedItems) { item ->
-                        /*
-                        // TODO bug: sometimes 2 container disappear
-                        var visible by remember { mutableStateOf(true) }
-                        AnimatedVisibility(
-                            visible = visible
-                        ) {
-
-                         */
                         ShoppingItemContainer(
                             item,
                             onCheckedChange = { updatedItem ->
-                                //visible = false
                                 shoppingItemsViewModel.updateCheckedStatus(
                                     shoppingListId,
                                     item,
@@ -238,10 +229,6 @@ fun ShoppingItemsOverviewScreen(
                                 )
                             }
                         )
-                        /*
-                        }
-
-                         */
                     }
 
                     if (checkedItems.isNotEmpty()) {
@@ -430,10 +417,10 @@ fun ShoppingItemContainer(
 
             // category
             /*
-            if (shoppingItem.category.isNotBlank()) {
-                   Text(text = shoppingItem.category, fontSize = 12.sp, color = Color.Blue)
-               }
-             */
+        if (shoppingItem.category.isNotBlank()) {
+               Text(text = shoppingItem.category, fontSize = 12.sp, color = Color.Blue)
+           }
+         */
 
             // amount and unit
             if (shoppingItem.amount > 0.0) {
@@ -454,7 +441,10 @@ fun ShoppingItemContainer(
                 Box(
                     modifier = Modifier
                         .size(28.dp)
-                        .background(getUsernameColor(shoppingItem.editedBy), shape = CircleShape)
+                        .background(
+                            getUsernameColor(shoppingItem.editedBy),
+                            shape = CircleShape
+                        )
                         .clickable {
                             Toast.makeText(
                                 context,
@@ -885,7 +875,7 @@ fun EditShoppingItemModal(
                                             .size(24.dp)
                                             .clickable {
                                                 if (tagInput.isNotBlank()) {
-                                                    tags = tags + tagInput
+                                                    tags = tags + tagInput.trim()
                                                     tagInput = ""
                                                     addTagIcon = true
                                                 }

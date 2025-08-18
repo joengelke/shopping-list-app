@@ -29,6 +29,7 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavHostController
 import com.joengelke.shoppinglistapp.frontend.R
+import com.joengelke.shoppinglistapp.frontend.models.RecipeSource
 import com.joengelke.shoppinglistapp.frontend.models.Visibility
 import com.joengelke.shoppinglistapp.frontend.ui.components.AppScaffold
 import com.joengelke.shoppinglistapp.frontend.ui.components.AppTopBar
@@ -43,6 +44,7 @@ import com.joengelke.shoppinglistapp.frontend.viewmodel.UserViewModel
 fun RecipeViewScreen(
     navController: NavHostController,
     recipeId: String,
+    source: RecipeSource,
     recipeViewModel: RecipeViewModel = hiltViewModel(),
     userViewModel: UserViewModel = hiltViewModel(),
     shoppingListViewModel: ShoppingListViewModel = hiltViewModel(),
@@ -50,12 +52,24 @@ fun RecipeViewScreen(
 ) {
     val context = LocalContext.current
 
-    LaunchedEffect(Unit) {
-        recipeViewModel.loadRecipes(
-            onSuccess = {
-                recipeViewModel.setCurrentRecipe(recipeId)
+    LaunchedEffect(source, recipeId) {
+        //either loads marketplace recipes or personal recipes depending on the source
+        when (source) {
+            RecipeSource.LOCAL -> {
+                recipeViewModel.loadRecipes(
+                    onSuccess = {
+                        recipeViewModel.setCurrentRecipe(recipeId)
+                    }
+                )
             }
-        )
+            RecipeSource.MARKETPLACE -> {
+                recipeViewModel.loadMarketplaceRecipes(
+                    onSuccess = {
+                        recipeViewModel.setCurrentRecipe(recipeId)
+                    }
+                )
+            }
+        }
         userViewModel.updateCurrentUserId()
         shoppingListViewModel.loadShoppingLists()
     }
@@ -432,7 +446,7 @@ fun RecipeViewScreen(
                                         keyboardActions = KeyboardActions(
                                             onDone = {
                                                 if (categoryInput.isNotBlank()) {
-                                                    recipeViewModel.addCategory(categoryInput)
+                                                    recipeViewModel.addCategory(categoryInput.trim())
                                                     categoryInput = ""
                                                     openAddCategoryField = false
                                                     keyboardController?.hide()

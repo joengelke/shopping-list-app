@@ -29,8 +29,18 @@ class RecipeViewModel @Inject constructor(
     private val _currentRecipe = MutableStateFlow<Recipe?>(null)
     val currentRecipe = _currentRecipe.asStateFlow()
 
-    private val _marketplaceRecipes = MutableStateFlow<List<Recipe>>(emptyList())
-    val marketplaceRecipes: StateFlow<List<Recipe>> = _marketplaceRecipes.asStateFlow()
+    //private val _marketplaceRecipes = MutableStateFlow<List<Recipe>>(emptyList())
+    //val marketplaceRecipes: StateFlow<List<Recipe>> = _marketplaceRecipes.asStateFlow()
+
+    val marketplaceRecipesCategories: StateFlow<List<String>> =
+        recipes
+            .map { recipes ->
+                recipes
+                    .flatMap { it.categories }
+                    .distinct()
+                    .sorted()
+            }
+            .stateIn(viewModelScope, SharingStarted.Lazily, emptyList())
 
     private val recipesSortOption = settingsRepository.recipesSortOptionFLow
 
@@ -142,7 +152,7 @@ class RecipeViewModel @Inject constructor(
         viewModelScope.launch {
             val result = recipeRepository.getAllMarketplaceRecipesByUserId()
             result.onSuccess { loadedRecipes ->
-                _marketplaceRecipes.value = loadedRecipes
+                _recipes.value = loadedRecipes
                 onSuccess()
             }
         }

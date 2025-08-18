@@ -19,4 +19,5 @@
     <string name="no_category">No category</string>
     <string name="already_exists_in">%1$s already exists in %2$s</string>
     <string name="added_to">%1$s added to %2$s</string>
+    <string name="recipe_name">Recipe name</string>
 </resources>

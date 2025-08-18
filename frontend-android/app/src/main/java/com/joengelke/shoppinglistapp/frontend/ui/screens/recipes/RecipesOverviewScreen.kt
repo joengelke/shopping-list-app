@@ -29,6 +29,8 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavHostController
 import com.joengelke.shoppinglistapp.frontend.R
 import com.joengelke.shoppinglistapp.frontend.models.Recipe
+import com.joengelke.shoppinglistapp.frontend.models.RecipeSource
+import com.joengelke.shoppinglistapp.frontend.models.Visibility
 import com.joengelke.shoppinglistapp.frontend.navigation.Routes
 import com.joengelke.shoppinglistapp.frontend.ui.common.RecipesSortCategory
 import com.joengelke.shoppinglistapp.frontend.ui.components.AppScaffold
@@ -188,7 +190,7 @@ fun RecipesOverviewScreen(
                                             onValueChange = { newValue ->
                                                 recipeName = newValue
                                             },
-                                            placeholder = { Text("Recipe name") },
+                                            placeholder = { Text(stringResource(R.string.recipe_name)) },
                                             modifier = Modifier
                                                 .fillMaxWidth(),
                                             trailingIcon = {
@@ -197,14 +199,15 @@ fun RecipesOverviewScreen(
                                                         if (recipeName.isNotBlank()) {
                                                             loadingNewRecipe = true
                                                             recipeViewModel.createEmptyRecipe(
-                                                                recipeName = recipeName,
+                                                                recipeName = recipeName.trim(),
                                                                 onSuccess = { recipeId ->
                                                                     loadingNewRecipe = false
                                                                     showOwnRecipeInput = false
                                                                     showAddRecipeButtons = false
                                                                     navController.navigate(
                                                                         Routes.RecipeView.createRoute(
-                                                                            recipeId
+                                                                            recipeId,
+                                                                            RecipeSource.LOCAL
                                                                         )
                                                                     )
                                                                 }
@@ -280,7 +283,8 @@ fun RecipesOverviewScreen(
                                                                     showAddRecipeButtons = false
                                                                     navController.navigate(
                                                                         Routes.RecipeView.createRoute(
-                                                                            recipeId
+                                                                            recipeId,
+                                                                            RecipeSource.LOCAL
                                                                         )
                                                                     )
                                                                 }
@@ -401,7 +405,8 @@ fun RecipesOverviewScreen(
                                 onOpenRecipe = { recipeId ->
                                     navController.navigate(
                                         Routes.RecipeView.createRoute(
-                                            recipeId
+                                            recipeId,
+                                            RecipeSource.LOCAL
                                         )
                                     )
                                 },
@@ -426,7 +431,8 @@ fun RecipesOverviewScreen(
                                 onOpenRecipe = { recipeId ->
                                     navController.navigate(
                                         Routes.RecipeView.createRoute(
-                                            recipeId
+                                            recipeId,
+                                            RecipeSource.LOCAL
                                         )
                                     )
                                 },
@@ -722,9 +728,16 @@ fun RecipeContainer(
             } else {
                 Text(
                     text = recipe.name,
-                    style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Medium),
+                    style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
                     modifier = Modifier.weight(1f),
                     color = MaterialTheme.colorScheme.onSurface
+                )
+                Icon(
+                    painter = painterResource(id = if (recipe.visibility == Visibility.PRIVATE) R.drawable.baseline_lock_24 else R.drawable.baseline_language_24),
+                    contentDescription = "visibility state",
+                    tint = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier
+                        .padding(end = 10.dp)
                 )
 
                 if (editMode) {

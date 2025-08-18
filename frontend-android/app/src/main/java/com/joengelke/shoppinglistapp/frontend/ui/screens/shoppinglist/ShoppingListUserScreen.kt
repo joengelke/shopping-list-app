@@ -133,7 +133,7 @@ fun ShoppingListUserScreen(
                                             isLoadingAddUser = true
                                             userViewModel.addUserToShoppingList(
                                                 shoppingListId,
-                                                username,
+                                                username.trim(),
                                                 onSuccess = {
                                                     username = ""
                                                     userNotFound = false
@@ -220,13 +220,12 @@ fun UserContainer(
         modifier = Modifier
             .fillMaxWidth()
             .padding(bottom = 4.dp),
-        elevation = CardDefaults.cardElevation(
-            defaultElevation = 4.dp
-        ),
         colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.primaryContainer,
-            contentColor = MaterialTheme.colorScheme.onPrimaryContainer
-        )
+            containerColor = MaterialTheme.colorScheme.surfaceVariant,
+            contentColor = MaterialTheme.colorScheme.primary
+        ),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+        shape = RoundedCornerShape(12.dp)
     ) {
         Row(
             modifier = Modifier

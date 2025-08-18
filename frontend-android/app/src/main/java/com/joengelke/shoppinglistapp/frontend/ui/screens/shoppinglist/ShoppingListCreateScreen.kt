@@ -79,7 +79,7 @@ fun ShoppingListCreateScreen(
             onClick = {
                 if (shoppingListName.isNotBlank()) {
                     shoppingListViewModel.createShoppingList(
-                        name = shoppingListName,
+                        name = shoppingListName.trim(),
                         onSuccess = {
                             navController.popBackStack()
                         }
