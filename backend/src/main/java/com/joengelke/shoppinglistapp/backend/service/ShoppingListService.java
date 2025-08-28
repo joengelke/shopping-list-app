@@ -4,14 +4,11 @@ import com.joengelke.shoppinglistapp.backend.dto.UserResponse;
 import com.joengelke.shoppinglistapp.backend.model.*;
 import com.joengelke.shoppinglistapp.backend.repository.ShoppingListRepository;
 import com.joengelke.shoppinglistapp.backend.security.JwtTokenProvider;
-import org.bson.types.ObjectId;
-import org.springframework.data.mongodb.gridfs.GridFsTemplate;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.server.ResponseStatusException;
 
-import java.io.IOException;
 import java.time.Instant;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -272,7 +269,7 @@ public class ShoppingListService {
                 .orElseThrow(() -> new NoSuchElementException("Shopping list not found"));
 
         for (ItemSetItem itemSetItem : newItemSet.getItemList()) {
-            if (itemSetItem.getId().isBlank()) {
+            if (itemSetItem.getId().isBlank() || !itemSetItem.getName().equals(shoppingItemService.getItemById(itemSetItem.getId()).getName())) {
                 // create or match shoppingItem
                 Optional<ShoppingItem> matchingItem = getItemsByShoppingList(listId).stream()
                         .filter(item -> item.getName().equals(itemSetItem.getName()))
