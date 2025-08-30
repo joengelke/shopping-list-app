@@ -18,6 +18,8 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
@@ -56,6 +58,7 @@ fun ItemSetCreateScreen(
     val hasUnsavedChanges by itemSetsViewModel.hasUnsavedChanges.collectAsState()
     var showDialog by remember { mutableStateOf(false) }
     val keyboardController = LocalSoftwareKeyboardController.current
+    var focusItemSetItemId by remember { mutableStateOf<String?>(null) }
 
     var addReceiptConfirm by remember { mutableStateOf(false) }
 
@@ -208,9 +211,20 @@ fun ItemSetCreateScreen(
                     .padding(paddingValues)
             ) {
                 items(itemSetItems, key = { it.tmpId }) { itemSetItem ->
+                    val focusRequesterItemSetItem = remember { FocusRequester() }
+
+                    LaunchedEffect(focusItemSetItemId) {
+                        if (focusItemSetItemId == itemSetItem.tmpId) {
+                            focusRequesterItemSetItem.requestFocus()
+                            keyboardController?.show()
+                            focusItemSetItemId = null // reset after focusing
+                        }
+                    }
+
                     ItemSetItemContainer(
                         itemSetId = itemSetId,
                         itemSetItem = itemSetItem,
+                        focusRequester = focusRequesterItemSetItem,
                         onDelete = { deletedItem ->
                             itemSetsViewModel.deleteItemSetItem(itemSetId, deletedItem)
                         }
@@ -222,7 +236,12 @@ fun ItemSetCreateScreen(
                             .fillMaxWidth()
                             .padding(horizontal = 8.dp),
                         onClick = {
-                            itemSetsViewModel.addEmptyItemSetItem(itemSetId)
+                            itemSetsViewModel.addEmptyItemSetItem(
+                                itemSetId,
+                                onSuccess = {newTmpId ->
+                                    focusItemSetItemId = newTmpId
+                                }
+                            )
                         },
                         elevation = ButtonDefaults.buttonElevation(
                             defaultElevation = 4.dp
@@ -322,6 +341,7 @@ fun ItemSetCreateScreen(
 fun ItemSetItemContainer(
     itemSetId: String,
     itemSetItem: ItemSetItem,
+    focusRequester: FocusRequester,
     onDelete: (ItemSetItem) -> Unit,
     itemSetsViewModel: ItemSetsViewModel = hiltViewModel()
 ) {
@@ -366,7 +386,9 @@ fun ItemSetItemContainer(
                     },
                     placeholder = { Text(stringResource(R.string.item_name)) },
                     singleLine = true,
-                    modifier = Modifier.fillMaxWidth(),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .focusRequester(focusRequester),
                     keyboardOptions = KeyboardOptions(
                         capitalization = KeyboardCapitalization.Sentences,
                         keyboardType = KeyboardType.Text,

@@ -20,4 +20,6 @@
     <string name="already_exists_in">%1$s existiert bereits in %2$s</string>
     <string name="added_to">%1$s zu %2$s hinzugefügt</string>
     <string name="recipe_name">Rezeptname</string>
+    <string name="private_word">Privat</string>
+    <string name="public_word">Öffentlich</string>
 </resources>

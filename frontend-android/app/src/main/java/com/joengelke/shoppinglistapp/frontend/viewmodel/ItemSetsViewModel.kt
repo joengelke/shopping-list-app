@@ -146,22 +146,28 @@ class ItemSetsViewModel @Inject constructor(
      */
 
     // add empty itemSetItem in frontend to create new container
-    fun addEmptyItemSetItem(itemSetId: String) {
+    fun addEmptyItemSetItem(
+        itemSetId: String,
+        onSuccess: (String) -> Unit
+    ) {
+        val tmpId = UUID.randomUUID().toString()
         _itemSets.value = _itemSets.value.map { itemSet ->
             if (itemSet.id == itemSetId) {
-                val updatedItems = (itemSet.itemList ?: emptyList()) + ItemSetItem(
-                    id = "",
-                    tmpId = UUID.randomUUID().toString(),
-                    name = "",
-                    amount = 1.0,
-                    unit = ""
-                )
-                itemSet.copy(itemList = updatedItems)
+                (itemSet.itemList ?: emptyList()).let { currentItems ->
+                    itemSet.copy(itemList = currentItems + ItemSetItem(
+                        id = "",
+                        tmpId = tmpId,
+                        name = "",
+                        amount = 1.0,
+                        unit = ""
+                    ))
+                }
             } else {
                 itemSet
             }
         }
         _hasUnsavedChanges.value = true
+        onSuccess(tmpId)
     }
 
     fun updateItemSetItem(itemSetId: String, updatedItemSetItem: ItemSetItem) {

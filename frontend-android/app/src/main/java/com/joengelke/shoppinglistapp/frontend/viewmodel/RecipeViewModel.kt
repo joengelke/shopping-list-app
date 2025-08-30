@@ -227,10 +227,16 @@ class RecipeViewModel @Inject constructor(
             // filters out empty instructions, items and steps
             val cleanedRecipe = recipe.copy(
                 itemSet = recipe.itemSet.copy(
-                    itemList = recipe.itemSet.itemList.filter { it.name.isNotBlank() }
+                    itemList = recipe.itemSet.itemList
+                        .map { it.copy(name = it.name.trim()) }
+                        .filter { it.name.isNotBlank() }
                 ),
-                instructions = recipe.instructions.filter { it.isNotBlank() },
-                categories = recipe.categories.filter { it.isNotBlank() }
+                instructions = recipe.instructions
+                    .map { it.trim() }
+                    .filter { it.isNotBlank() },
+                categories = recipe.categories
+                    .map { it.trim() }
+                    .filter { it.isNotBlank() }
             )
             val result = recipeRepository.updateRecipe(cleanedRecipe)
             result.onSuccess { updatedRecipe ->
@@ -265,13 +271,16 @@ class RecipeViewModel @Inject constructor(
     fun addRecipeToUser(
         recipeId: String,
         username: String?,
+        updateRecipes: Boolean = true,
         onSuccess: () -> Unit,
         onFailure: () -> Unit
     ) {
         viewModelScope.launch {
             val result = recipeRepository.addRecipeToUser(recipeId, username)
             result.onSuccess { updatedRecipeList ->
-                _recipes.value = updatedRecipeList
+                if(updateRecipes) {
+                    _recipes.value = updatedRecipeList
+                }
                 onSuccess()
             }
             result.onFailure {
@@ -347,21 +356,27 @@ class RecipeViewModel @Inject constructor(
         }
     }
 
-    fun addEmptyInstruction() {
+    fun addEmptyInstruction(
+        onSuccess: (Int) -> Unit
+    ) {
         _currentRecipe.value = _currentRecipe.value?.let { recipe ->
             val updatedInstructions = recipe.instructions.toMutableList()
             updatedInstructions.add("") // Add an empty string as new instruction
+            onSuccess(updatedInstructions.lastIndex)
             recipe.copy(instructions = updatedInstructions)
         }
     }
 
-    fun addEmptyItemSetItem() {
+    fun addEmptyItemSetItem(
+        onSuccess: (String) -> Unit
+    ) {
+        val tmpId = UUID.randomUUID().toString()
         _currentRecipe.value = _currentRecipe.value?.let { recipe ->
             recipe.copy(
                 itemSet = recipe.itemSet.copy(
                     itemList = recipe.itemSet.itemList + ItemSetItem(
                         id = "",
-                        tmpId = UUID.randomUUID().toString(),
+                        tmpId = tmpId,
                         name = "",
                         amount = 0.0,
                         unit = ""
@@ -369,6 +384,7 @@ class RecipeViewModel @Inject constructor(
                 )
             )
         }
+        onSuccess(tmpId)
     }
 
     fun updateItemSetItemName(itemId: String, newName: String) {

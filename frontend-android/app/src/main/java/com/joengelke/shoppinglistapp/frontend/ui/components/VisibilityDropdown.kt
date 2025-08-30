@@ -5,7 +5,9 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.joengelke.shoppinglistapp.frontend.R
@@ -16,15 +18,16 @@ import com.joengelke.shoppinglistapp.frontend.viewmodel.RecipeViewModel
 fun VisibilityDropdown(
     recipeId: String,
     visibility: Visibility,
+    iconColor: Color,
     recipeViewModel: RecipeViewModel = hiltViewModel()
 ) {
     var expanded by remember { mutableStateOf(false) }
     var loading by remember { mutableStateOf(false) }
 
     val visibilityOptions = listOf(
-        Triple(Visibility.PRIVATE, R.drawable.baseline_lock_24, "Private"),
-        Triple(Visibility.SHARED, R.drawable.baseline_group_24, "Shared"),
-        Triple(Visibility.PUBLIC, R.drawable.baseline_public_24, "Public")
+        Triple(Visibility.PRIVATE, R.drawable.baseline_lock_24, stringResource(R.string.private_word)),
+        //Triple(Visibility.SHARED, R.drawable.baseline_group_24, "Shared"), TODO
+        Triple(Visibility.PUBLIC, R.drawable.baseline_public_24, stringResource(R.string.public_word))
     )
 
     val currentOption =
@@ -38,13 +41,13 @@ fun VisibilityDropdown(
                 Icon(
                     painter = painterResource(id = currentOption.second),
                     contentDescription = currentOption.third,
-                    tint = MaterialTheme.colorScheme.onPrimary
+                    tint = iconColor
                 )
             } else {
                 CircularProgressIndicator(
                     modifier = Modifier
                         .size(24.dp),
-                    color = MaterialTheme.colorScheme.onPrimary,
+                    color = iconColor,
                     strokeWidth = 1.5.dp
                 )
             }

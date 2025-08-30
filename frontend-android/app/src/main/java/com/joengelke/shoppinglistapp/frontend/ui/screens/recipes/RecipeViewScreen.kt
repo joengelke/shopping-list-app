@@ -1,7 +1,6 @@
 package com.joengelke.shoppinglistapp.frontend.ui.screens.recipes
 
 import android.widget.Toast
-import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -9,8 +8,8 @@ import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.KeyboardArrowDown
-import androidx.compose.material.icons.filled.KeyboardArrowUp
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -30,10 +29,8 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavHostController
 import com.joengelke.shoppinglistapp.frontend.R
 import com.joengelke.shoppinglistapp.frontend.models.RecipeSource
-import com.joengelke.shoppinglistapp.frontend.models.Visibility
 import com.joengelke.shoppinglistapp.frontend.ui.components.AppScaffold
 import com.joengelke.shoppinglistapp.frontend.ui.components.AppTopBar
-import com.joengelke.shoppinglistapp.frontend.ui.components.VisibilityDropdown
 import com.joengelke.shoppinglistapp.frontend.viewmodel.ItemSetsViewModel
 import com.joengelke.shoppinglistapp.frontend.viewmodel.RecipeViewModel
 import com.joengelke.shoppinglistapp.frontend.viewmodel.ShoppingListViewModel
@@ -62,6 +59,7 @@ fun RecipeViewScreen(
                     }
                 )
             }
+
             RecipeSource.MARKETPLACE -> {
                 recipeViewModel.loadMarketplaceRecipes(
                     onSuccess = {
@@ -77,30 +75,35 @@ fun RecipeViewScreen(
     val recipe by recipeViewModel.currentRecipe.collectAsState()
     val currentUserId by userViewModel.currentUserId.collectAsState()
 
-    var showIconButtons by remember { mutableStateOf(false) }
     var editMode by remember { mutableStateOf(false) }
 
     var showShoppingLists by remember { mutableStateOf(false) }
     val shoppingLists by shoppingListViewModel.shoppingLists.collectAsState()
 
     var showDescription by remember { mutableStateOf(true) }
+    var editDescription by remember { mutableStateOf(false) }
 
     var showCategories by remember { mutableStateOf(true) }
+    var editCategories by remember { mutableStateOf(false)}
     var openAddCategoryField by remember { mutableStateOf(false) }
     var categoryInput by remember { mutableStateOf("") }
-    val focusRequester = remember { FocusRequester() }
+    val focusRequesterCategory = remember { FocusRequester() }
     val keyboardController = LocalSoftwareKeyboardController.current
     LaunchedEffect(openAddCategoryField) {
         if (openAddCategoryField) {
-            focusRequester.requestFocus()
+            focusRequesterCategory.requestFocus()
             keyboardController?.show()
         }
     }
 
     var showIngredients by remember { mutableStateOf(true) }
+    var editIngredients by remember { mutableStateOf(false) }
+    var focusIngredientId by remember { mutableStateOf<String?>(null) }
     val units = listOf("", "ml", "l", "g", "kg", "EL", "TL", stringResource(R.string.pieces_short))
 
     var showInstructions by remember { mutableStateOf(true) }
+    var editInstructions by remember { mutableStateOf(false) }
+    var focusInstructionIndex by remember { mutableStateOf<Int?>(null) }
 
     var showDialog by remember { mutableStateOf(false) }
 
@@ -111,7 +114,7 @@ fun RecipeViewScreen(
                     title = recipe?.name ?: stringResource(R.string.loading),
                     showNavigationIcon = true,
                     onNavigationClick = {
-                        if (editMode) {
+                        if (editMode && (editDescription || editCategories || editIngredients || editInstructions)) {
                             showDialog = true
                         } else {
                             navController.popBackStack()
@@ -119,29 +122,38 @@ fun RecipeViewScreen(
                     },
                     navController = navController,
                     actions = {
-                        IconButton(
-                            onClick = {
-                                showIconButtons = !showIconButtons
-                            }
-                        ) {
-                            Icon(
-                                imageVector = if (!showIconButtons) Icons.Default.KeyboardArrowDown else Icons.Default.KeyboardArrowUp,
-                                contentDescription = "show all buttons ",
-                                tint = MaterialTheme.colorScheme.onPrimary
-                            )
-                        }
-                    }
-                )
-                AnimatedVisibility(visible = showIconButtons) {
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .background(MaterialTheme.colorScheme.primary)
-                            .padding(4.dp),
-                        horizontalArrangement = Arrangement.End
-                    ) {
                         recipe?.let { recipe ->
-                            if (!editMode) {
+                            if (currentUserId == recipe.creatorId) {
+                                IconButton(
+                                    onClick = {
+                                        if (editMode) {
+                                            recipeViewModel.updateRecipe(recipe)
+                                            editMode = false
+                                            editDescription = false
+                                            editCategories = false
+                                            editIngredients = false
+                                            editInstructions = false
+                                        } else {
+                                            editMode = true
+                                        }
+                                    }
+                                ) {
+                                    if (!editMode) {
+                                        Icon(
+                                            painter = painterResource(id = R.drawable.baseline_edit_24),
+                                            contentDescription = "edit recipe",
+                                            tint = MaterialTheme.colorScheme.onPrimary
+                                        )
+                                    } else {
+                                        Icon(
+                                            painter = painterResource(id = R.drawable.baseline_check_24),
+                                            contentDescription = "edit recipe",
+                                            tint = MaterialTheme.colorScheme.onPrimary
+                                        )
+                                    }
+                                }
+                            }
+                            if(!editMode) {
                                 Box {
                                     IconButton(
                                         onClick = {
@@ -162,7 +174,12 @@ fun RecipeViewScreen(
                                         Text(
                                             text = stringResource(R.string.add_ingredients_to),
                                             modifier = Modifier
-                                                .padding(start = 12.dp, end = 12.dp, top = 0.dp, bottom = 4.dp)
+                                                .padding(
+                                                    start = 12.dp,
+                                                    end = 12.dp,
+                                                    top = 0.dp,
+                                                    bottom = 4.dp
+                                                )
                                         )
                                         HorizontalDivider()
 
@@ -206,54 +223,9 @@ fun RecipeViewScreen(
                                     }
                                 }
                             }
-                            if (currentUserId == recipe.creatorId) {
-                                if (recipe.visibility == Visibility.SHARED) {
-                                    IconButton(
-                                        onClick = {
-                                            //TODO add User to Recipe Screen
-                                        }
-                                    ) {
-                                        Icon(
-                                            painter = painterResource(id = R.drawable.baseline_person_add_24),
-                                            contentDescription = "share User with recipe",
-                                            tint = MaterialTheme.colorScheme.onPrimary
-                                        )
-                                    }
-                                }
-                                if (!editMode) {
-                                    VisibilityDropdown(
-                                        visibility = recipe.visibility,
-                                        recipeId = recipeId
-                                    )
-                                }
-                                IconButton(
-                                    onClick = {
-                                        if (editMode) {
-                                            recipeViewModel.updateRecipe(recipe)
-                                            editMode = false
-                                        } else {
-                                            editMode = true
-                                        }
-                                    }
-                                ) {
-                                    if (!editMode) {
-                                        Icon(
-                                            painter = painterResource(id = R.drawable.baseline_edit_24),
-                                            contentDescription = "edit recipe",
-                                            tint = MaterialTheme.colorScheme.onPrimary
-                                        )
-                                    } else {
-                                        Icon(
-                                            painter = painterResource(id = R.drawable.baseline_save_24),
-                                            contentDescription = "edit recipe",
-                                            tint = MaterialTheme.colorScheme.onPrimary
-                                        )
-                                    }
-                                }
-                            }
                         }
                     }
-                }
+                )
             }
         },
         content = { paddingValues ->
@@ -279,10 +251,31 @@ fun RecipeViewScreen(
                                 text = stringResource(R.string.description),
                                 style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.SemiBold),
                                 color = MaterialTheme.colorScheme.primary,
-                                modifier = Modifier.weight(1f)
                             )
+                            if(editMode) {
+                                IconButton(
+                                    onClick = {
+                                        if (!editDescription) {
+                                            editDescription = true
+                                            showDescription = true
+                                        } else {
+                                            recipeViewModel.updateRecipe(recipe)
+                                            editDescription = false
+                                        }
+                                    },
+                                    modifier = Modifier.size(20.dp)
+                                ) {
+                                    Icon(
+                                        painter = painterResource(id = if (!editDescription) R.drawable.baseline_edit_24 else R.drawable.baseline_save_24),
+                                        contentDescription = "Edit description",
+                                        tint = MaterialTheme.colorScheme.primary,
+                                        modifier = Modifier.size(16.dp)
+                                    )
+                                }
+                            }
+                            Spacer(modifier = Modifier.weight(1f))
                             Icon(
-                                imageVector = if (showDescription) Icons.Default.KeyboardArrowUp else Icons.Default.KeyboardArrowDown,
+                                imageVector = if (showDescription) Icons.Default.KeyboardArrowDown else Icons.AutoMirrored.Filled.KeyboardArrowRight,
                                 contentDescription = "Toggle description",
                                 tint = MaterialTheme.colorScheme.onSurfaceVariant
                             )
@@ -296,7 +289,7 @@ fun RecipeViewScreen(
                         )
                     }
                     if (showDescription) {
-                        if (!editMode && recipe.description.isNotBlank()) {
+                        if (!editDescription && recipe.description.isNotBlank()) {
                             Text(
                                 text = recipe.description,
                                 style = MaterialTheme.typography.bodyLarge,
@@ -306,7 +299,7 @@ fun RecipeViewScreen(
                                     .padding(bottom = 12.dp)
                             )
                         }
-                        if (editMode) {
+                        if (editDescription) {
                             OutlinedTextField(
                                 value = recipe.description,
                                 onValueChange = { recipeViewModel.updateDescription(it) },
@@ -332,10 +325,31 @@ fun RecipeViewScreen(
                                 text = stringResource(R.string.categories),
                                 style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.SemiBold),
                                 color = MaterialTheme.colorScheme.primary,
-                                modifier = Modifier.weight(1f)
                             )
+                            if(editMode) {
+                                IconButton(
+                                    onClick = {
+                                        if (!editCategories) {
+                                            editCategories = true
+                                            showCategories = true
+                                        } else {
+                                            recipeViewModel.updateRecipe(recipe)
+                                            editCategories = false
+                                        }
+                                    },
+                                    modifier = Modifier.size(20.dp)
+                                ) {
+                                    Icon(
+                                        painter = painterResource(id = if (!editCategories) R.drawable.baseline_edit_24 else R.drawable.baseline_save_24),
+                                        contentDescription = "Edit categories",
+                                        tint = MaterialTheme.colorScheme.primary,
+                                        modifier = Modifier.size(16.dp)
+                                    )
+                                }
+                            }
+                            Spacer(modifier = Modifier.weight(1f))
                             Icon(
-                                imageVector = if (showCategories) Icons.Default.KeyboardArrowUp else Icons.Default.KeyboardArrowDown,
+                                imageVector = if (showCategories) Icons.Default.KeyboardArrowDown else Icons.AutoMirrored.Filled.KeyboardArrowRight,
                                 contentDescription = "Toggle categories",
                                 tint = MaterialTheme.colorScheme.onSurfaceVariant
                             )
@@ -354,7 +368,7 @@ fun RecipeViewScreen(
                                 .fillMaxWidth()
                                 .padding(horizontal = 16.dp)
                                 .then(
-                                    if (editMode) {
+                                    if (editCategories) {
                                         Modifier.border(
                                             width = 1.dp,
                                             color = MaterialTheme.colorScheme.primary,
@@ -376,7 +390,7 @@ fun RecipeViewScreen(
                                         }
                                     },
                                     leadingIcon = {
-                                        if (confirmDelete && editMode) {
+                                        if (confirmDelete && editCategories) {
                                             Icon(
                                                 painter = painterResource(id = R.drawable.baseline_check_24),
                                                 contentDescription = "delete category",
@@ -391,7 +405,7 @@ fun RecipeViewScreen(
                                         }
                                     },
                                     trailingIcon = {
-                                        if (editMode) {
+                                        if (editCategories) {
                                             if (!confirmDelete) {
                                                 Icon(
                                                     painter = painterResource(id = R.drawable.baseline_delete_24),
@@ -416,12 +430,12 @@ fun RecipeViewScreen(
                                         }
                                     },
                                     modifier = Modifier.padding(
-                                        start = if (editMode) 8.dp else 0.dp,
-                                        end = if (editMode) 0.dp else 8.dp
+                                        start = if (editCategories) 8.dp else 0.dp,
+                                        end = if (editCategories) 0.dp else 8.dp
                                     )
                                 )
                             }
-                            if (editMode) {
+                            if (editCategories) {
                                 if (!openAddCategoryField) {
                                     AssistChip(
                                         onClick = {
@@ -441,16 +455,16 @@ fun RecipeViewScreen(
                                         value = categoryInput,
                                         onValueChange = { categoryInput = it },
                                         modifier = Modifier
-                                            .focusRequester(focusRequester),
+                                            .focusRequester(focusRequesterCategory),
                                         keyboardOptions = KeyboardOptions.Default.copy(imeAction = ImeAction.Done),
                                         keyboardActions = KeyboardActions(
                                             onDone = {
                                                 if (categoryInput.isNotBlank()) {
                                                     recipeViewModel.addCategory(categoryInput.trim())
-                                                    categoryInput = ""
-                                                    openAddCategoryField = false
-                                                    keyboardController?.hide()
                                                 }
+                                                categoryInput = ""
+                                                openAddCategoryField = false
+                                                keyboardController?.hide()
                                             }
                                         ),
                                         decorationBox = { innerTextField ->
@@ -495,10 +509,10 @@ fun RecipeViewScreen(
                                                                     recipeViewModel.addCategory(
                                                                         categoryInput
                                                                     )
-                                                                    categoryInput = ""
-                                                                    openAddCategoryField = false
-                                                                    keyboardController?.hide()
                                                                 }
+                                                                categoryInput = ""
+                                                                openAddCategoryField = false
+                                                                keyboardController?.hide()
                                                             },
                                                         tint = MaterialTheme.colorScheme.primary
                                                     )
@@ -525,11 +539,32 @@ fun RecipeViewScreen(
                             Text(
                                 text = stringResource(R.string.ingredients),
                                 style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.SemiBold),
-                                color = MaterialTheme.colorScheme.primary,
-                                modifier = Modifier.weight(1f)
+                                color = MaterialTheme.colorScheme.primary
                             )
+                            if(editMode) {
+                                IconButton(
+                                    onClick = {
+                                        if (!editIngredients) {
+                                            editIngredients = true
+                                            showIngredients = true
+                                        } else {
+                                            recipeViewModel.updateRecipe(recipe)
+                                            editIngredients = false
+                                        }
+                                    },
+                                    modifier = Modifier.size(20.dp)
+                                ) {
+                                    Icon(
+                                        painter = painterResource(id = if (!editIngredients) R.drawable.baseline_edit_24 else R.drawable.baseline_save_24),
+                                        contentDescription = "Edit ingredients",
+                                        tint = MaterialTheme.colorScheme.primary,
+                                        modifier = Modifier.size(16.dp)
+                                    )
+                                }
+                            }
+                            Spacer(modifier = Modifier.weight(1f))
                             Icon(
-                                imageVector = if (showIngredients) Icons.Default.KeyboardArrowUp else Icons.Default.KeyboardArrowDown,
+                                imageVector = if (showIngredients) Icons.Default.KeyboardArrowDown else Icons.AutoMirrored.Filled.KeyboardArrowRight,
                                 contentDescription = "Toggle ingredients",
                                 tint = MaterialTheme.colorScheme.onSurfaceVariant
                             )
@@ -545,7 +580,7 @@ fun RecipeViewScreen(
 
                     // List of items
                     if (showIngredients) {
-                        if (!editMode) {
+                        if (!editIngredients) {
                             Column(
                                 modifier = Modifier.padding(horizontal = 8.dp),
                             ) {
@@ -589,110 +624,126 @@ fun RecipeViewScreen(
                                 modifier = Modifier.padding(horizontal = 16.dp),
                             ) {
                                 recipe.itemSet.itemList.forEach { item ->
-                                    var expandedUnitDropdown by remember { mutableStateOf(false) }
+                                    key(item.tmpId) {
+                                        val focusRequesterIngredients =
+                                            remember { FocusRequester() }
+                                        var expandedUnitDropdown by remember { mutableStateOf(false) }
 
-                                    Row(
-                                        modifier = Modifier
-                                            .fillMaxWidth()
-                                            .padding(bottom = 2.dp),
-                                        verticalAlignment = Alignment.CenterVertically,
-                                        horizontalArrangement = Arrangement.spacedBy(12.dp)
-                                    ) {
-                                        OutlinedTextField(
-                                            value = item.name,
-                                            onValueChange = { newName ->
-                                                recipeViewModel.updateItemSetItemName(
-                                                    item.id,
-                                                    newName
-                                                )
-                                            },
-                                            placeholder = { Text(stringResource(R.string.item_name)) },
-                                            singleLine = true,
-                                            modifier = Modifier.weight(0.55f),
-                                            keyboardOptions = KeyboardOptions(
-                                                capitalization = KeyboardCapitalization.Sentences,
-                                                keyboardType = KeyboardType.Text,
-                                                imeAction = ImeAction.Done
-                                            ),
-                                            colors = OutlinedTextFieldDefaults.colors(
-                                                focusedBorderColor = MaterialTheme.colorScheme.primary,
-                                                unfocusedBorderColor = MaterialTheme.colorScheme.primary
-                                            )
-                                        )
-
-                                        OutlinedTextField(
-                                            value = if (item.amount == 0.0) "" else item.amount.toString()
-                                                .replace(".0", ""),
-                                            onValueChange = { newValue ->
-                                                recipeViewModel.updateItemSetItemAmount(
-                                                    item.id,
-                                                    newValue
-                                                )
-                                            },
-                                            keyboardOptions = KeyboardOptions.Default.copy(
-                                                keyboardType = KeyboardType.Number
-                                            ),
-                                            singleLine = true,
-                                            modifier = Modifier.weight(0.2f),
-                                            colors = OutlinedTextFieldDefaults.colors(
-                                                focusedBorderColor = MaterialTheme.colorScheme.primary,
-                                                unfocusedBorderColor = MaterialTheme.colorScheme.primary
-                                            )
-                                        )
-
-                                        ExposedDropdownMenuBox(
-                                            expanded = expandedUnitDropdown,
-                                            onExpandedChange = {
-                                                expandedUnitDropdown = !expandedUnitDropdown
-                                            },
-                                            modifier = Modifier.weight(0.2f)
+                                        Row(
+                                            modifier = Modifier
+                                                .fillMaxWidth()
+                                                .padding(bottom = 2.dp),
+                                            verticalAlignment = Alignment.CenterVertically,
+                                            horizontalArrangement = Arrangement.spacedBy(12.dp)
                                         ) {
                                             OutlinedTextField(
-                                                value = item.unit.ifEmpty { " " },
-                                                onValueChange = {},
-                                                readOnly = true,
-                                                enabled = false,
+                                                value = item.name,
+                                                onValueChange = { newName ->
+                                                    recipeViewModel.updateItemSetItemName(
+                                                        item.tmpId,
+                                                        newName
+                                                    )
+                                                },
+                                                placeholder = { Text(stringResource(R.string.item_name)) },
                                                 singleLine = true,
                                                 modifier = Modifier
-                                                    .fillMaxWidth()
-                                                    .menuAnchor(
-                                                        MenuAnchorType.PrimaryNotEditable,
-                                                        expandedUnitDropdown
-                                                    )
-                                                    .clickable { expandedUnitDropdown = true },
+                                                    .weight(0.55f)
+                                                    .focusRequester(focusRequesterIngredients),
+                                                keyboardOptions = KeyboardOptions(
+                                                    capitalization = KeyboardCapitalization.Sentences,
+                                                    keyboardType = KeyboardType.Text,
+                                                    imeAction = ImeAction.Done
+                                                ),
                                                 colors = OutlinedTextFieldDefaults.colors(
-                                                    disabledBorderColor = MaterialTheme.colorScheme.primary,
-                                                    disabledTextColor = MaterialTheme.colorScheme.onSurface,
-                                                    disabledLabelColor = MaterialTheme.colorScheme.onSurfaceVariant,
-                                                    disabledTrailingIconColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                                                    focusedBorderColor = MaterialTheme.colorScheme.primary,
+                                                    unfocusedBorderColor = MaterialTheme.colorScheme.primary
                                                 )
                                             )
-                                            ExposedDropdownMenu(
-                                                expanded = expandedUnitDropdown,
-                                                onDismissRequest = { expandedUnitDropdown = false }
-                                            ) {
-                                                units.forEach { unit ->
-                                                    DropdownMenuItem(
-                                                        text = { Text(unit) },
-                                                        onClick = {
-                                                            recipeViewModel.updateItemSetItemUnit(
-                                                                item.id,
-                                                                unit
-                                                            )
-                                                            expandedUnitDropdown = false
-                                                        }
-                                                    )
+
+                                            LaunchedEffect(focusIngredientId, item.tmpId) {
+                                                if (focusIngredientId == item.tmpId) {
+                                                    focusRequesterIngredients.requestFocus()
+                                                    keyboardController?.show()
+                                                    focusIngredientId = null
                                                 }
                                             }
-                                        }
 
-                                        IconButton(onClick = {
-                                            recipeViewModel.deleteItemSetItem(item.id)
-                                        }) {
-                                            Icon(
-                                                painter = painterResource(id = R.drawable.baseline_delete_24),
-                                                contentDescription = "Remove"
+                                            OutlinedTextField(
+                                                value = if (item.amount == 0.0) "" else item.amount.toString()
+                                                    .replace(".0", ""),
+                                                onValueChange = { newValue ->
+                                                    recipeViewModel.updateItemSetItemAmount(
+                                                        item.tmpId,
+                                                        newValue
+                                                    )
+                                                },
+                                                keyboardOptions = KeyboardOptions.Default.copy(
+                                                    keyboardType = KeyboardType.Number
+                                                ),
+                                                singleLine = true,
+                                                modifier = Modifier.weight(0.2f),
+                                                colors = OutlinedTextFieldDefaults.colors(
+                                                    focusedBorderColor = MaterialTheme.colorScheme.primary,
+                                                    unfocusedBorderColor = MaterialTheme.colorScheme.primary
+                                                )
                                             )
+
+                                            ExposedDropdownMenuBox(
+                                                expanded = expandedUnitDropdown,
+                                                onExpandedChange = {
+                                                    expandedUnitDropdown = !expandedUnitDropdown
+                                                },
+                                                modifier = Modifier.weight(0.2f)
+                                            ) {
+                                                OutlinedTextField(
+                                                    value = item.unit.ifEmpty { " " },
+                                                    onValueChange = {},
+                                                    readOnly = true,
+                                                    enabled = false,
+                                                    singleLine = true,
+                                                    modifier = Modifier
+                                                        .fillMaxWidth()
+                                                        .menuAnchor(
+                                                            MenuAnchorType.PrimaryNotEditable,
+                                                            expandedUnitDropdown
+                                                        )
+                                                        .clickable { expandedUnitDropdown = true },
+                                                    colors = OutlinedTextFieldDefaults.colors(
+                                                        disabledBorderColor = MaterialTheme.colorScheme.primary,
+                                                        disabledTextColor = MaterialTheme.colorScheme.onSurface,
+                                                        disabledLabelColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                                                        disabledTrailingIconColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                                                    )
+                                                )
+                                                ExposedDropdownMenu(
+                                                    expanded = expandedUnitDropdown,
+                                                    onDismissRequest = {
+                                                        expandedUnitDropdown = false
+                                                    }
+                                                ) {
+                                                    units.forEach { unit ->
+                                                        DropdownMenuItem(
+                                                            text = { Text(unit) },
+                                                            onClick = {
+                                                                recipeViewModel.updateItemSetItemUnit(
+                                                                    item.tmpId,
+                                                                    unit
+                                                                )
+                                                                expandedUnitDropdown = false
+                                                            }
+                                                        )
+                                                    }
+                                                }
+                                            }
+
+                                            IconButton(onClick = {
+                                                recipeViewModel.deleteItemSetItem(item.id)
+                                            }) {
+                                                Icon(
+                                                    painter = painterResource(id = R.drawable.baseline_delete_24),
+                                                    contentDescription = "Remove"
+                                                )
+                                            }
                                         }
                                     }
                                 }
@@ -702,7 +753,11 @@ fun RecipeViewScreen(
                                         .fillMaxWidth()
                                         .padding(top = 4.dp),
                                     onClick = {
-                                        recipeViewModel.addEmptyItemSetItem()
+                                        recipeViewModel.addEmptyItemSetItem(
+                                            onSuccess = { newTmpId ->
+                                                focusIngredientId = newTmpId
+                                            }
+                                        )
                                     },
                                     elevation = ButtonDefaults.buttonElevation(defaultElevation = 6.dp),
                                 ) {
@@ -726,11 +781,32 @@ fun RecipeViewScreen(
                             Text(
                                 text = stringResource(R.string.instructions),
                                 style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.SemiBold),
-                                color = MaterialTheme.colorScheme.primary,
-                                modifier = Modifier.weight(1f)
+                                color = MaterialTheme.colorScheme.primary
                             )
+                            if(editMode) {
+                                IconButton(
+                                    onClick = {
+                                        if (!editInstructions) {
+                                            editInstructions = true
+                                            showInstructions = true
+                                        } else {
+                                            recipeViewModel.updateRecipe(recipe)
+                                            editInstructions = false
+                                        }
+                                    },
+                                    modifier = Modifier.size(20.dp)
+                                ) {
+                                    Icon(
+                                        painter = painterResource(id = if (!editInstructions) R.drawable.baseline_edit_24 else R.drawable.baseline_save_24),
+                                        contentDescription = "Edit instructions",
+                                        tint = MaterialTheme.colorScheme.primary,
+                                        modifier = Modifier.size(16.dp)
+                                    )
+                                }
+                            }
+                            Spacer(modifier = Modifier.weight(1f))
                             Icon(
-                                imageVector = if (showInstructions) Icons.Default.KeyboardArrowUp else Icons.Default.KeyboardArrowDown,
+                                imageVector = if (showInstructions) Icons.Default.KeyboardArrowDown else Icons.AutoMirrored.Filled.KeyboardArrowRight,
                                 contentDescription = "Toggle instructions",
                                 tint = MaterialTheme.colorScheme.onSurfaceVariant
                             )
@@ -744,7 +820,7 @@ fun RecipeViewScreen(
                         )
                     }
                     if (showInstructions) {
-                        if (!editMode) {
+                        if (!editInstructions) {
                             Column(
                                 modifier = Modifier.padding(horizontal = 16.dp),
                             ) {
@@ -785,6 +861,7 @@ fun RecipeViewScreen(
                                 modifier = Modifier.padding(horizontal = 16.dp),
                             ) {
                                 recipe.instructions.forEachIndexed { index, instruction ->
+                                    val focusRequesterInstructions = remember { FocusRequester() }
                                     OutlinedTextField(
                                         value = instruction,
                                         onValueChange = { newValue ->
@@ -797,14 +874,26 @@ fun RecipeViewScreen(
                                         modifier = Modifier
                                             .fillMaxWidth()
                                             .padding(vertical = 4.dp)
+                                            .focusRequester(focusRequesterInstructions)
                                     )
+                                    LaunchedEffect(focusInstructionIndex, index) {
+                                        if (focusInstructionIndex == index && instruction.isEmpty()) {
+                                            focusRequesterInstructions.requestFocus()
+                                            keyboardController?.show()
+                                            focusInstructionIndex = null
+                                        }
+                                    }
                                 }
                                 Button(
                                     modifier = Modifier
                                         .fillMaxWidth()
                                         .padding(vertical = 4.dp),
                                     onClick = {
-                                        recipeViewModel.addEmptyInstruction()
+                                        recipeViewModel.addEmptyInstruction(
+                                            onSuccess = { newIndex ->
+                                                focusInstructionIndex = newIndex
+                                            }
+                                        )
                                     },
                                     elevation = ButtonDefaults.buttonElevation(
                                         defaultElevation = 6.dp

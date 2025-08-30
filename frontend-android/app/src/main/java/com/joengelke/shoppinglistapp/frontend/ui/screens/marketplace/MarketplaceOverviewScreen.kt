@@ -29,6 +29,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavHostController
@@ -50,6 +51,7 @@ fun MarketplaceOverviewScreen(
     settingsViewModel: SettingsViewModel = hiltViewModel()
 ) {
     val context = LocalContext.current
+    val currentUserId by userViewModel.currentUserId.collectAsState()
 
     LaunchedEffect(Unit) {
         recipeViewModel.loadMarketplaceRecipes()
@@ -119,7 +121,7 @@ fun MarketplaceOverviewScreen(
                             },
                             placeholder = {
                                 Text(
-                                    text = "Search...",
+                                    text = stringResource(R.string.search),
                                     color = MaterialTheme.colorScheme.onPrimary
                                 )
                             },
@@ -259,6 +261,7 @@ fun MarketplaceOverviewScreen(
                     items(filteredRecipes) { recipe ->
                         MarketplaceRecipeContainer(
                             recipe = recipe,
+                            currentUserId = currentUserId,
                             onOpenRecipe = { recipeId ->
                                 navController.navigate(
                                     Routes.RecipeView.createRoute(
@@ -271,6 +274,7 @@ fun MarketplaceOverviewScreen(
                                 recipeViewModel.addRecipeToUser(
                                     recipeId,
                                     null,
+                                    updateRecipes = false,
                                     onSuccess = {
                                         Toast.makeText(
                                             context,
@@ -301,6 +305,7 @@ fun MarketplaceOverviewScreen(
 @Composable
 fun MarketplaceRecipeContainer(
     recipe: Recipe,
+    currentUserId: String,
     onOpenRecipe: (String) -> Unit,
     onAddRecipeToUser: (String) -> Unit
 ) {
@@ -308,7 +313,7 @@ fun MarketplaceRecipeContainer(
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(start = 8.dp, end = 8.dp, top = 8.dp)
+            .padding(horizontal = 12.dp, vertical = 6.dp)
             .clickable {
                 onOpenRecipe(recipe.id)
             },
@@ -321,19 +326,33 @@ fun MarketplaceRecipeContainer(
     ) {
         Row(
             modifier = Modifier
-                .fillMaxWidth(),
+                .fillMaxWidth()
+                .padding(start = 16.dp, end = 6.dp, top = 8.dp, bottom = 8.dp),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.Center
         ) {
-
-            Text(
-                text = recipe.name,
-                style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
-                color = MaterialTheme.colorScheme.onSurface,
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
                 modifier = Modifier
-                    .padding(20.dp)
                     .weight(1f)
-            )
+            ) {
+                Text(
+                    text = recipe.name,
+                    style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
+                    color = MaterialTheme.colorScheme.onSurface,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier.padding(end = 4.dp)
+                )
+                if (currentUserId == recipe.creatorId) {
+                    Icon(
+                        painter = painterResource(id = R.drawable.baseline_person_24),
+                        contentDescription = "Own recipe",
+                        tint = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.size(16.dp)
+                    )
+                }
+            }
             IconButton(
                 onClick = {
                     onAddRecipeToUser(recipe.id)
