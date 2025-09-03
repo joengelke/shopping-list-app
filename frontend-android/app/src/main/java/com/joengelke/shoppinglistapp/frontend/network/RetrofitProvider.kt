@@ -43,13 +43,13 @@ class RetrofitProvider @Inject constructor(
 
     private fun getSafeOkHttpClient(context: Context, ip: String): OkHttpClient {
         val certificateFactory = CertificateFactory.getInstance("X.509")
-        val certificate = context.assets.open("mycert.crt").use {
+        val certificate = context.assets.open("mycertoracle.crt").use {
             certificateFactory.generateCertificate(it)
         }
 
         val keyStore = KeyStore.getInstance(KeyStore.getDefaultType()).apply {
             load(null, null)
-            setCertificateEntry("backendserver", certificate)
+            setCertificateEntry("backendserveroracle", certificate)
         }
 
         val trustManagerFactory = TrustManagerFactory.getInstance(

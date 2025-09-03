@@ -13,4 +13,7 @@
     <string name="pieces_short">pcs</string>
     <string name="teaspoon">tsp</string>
     <string name="tablespoon">tbsp</string>
+    <string name="cup">cup(s)</string>
+    <string name="cube">cube</string>
+    <string name="pck">pck</string>
 </resources>

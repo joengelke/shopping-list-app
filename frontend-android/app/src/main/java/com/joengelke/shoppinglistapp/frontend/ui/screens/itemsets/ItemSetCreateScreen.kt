@@ -6,7 +6,6 @@ import android.provider.OpenableColumns
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -35,7 +34,10 @@ import androidx.navigation.NavHostController
 import com.joengelke.shoppinglistapp.frontend.R
 import com.joengelke.shoppinglistapp.frontend.models.ItemSet
 import com.joengelke.shoppinglistapp.frontend.models.ItemSetItem
+import com.joengelke.shoppinglistapp.frontend.models.RecipeSource
+import com.joengelke.shoppinglistapp.frontend.navigation.Routes
 import com.joengelke.shoppinglistapp.frontend.ui.components.ConfirmationDialog
+import com.joengelke.shoppinglistapp.frontend.ui.components.UnitDropdown
 import com.joengelke.shoppinglistapp.frontend.viewmodel.ItemSetsViewModel
 import com.joengelke.shoppinglistapp.frontend.viewmodel.RecipeViewModel
 import java.io.File
@@ -162,7 +164,7 @@ fun ItemSetCreateScreen(
                             tint = MaterialTheme.colorScheme.onPrimary
                         )
                     }
-                    Box{
+                    Box {
                         IconButton(
                             onClick = {
                                 openItemSetExport = !openItemSetExport
@@ -176,7 +178,7 @@ fun ItemSetCreateScreen(
                         }
                         DropdownMenu(
                             expanded = openItemSetExport,
-                            onDismissRequest = { openItemSetExport = false}
+                            onDismissRequest = { openItemSetExport = false }
                         ) {
                             DropdownMenuItem(
                                 text = {
@@ -185,13 +187,26 @@ fun ItemSetCreateScreen(
                                 onClick = {
                                     recipeViewModel.convertItemSetToRecipe(
                                         itemSet!!,
-                                        onSuccess = {
-                                            Toast.makeText(context,
-                                                context.getString(R.string.new_recipe_created), Toast.LENGTH_SHORT).show()
+                                        onSuccess = { createdRecipe ->
+                                            Toast.makeText(
+                                                context,
+                                                context.getString(R.string.new_recipe_created),
+                                                Toast.LENGTH_SHORT
+                                            ).show()
+
+                                            navController.navigate(
+                                                Routes.RecipeView.createRoute(
+                                                    createdRecipe.id,
+                                                    RecipeSource.LOCAL
+                                                )
+                                            )
                                         },
                                         onFailure = { message ->
-                                            Toast.makeText(context,
-                                                context.getString(R.string.recipe_already_exists), Toast.LENGTH_SHORT).show()
+                                            Toast.makeText(
+                                                context,
+                                                context.getString(R.string.recipe_already_exists),
+                                                Toast.LENGTH_SHORT
+                                            ).show()
                                         }
                                     )
                                 }
@@ -238,7 +253,7 @@ fun ItemSetCreateScreen(
                         onClick = {
                             itemSetsViewModel.addEmptyItemSetItem(
                                 itemSetId,
-                                onSuccess = {newTmpId ->
+                                onSuccess = { newTmpId ->
                                     focusItemSetItemId = newTmpId
                                 }
                             )
@@ -350,9 +365,6 @@ fun ItemSetItemContainer(
     var amountText by remember { mutableStateOf(amount.toString().replace(".0", "")) }
     var unit by remember { mutableStateOf(itemSetItem.unit) }
 
-    var expandedUnitDropdown by remember { mutableStateOf(false) }
-    val units = listOf("", "ml", "l", "g", "kg", "EL", "TL", stringResource(R.string.pieces_short))
-
     Card(
         modifier = Modifier
             .fillMaxWidth(),
@@ -426,54 +438,16 @@ fun ItemSetItemContainer(
                     )
                 )
             }
-            Column(
+
+            UnitDropdown(
+                unit = unit,
+                onUnitSelected = { unit = it },
+                withLabel = false,
                 modifier = Modifier
                     .weight(0.175f)
                     .padding(horizontal = 4.dp)
-            ) {
-                ExposedDropdownMenuBox(
-                    expanded = expandedUnitDropdown,
-                    onExpandedChange = { expandedUnitDropdown = !expandedUnitDropdown },
-                ) {
-                    OutlinedTextField(
-                        value = unit.ifEmpty { " " },
-                        onValueChange = { },
-                        readOnly = true,
-                        enabled = false,
-                        singleLine = true,
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .menuAnchor(MenuAnchorType.PrimaryNotEditable, expandedUnitDropdown)
-                            .clickable {
-                                expandedUnitDropdown = true
-                            },
-                        colors = OutlinedTextFieldDefaults.colors(
-                            disabledBorderColor = MaterialTheme.colorScheme.primary,
-                            disabledTextColor = MaterialTheme.colorScheme.onSurface,
-                            disabledLabelColor = MaterialTheme.colorScheme.onSurfaceVariant,
-                            disabledTrailingIconColor = MaterialTheme.colorScheme.onSurfaceVariant,
-                        )
-                    )
-                    ExposedDropdownMenu(
-                        expanded = expandedUnitDropdown,
-                        onDismissRequest = { expandedUnitDropdown = false }
-                    ) {
-                        units.forEach { item ->
-                            DropdownMenuItem(
-                                text = { Text(item) },
-                                onClick = {
-                                    unit = item
-                                    itemSetsViewModel.updateItemSetItem(
-                                        itemSetId,
-                                        itemSetItem.copy(unit = item)
-                                    )
-                                    expandedUnitDropdown = false
-                                }
-                            )
-                        }
-                    }
-                }
-            }
+            )
+
             Column(
                 modifier = Modifier.weight(0.1f)
             ) {

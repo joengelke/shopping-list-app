@@ -1,6 +1,11 @@
 package com.joengelke.shoppinglistapp.frontend.ui.screens.recipes
 
 import android.widget.Toast
+import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.slideInHorizontally
+import androidx.compose.animation.slideOutHorizontally
+import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -8,6 +13,7 @@ import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material3.*
@@ -29,8 +35,12 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavHostController
 import com.joengelke.shoppinglistapp.frontend.R
 import com.joengelke.shoppinglistapp.frontend.models.RecipeSource
+import com.joengelke.shoppinglistapp.frontend.navigation.Routes
 import com.joengelke.shoppinglistapp.frontend.ui.components.AppScaffold
 import com.joengelke.shoppinglistapp.frontend.ui.components.AppTopBar
+import com.joengelke.shoppinglistapp.frontend.ui.components.UnitDropdown
+import com.joengelke.shoppinglistapp.frontend.utils.FileUtils
+import com.joengelke.shoppinglistapp.frontend.utils.NotificationUtils
 import com.joengelke.shoppinglistapp.frontend.viewmodel.ItemSetsViewModel
 import com.joengelke.shoppinglistapp.frontend.viewmodel.RecipeViewModel
 import com.joengelke.shoppinglistapp.frontend.viewmodel.ShoppingListViewModel
@@ -77,14 +87,15 @@ fun RecipeViewScreen(
 
     var editMode by remember { mutableStateOf(false) }
 
-    var showShoppingLists by remember { mutableStateOf(false) }
+    var openShareOptions by remember { mutableStateOf(false) }
+    var currentShareMenu by remember { mutableStateOf("main") }
     val shoppingLists by shoppingListViewModel.shoppingLists.collectAsState()
 
     var showDescription by remember { mutableStateOf(true) }
     var editDescription by remember { mutableStateOf(false) }
 
     var showCategories by remember { mutableStateOf(true) }
-    var editCategories by remember { mutableStateOf(false)}
+    var editCategories by remember { mutableStateOf(false) }
     var openAddCategoryField by remember { mutableStateOf(false) }
     var categoryInput by remember { mutableStateOf("") }
     val focusRequesterCategory = remember { FocusRequester() }
@@ -99,7 +110,6 @@ fun RecipeViewScreen(
     var showIngredients by remember { mutableStateOf(true) }
     var editIngredients by remember { mutableStateOf(false) }
     var focusIngredientId by remember { mutableStateOf<String?>(null) }
-    val units = listOf("", "ml", "l", "g", "kg", "EL", "TL", stringResource(R.string.pieces_short))
 
     var showInstructions by remember { mutableStateOf(true) }
     var editInstructions by remember { mutableStateOf(false) }
@@ -153,72 +163,142 @@ fun RecipeViewScreen(
                                     }
                                 }
                             }
-                            if(!editMode) {
+                            if (!editMode) {
                                 Box {
                                     IconButton(
                                         onClick = {
-                                            showShoppingLists = true
+                                            openShareOptions = !openShareOptions
                                         }
                                     ) {
                                         Icon(
-                                            painter = painterResource(id = R.drawable.baseline_library_add_24),
-                                            contentDescription = "add recipe to ",
+                                            painter = painterResource(id = R.drawable.baseline_share_24),
+                                            contentDescription = "open share options ",
                                             tint = MaterialTheme.colorScheme.onPrimary
                                         )
                                     }
+
                                     DropdownMenu(
-                                        expanded = showShoppingLists,
-                                        onDismissRequest = { showShoppingLists = false }
+                                        expanded = openShareOptions,
+                                        onDismissRequest = {
+                                            openShareOptions = false
+                                            currentShareMenu = "main"
+                                        }
                                     ) {
-
-                                        Text(
-                                            text = stringResource(R.string.add_ingredients_to),
-                                            modifier = Modifier
-                                                .padding(
-                                                    start = 12.dp,
-                                                    end = 12.dp,
-                                                    top = 0.dp,
-                                                    bottom = 4.dp
+                                        AnimatedContent(
+                                            targetState = currentShareMenu,
+                                            transitionSpec = {
+                                                slideInHorizontally(
+                                                    initialOffsetX = { fullWidth -> fullWidth },
+                                                    animationSpec = tween(300)
+                                                ) togetherWith slideOutHorizontally(
+                                                    targetOffsetX = { fullWidth -> -fullWidth },
+                                                    animationSpec = tween(300)
                                                 )
-                                        )
-                                        HorizontalDivider()
-
-                                        shoppingLists.forEach { shoppingList ->
-                                            DropdownMenuItem(
-                                                text = {
-                                                    Text(shoppingList.name)
-                                                },
-                                                onClick = {
-                                                    itemSetsViewModel.uploadItemSet(
-                                                        shoppingList.id,
-                                                        recipe.itemSet,
-                                                        onSuccess = {
-                                                            Toast.makeText(
-                                                                context,
-                                                                context.getString(
-                                                                    R.string.added_to,
-                                                                    recipe.name,
-                                                                    shoppingList.name
-                                                                ),
-                                                                Toast.LENGTH_SHORT
-                                                            ).show()
-                                                            showShoppingLists = false
-                                                        },
-                                                        itemSetNameExists = {
-                                                            Toast.makeText(
-                                                                context,
-                                                                context.getString(
-                                                                    R.string.already_exists_in,
-                                                                    recipe.name,
-                                                                    shoppingList.name
-                                                                ),
-                                                                Toast.LENGTH_SHORT
-                                                            ).show()
-                                                            showShoppingLists = false
-                                                        }
-                                                    )
+                                            },
+                                            label = "menuTransition"
+                                        ) { menu ->
+                                            when (menu) {
+                                                "main" -> {
+                                                    Column {
+                                                        DropdownMenuItem(
+                                                            text = { Text("Add to shopping list") },
+                                                            onClick = {
+                                                                currentShareMenu =
+                                                                    "addToShoppingList"
+                                                            }
+                                                        )
+                                                        DropdownMenuItem(
+                                                            text = { Text("Download PDF") },
+                                                            onClick = {
+                                                                val file = FileUtils.createRecipePdf(context, recipe,true)
+                                                                NotificationUtils.showDownloadNotification(context, file)
+                                                                currentShareMenu = "main"
+                                                                openShareOptions = false
+                                                            }
+                                                        )
+                                                        DropdownMenuItem(
+                                                            text = { Text("Share PDF") },
+                                                            onClick = {
+                                                                val file = FileUtils.createRecipePdf(context, recipe,false)
+                                                                FileUtils.sharePdf(context, file)
+                                                                currentShareMenu = "main"
+                                                                openShareOptions = false
+                                                            }
+                                                        )
+                                                        DropdownMenuItem(
+                                                            text = { Text("Share as Text") },
+                                                            onClick = {
+                                                                FileUtils.shareRecipeAsText(context, recipe)
+                                                                currentShareMenu = "main"
+                                                                openShareOptions = false
+                                                            }
+                                                        )
+                                                    }
                                                 }
-                                            )
+                                                "addToShoppingList" -> {
+                                                    Column {
+                                                        DropdownMenuItem(
+                                                            text = { Text("Back") },
+                                                            onClick = { currentShareMenu = "main" },
+                                                            leadingIcon = {
+                                                                Icon(
+                                                                    Icons.AutoMirrored.Filled.ArrowBack,
+                                                                    contentDescription = "Back",
+                                                                    tint = MaterialTheme.colorScheme.onPrimaryContainer
+                                                                )
+                                                            }
+                                                        )
+                                                        HorizontalDivider()
+
+                                                        shoppingLists.forEach { shoppingList ->
+                                                            DropdownMenuItem(
+                                                                text = {
+                                                                    Text(shoppingList.name)
+                                                                },
+                                                                onClick = {
+                                                                    itemSetsViewModel.uploadItemSet(
+                                                                        shoppingList.id,
+                                                                        recipe.itemSet,
+                                                                        onSuccess = {
+                                                                            Toast.makeText(
+                                                                                context,
+                                                                                context.getString(
+                                                                                    R.string.added_to,
+                                                                                    recipe.name,
+                                                                                    shoppingList.name
+                                                                                ),
+                                                                                Toast.LENGTH_SHORT
+                                                                            ).show()
+                                                                            currentShareMenu =
+                                                                                "main"
+                                                                            openShareOptions = false
+                                                                            navController.navigate(
+                                                                                Routes.ShoppingItemsCreate.createRoute(
+                                                                                    shoppingList.id
+                                                                                )
+                                                                            )
+                                                                        },
+                                                                        itemSetNameExists = {
+                                                                            Toast.makeText(
+                                                                                context,
+                                                                                context.getString(
+                                                                                    R.string.already_exists_in,
+                                                                                    recipe.name,
+                                                                                    shoppingList.name
+                                                                                ),
+                                                                                Toast.LENGTH_SHORT
+                                                                            ).show()
+                                                                            currentShareMenu =
+                                                                                "main"
+                                                                            openShareOptions = false
+                                                                        }
+                                                                    )
+                                                                }
+                                                            )
+                                                        }
+                                                    }
+                                                }
+                                            }
                                         }
                                     }
                                 }
@@ -252,7 +332,7 @@ fun RecipeViewScreen(
                                 style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.SemiBold),
                                 color = MaterialTheme.colorScheme.primary,
                             )
-                            if(editMode) {
+                            if (editMode) {
                                 IconButton(
                                     onClick = {
                                         if (!editDescription) {
@@ -305,7 +385,8 @@ fun RecipeViewScreen(
                                 onValueChange = { recipeViewModel.updateDescription(it) },
                                 modifier = Modifier
                                     .fillMaxWidth()
-                                    .padding(horizontal = 16.dp, vertical = 12.dp)
+                                    .padding(horizontal = 16.dp)
+                                    .padding(bottom = 12.dp)
                             )
                         }
                     }
@@ -326,7 +407,7 @@ fun RecipeViewScreen(
                                 style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.SemiBold),
                                 color = MaterialTheme.colorScheme.primary,
                             )
-                            if(editMode) {
+                            if (editMode) {
                                 IconButton(
                                     onClick = {
                                         if (!editCategories) {
@@ -541,7 +622,7 @@ fun RecipeViewScreen(
                                 style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.SemiBold),
                                 color = MaterialTheme.colorScheme.primary
                             )
-                            if(editMode) {
+                            if (editMode) {
                                 IconButton(
                                     onClick = {
                                         if (!editIngredients) {
@@ -596,17 +677,16 @@ fun RecipeViewScreen(
                                             modifier = Modifier.weight(1f),
                                             style = MaterialTheme.typography.bodyMedium
                                         )
-                                        Text(
-                                            text = buildString {
-                                                if (item.amount != 0.0) {
+                                        if (item.amount != 0.0) {
+                                            Text(
+                                                text = buildString {
                                                     append(item.amount.toString().replace(".0", ""))
-                                                    append(" ")
-                                                }
-                                                append(item.unit)
-                                            },
-                                            style = MaterialTheme.typography.bodyMedium,
-                                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                                        )
+                                                    if (item.unit.isNotEmpty()) append(" ${item.unit}")
+                                                },
+                                                style = MaterialTheme.typography.bodyMedium,
+                                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                                            )
+                                        }
                                     }
                                     if (index != recipe.itemSet.itemList.lastIndex) {
                                         HorizontalDivider(
@@ -627,14 +707,12 @@ fun RecipeViewScreen(
                                     key(item.tmpId) {
                                         val focusRequesterIngredients =
                                             remember { FocusRequester() }
-                                        var expandedUnitDropdown by remember { mutableStateOf(false) }
-
                                         Row(
                                             modifier = Modifier
                                                 .fillMaxWidth()
                                                 .padding(bottom = 2.dp),
                                             verticalAlignment = Alignment.CenterVertically,
-                                            horizontalArrangement = Arrangement.spacedBy(12.dp)
+                                            horizontalArrangement = Arrangement.SpaceBetween
                                         ) {
                                             OutlinedTextField(
                                                 value = item.name,
@@ -647,8 +725,9 @@ fun RecipeViewScreen(
                                                 placeholder = { Text(stringResource(R.string.item_name)) },
                                                 singleLine = true,
                                                 modifier = Modifier
-                                                    .weight(0.55f)
-                                                    .focusRequester(focusRequesterIngredients),
+                                                    .weight(0.5f)
+                                                    .focusRequester(focusRequesterIngredients)
+                                                    .padding(end = 4.dp),
                                                 keyboardOptions = KeyboardOptions(
                                                     capitalization = KeyboardCapitalization.Sentences,
                                                     keyboardType = KeyboardType.Text,
@@ -681,64 +760,35 @@ fun RecipeViewScreen(
                                                     keyboardType = KeyboardType.Number
                                                 ),
                                                 singleLine = true,
-                                                modifier = Modifier.weight(0.2f),
+                                                modifier = Modifier
+                                                    .weight(0.225f)
+                                                    .padding(horizontal = 4.dp),
                                                 colors = OutlinedTextFieldDefaults.colors(
                                                     focusedBorderColor = MaterialTheme.colorScheme.primary,
                                                     unfocusedBorderColor = MaterialTheme.colorScheme.primary
                                                 )
                                             )
 
-                                            ExposedDropdownMenuBox(
-                                                expanded = expandedUnitDropdown,
-                                                onExpandedChange = {
-                                                    expandedUnitDropdown = !expandedUnitDropdown
-                                                },
-                                                modifier = Modifier.weight(0.2f)
-                                            ) {
-                                                OutlinedTextField(
-                                                    value = item.unit.ifEmpty { " " },
-                                                    onValueChange = {},
-                                                    readOnly = true,
-                                                    enabled = false,
-                                                    singleLine = true,
-                                                    modifier = Modifier
-                                                        .fillMaxWidth()
-                                                        .menuAnchor(
-                                                            MenuAnchorType.PrimaryNotEditable,
-                                                            expandedUnitDropdown
-                                                        )
-                                                        .clickable { expandedUnitDropdown = true },
-                                                    colors = OutlinedTextFieldDefaults.colors(
-                                                        disabledBorderColor = MaterialTheme.colorScheme.primary,
-                                                        disabledTextColor = MaterialTheme.colorScheme.onSurface,
-                                                        disabledLabelColor = MaterialTheme.colorScheme.onSurfaceVariant,
-                                                        disabledTrailingIconColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                                            UnitDropdown(
+                                                unit = item.unit,
+                                                onUnitSelected = {
+                                                    recipeViewModel.updateItemSetItemUnit(
+                                                        item.tmpId,
+                                                        it
                                                     )
-                                                )
-                                                ExposedDropdownMenu(
-                                                    expanded = expandedUnitDropdown,
-                                                    onDismissRequest = {
-                                                        expandedUnitDropdown = false
-                                                    }
-                                                ) {
-                                                    units.forEach { unit ->
-                                                        DropdownMenuItem(
-                                                            text = { Text(unit) },
-                                                            onClick = {
-                                                                recipeViewModel.updateItemSetItemUnit(
-                                                                    item.tmpId,
-                                                                    unit
-                                                                )
-                                                                expandedUnitDropdown = false
-                                                            }
-                                                        )
-                                                    }
-                                                }
-                                            }
+                                                },
+                                                withLabel = false,
+                                                modifier = Modifier
+                                                    .weight(0.175f)
+                                                    .padding(horizontal = 4.dp)
+                                            )
 
-                                            IconButton(onClick = {
-                                                recipeViewModel.deleteItemSetItem(item.id)
-                                            }) {
+                                            IconButton(
+                                                onClick = {
+                                                    recipeViewModel.deleteItemSetItem(item.id)
+                                                },
+                                                modifier = Modifier.weight(0.1f)
+                                            ) {
                                                 Icon(
                                                     painter = painterResource(id = R.drawable.baseline_delete_24),
                                                     contentDescription = "Remove"
@@ -783,7 +833,7 @@ fun RecipeViewScreen(
                                 style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.SemiBold),
                                 color = MaterialTheme.colorScheme.primary
                             )
-                            if(editMode) {
+                            if (editMode) {
                                 IconButton(
                                     onClick = {
                                         if (!editInstructions) {
@@ -822,7 +872,9 @@ fun RecipeViewScreen(
                     if (showInstructions) {
                         if (!editInstructions) {
                             Column(
-                                modifier = Modifier.padding(horizontal = 16.dp),
+                                modifier = Modifier
+                                    .padding(horizontal = 16.dp)
+                                    .padding(bottom = 16.dp),
                             ) {
                                 recipe.instructions.forEachIndexed { index, instruction ->
                                     Row(
@@ -858,7 +910,9 @@ fun RecipeViewScreen(
                             }
                         } else {
                             Column(
-                                modifier = Modifier.padding(horizontal = 16.dp),
+                                modifier = Modifier
+                                    .padding(horizontal = 16.dp)
+                                    .padding(bottom = 16.dp),
                             ) {
                                 recipe.instructions.forEachIndexed { index, instruction ->
                                     val focusRequesterInstructions = remember { FocusRequester() }

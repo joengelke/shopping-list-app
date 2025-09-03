@@ -188,13 +188,13 @@ class RecipeViewModel @Inject constructor(
 
     fun convertItemSetToRecipe(
         itemSet: ItemSet,
-        onSuccess: () -> Unit,
+        onSuccess: (Recipe) -> Unit,
         onFailure: (String) -> Unit
     ) {
         viewModelScope.launch {
             val result = recipeRepository.convertItemSetToRecipe(itemSet)
-            result.onSuccess {
-                onSuccess()
+            result.onSuccess { createdRecipe ->
+                onSuccess(createdRecipe)
             }.onFailure { error ->
                 onFailure(error.message ?: "An unknown error occurred")
             }

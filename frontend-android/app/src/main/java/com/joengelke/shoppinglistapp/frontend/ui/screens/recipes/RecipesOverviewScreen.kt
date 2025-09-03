@@ -82,6 +82,9 @@ fun RecipesOverviewScreen(
         .filter { it.name.contains(recipeSearchValue, ignoreCase = true) }
         .sortedBy { it.name }
 
+    val foldedLetterStates = remember { mutableStateMapOf<String, Boolean>() }
+    val foldedCategoryStates = remember { mutableStateMapOf<String, Boolean>() }
+
     var refreshing by remember { mutableStateOf(false) }
     val state = rememberPullToRefreshState()
     val onRefresh: () -> Unit = {
@@ -561,10 +564,13 @@ fun RecipesOverviewScreen(
                     if (!showSearchBar) {
                         if (recipesSortOption.category == RecipesSortCategory.CATEGORIES) {
                             items(categorySortedRecipes) { (category, recipeList) ->
+                                val folded = foldedCategoryStates[category] ?: true
                                 CategoryContainer(
                                     category,
                                     currentUserId,
                                     recipeList,
+                                    categoryFolded = folded,
+                                    onFoldedChange = { foldedCategoryStates[category] = it },
                                     onOpenRecipe = { recipeId ->
                                         navController.navigate(
                                             Routes.RecipeView.createRoute(
@@ -586,10 +592,13 @@ fun RecipesOverviewScreen(
                             }
                         } else {
                             items(alphabeticSortedRecipes) { (letter, recipe) ->
+                                val folded = foldedLetterStates[letter] ?: true
                                 LetterContainer(
                                     letter,
                                     recipe,
                                     currentUserId,
+                                    letterFolded = folded,
+                                    onFoldedChange = { foldedLetterStates[letter] = it },
                                     onOpenRecipe = { recipeId ->
                                         navController.navigate(
                                             Routes.RecipeView.createRoute(
@@ -668,16 +677,17 @@ fun LetterContainer(
     letter: String,
     recipeList: List<Recipe>,
     currentUserId: String,
+    letterFolded: Boolean,
+    onFoldedChange: (Boolean) -> Unit,
     onOpenRecipe: (String) -> Unit,
     onEditRecipe: (Recipe) -> Unit,
     onDeleteComplete: (String) -> Unit,
     onRemoveFromUser: (String) -> Unit
 ) {
-    var letterFolded by remember { mutableStateOf(true) }
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .clickable { letterFolded = !letterFolded }
+            .clickable { onFoldedChange(!letterFolded) }
             .padding(horizontal = 16.dp, vertical = 8.dp)
     ) {
         Row(
@@ -736,16 +746,17 @@ fun CategoryContainer(
     category: String,
     currentUserId: String,
     recipeList: List<Recipe>,
+    categoryFolded: Boolean,
+    onFoldedChange: (Boolean) -> Unit,
     onOpenRecipe: (String) -> Unit,
     onEditRecipe: (Recipe) -> Unit,
     onDeleteComplete: (String) -> Unit,
     onRemoveFromUser: (String) -> Unit
 ) {
-    var categoryFolded by remember { mutableStateOf(true) }
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .clickable { categoryFolded = !categoryFolded }
+            .clickable { onFoldedChange(!categoryFolded) }
             .padding(horizontal = 16.dp, vertical = 8.dp)
     ) {
         Row(

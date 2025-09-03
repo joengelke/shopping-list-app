@@ -29,6 +29,8 @@ uiTextGoogleFonts = "1.8.0"
 lifecycleProcess = "2.9.1"
 jsoup = "1.21.1"
 securityCrypto = "1.1.0-beta01"
+glanceAppwidget = "1.1.1"
+glanceMaterial3 = "1.1.1"
 
 [libraries]
 androidx-activity-compose-v182 = { module = "androidx.activity:activity-compose", version = "1.10.1" }
@@ -66,6 +68,8 @@ androidx-ui-text-google-fonts = { group = "androidx.compose.ui", name = "ui-text
 androidx-lifecycle-process = { group = "androidx.lifecycle", name = "lifecycle-process", version.ref = "lifecycleProcess" }
 jsoup = { group = "org.jsoup", name = "jsoup", version.ref = "jsoup" }
 androidx-security-crypto = { group = "androidx.security", name = "security-crypto", version.ref = "securityCrypto" }
+androidx-glance-appwidget = { group = "androidx.glance", name = "glance-appwidget", version.ref = "glanceAppwidget" }
+androidx-glance-material3 = { group = "androidx.glance", name = "glance-material3", version.ref = "glanceMaterial3" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }

@@ -43,6 +43,7 @@ import com.joengelke.shoppinglistapp.frontend.models.ShoppingItem
 import com.joengelke.shoppinglistapp.frontend.navigation.Routes
 import com.joengelke.shoppinglistapp.frontend.ui.common.ShoppingItemsSortCategory
 import com.joengelke.shoppinglistapp.frontend.ui.components.SortOptionsModal
+import com.joengelke.shoppinglistapp.frontend.ui.components.UnitDropdown
 import com.joengelke.shoppinglistapp.frontend.viewmodel.SettingsViewModel
 import com.joengelke.shoppinglistapp.frontend.viewmodel.ShoppingItemsViewModel
 import kotlinx.coroutines.delay
@@ -545,13 +546,6 @@ fun EditShoppingItemModal(
     var tags by remember { mutableStateOf(shoppingItem.tags) }
     var note by remember { mutableStateOf(shoppingItem.note) }
 
-    var expandedUnitDropdown by remember { mutableStateOf(false) }
-    val units = listOf(
-        "", "ml", "l", "g", "kg",
-        stringResource(R.string.teaspoon),
-        stringResource(R.string.tablespoon), stringResource(R.string.pieces_short)
-    )
-
     var addTagIcon by remember { mutableStateOf(true) }
     var tagInput by remember { mutableStateOf("") }
 
@@ -637,49 +631,12 @@ fun EditShoppingItemModal(
                         unfocusedBorderColor = MaterialTheme.colorScheme.primary
                     )
                 )
-                ExposedDropdownMenuBox(
-                    expanded = expandedUnitDropdown,
-                    onExpandedChange = { expandedUnitDropdown = !expandedUnitDropdown },
-                    modifier = Modifier
-                        .weight(0.2f)
-                ) {
-                    OutlinedTextField(
-                        value = unit.ifEmpty { " " },
-                        onValueChange = {},
-                        label = { Text(stringResource(R.string.unit)) },
-                        readOnly = true,
-                        enabled = false,
-                        singleLine = true,
-                        trailingIcon = {
-                            ExposedDropdownMenuDefaults.TrailingIcon(expanded = expandedUnitDropdown)
-                        },
-                        modifier = Modifier
-                            .menuAnchor(MenuAnchorType.PrimaryNotEditable, expandedUnitDropdown)
-                            .clickable {
-                                expandedUnitDropdown = true
-                            },
-                        colors = OutlinedTextFieldDefaults.colors(
-                            disabledBorderColor = MaterialTheme.colorScheme.primary,
-                            disabledTextColor = MaterialTheme.colorScheme.onSurface,
-                            disabledLabelColor = MaterialTheme.colorScheme.onSurfaceVariant,
-                            disabledTrailingIconColor = MaterialTheme.colorScheme.onSurfaceVariant,
-                        )
-                    )
-                    ExposedDropdownMenu(
-                        expanded = expandedUnitDropdown,
-                        onDismissRequest = { expandedUnitDropdown = false }
-                    ) {
-                        units.forEach { item ->
-                            DropdownMenuItem(
-                                text = { Text(item) },
-                                onClick = {
-                                    unit = item
-                                    expandedUnitDropdown = false
-                                }
-                            )
-                        }
-                    }
-                }
+                UnitDropdown(
+                    unit = unit,
+                    onUnitSelected = {unit = it},
+                    withLabel = true,
+                    modifier = Modifier.weight(0.2f)
+                )
                 IconButton(
                     onClick = {
                         if (amount >= 1) {

@@ -7,22 +7,21 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.ProcessLifecycleOwner
 import androidx.navigation.NavHostController
-import com.joengelke.shoppinglistapp.frontend.network.SessionManager
+import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.launch
 
 @Composable
 fun GlobalEventHandler(
-    sessionManager: SessionManager,
+    logoutEvent: SharedFlow<String>,
+    disconnectedEvent: SharedFlow<String>,
     navController: NavHostController,
     context: Context
 ) {
 
-    // val snackbarHostState = remember { SnackbarHostState() }
-
     LaunchedEffect(Unit) {
         launch {
-            sessionManager.logoutEvent.collect { message ->
-                Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
+            logoutEvent.collect { message ->
+                //Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
                 navController.navigate("login") {
                     popUpTo(0) { inclusive = true }
                 }
@@ -30,14 +29,7 @@ fun GlobalEventHandler(
         }
 
         launch {
-            sessionManager.disconnectedEvent.collect { message ->
-                /* TODO: later if just one global scaffold exists
-                // Only show snackbar if app is in the foreground
-                if (ProcessLifecycleOwner.get().lifecycle.currentState.isAtLeast(Lifecycle.State.STARTED)) {
-                    snackbarHostState.showSnackbar(message)
-                }
-
-                 */
+            disconnectedEvent.collect { message ->
                 if (ProcessLifecycleOwner.get().lifecycle.currentState.isAtLeast(Lifecycle.State.STARTED)) {
                     Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
                 }

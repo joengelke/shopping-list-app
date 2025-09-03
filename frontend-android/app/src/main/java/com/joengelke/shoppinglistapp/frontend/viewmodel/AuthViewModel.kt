@@ -1,14 +1,15 @@
 package com.joengelke.shoppinglistapp.frontend.viewmodel
 
+import android.content.Context
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.joengelke.shoppinglistapp.frontend.datastore.LoginDataStore
 import com.joengelke.shoppinglistapp.frontend.network.SessionManager
-import com.joengelke.shoppinglistapp.frontend.network.TokenManager
 import com.joengelke.shoppinglistapp.frontend.repository.AuthRepository
+import com.joengelke.shoppinglistapp.frontend.ui.common.LoginState
 import dagger.hilt.android.lifecycle.HiltViewModel
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asStateFlow
+import dagger.hilt.android.qualifiers.ApplicationContext
+import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
@@ -16,12 +17,16 @@ import javax.inject.Inject
 @HiltViewModel
 class AuthViewModel @Inject constructor(
     private val authRepository: AuthRepository,
-    val sessionManager: SessionManager,
-    private val tokenManager: TokenManager
+    private val sessionManager: SessionManager,
+    @ApplicationContext private val context: Context
 ) : ViewModel() {
 
-    private val _isLoggedIn = MutableStateFlow(false)
-    val isLoggedIn = _isLoggedIn.asStateFlow()
+    val logoutEvent: SharedFlow<String> = sessionManager.logoutEvent
+    val disconnectedEvent: SharedFlow<String> = sessionManager.disconnectedEvent
+
+    private val _loginState = MutableStateFlow<LoginState>(LoginState.Unknown)
+    val loginState: StateFlow<LoginState> = _loginState.asStateFlow()
+    //val isLoggedIn: StateFlow<Boolean> = LoginDataStore.isLoggedInFlow(context).stateIn(viewModelScope, SharingStarted.Eagerly, false)
 
     private val _credentials = MutableStateFlow<Pair<String, String>?>(null)
     val credentials: StateFlow<Pair<String, String>?> = _credentials.asStateFlow()
@@ -43,8 +48,9 @@ class AuthViewModel @Inject constructor(
 
     fun checkIfTokenIsValid() {
         viewModelScope.launch {
-            val token = tokenManager.getToken()
-            _isLoggedIn.value = token != null && tokenManager.validateToken(token)
+            sessionManager.refreshLoginState()
+            val loggedIn = LoginDataStore.isLoggedInFlow(context).first()
+            _loginState.value = if (loggedIn) LoginState.LoggedIn else LoginState.LoggedOut
         }
     }
 
@@ -58,7 +64,7 @@ class AuthViewModel @Inject constructor(
         viewModelScope.launch {
             val result = authRepository.login(username, password)
             result.onSuccess {
-                _isLoggedIn.value = true
+                _loginState.value = if (sessionManager.isLoggedIn()) LoginState.LoggedIn else LoginState.LoggedOut
                 onSuccess()
             }
             result.onFailure {
@@ -87,12 +93,14 @@ class AuthViewModel @Inject constructor(
         }
     }
 
-
     // Perform logout
     fun logout() {
         viewModelScope.launch {
-            tokenManager.deleteToken()
-            _isLoggedIn.value = false
+            authRepository.logout()
+                .onSuccess {
+                    _loginState.value = if (sessionManager.isLoggedIn()) LoginState.LoggedIn else LoginState.LoggedOut
+                }
+                .onFailure {}
         }
     }
 
