@@ -1,0 +1,341 @@
+<div class="recipes-content">
+  <div
+    class="recipes-sidebar"
+    style="width: 280px; min-width: 200px; max-width: 320px; flex-shrink: 0"
+  >
+    <button
+      mat-fab
+      color="primary"
+      class="add-recipe-btn"
+      (click)="startCreate()"
+      aria-label="Add Recipe"
+      style="margin: 1rem auto; display: block"
+    >
+      <mat-icon>add</mat-icon>
+    </button>
+    <mat-nav-list>
+      <mat-list-item
+        *ngFor="let recipe of recipes"
+        (click)="selectRecipe(recipe)"
+        [class.selected]="selectedRecipe?.id === recipe.id"
+      >
+        <mat-icon matListIcon>restaurant_menu</mat-icon>
+        <span matLine>{{ recipe.name }}</span>
+      </mat-list-item>
+    </mat-nav-list>
+  </div>
+  <div
+    class="recipes-main"
+    style="flex: 1; overflow-y: auto; position: relative"
+  >
+    <!-- CREATE NEW RECIPE-->
+
+    <ng-container *ngIf="isCreatingRecipe; else recipeView">
+      <mat-card>
+        <h2>Add New Recipe</h2>
+        <mat-form-field appearance="outline" style="width: 100%">
+          <mat-label>Name</mat-label>
+          <input matInput [(ngModel)]="newRecipe.name" />
+        </mat-form-field>
+        <mat-form-field appearance="outline" style="width: 100%">
+          <mat-label>Description</mat-label>
+          <textarea matInput [(ngModel)]="newRecipe.description"></textarea>
+        </mat-form-field>
+        <div>
+          <h3>Categories</h3>
+          <div
+            *ngFor="let category of newRecipe.categories; let i = index; trackBy: trackByIndex"
+            style="display: flex; align-items: center; gap: 0.5rem"
+          >
+            <mat-form-field appearance="outline">
+              <input
+                matInput
+                [(ngModel)]="newRecipe.categories[i]"
+                placeholder="Category"
+              />
+            </mat-form-field>
+            <button
+              mat-icon-button
+              color="warn"
+              (click)="removeCategory(newRecipe, i)"
+            >
+              <mat-icon>remove_circle</mat-icon>
+            </button>
+          </div>
+          <button
+            mat-stroked-button
+            color="primary"
+            (click)="addCategory(newRecipe)"
+          >
+            Add Category
+          </button>
+        </div>
+        <div>
+          <h3>Ingredients</h3>
+          <div
+            *ngFor="let itemSetItem of newRecipe.itemSet.itemList; let i = index"
+            style="display: flex; gap: 0.5rem; align-items: center"
+          >
+            <mat-form-field appearance="outline" style="flex: 2">
+              <input
+                matInput
+                [(ngModel)]="itemSetItem.name"
+                placeholder="Name"
+              />
+            </mat-form-field>
+            <mat-form-field appearance="outline" style="flex: 1">
+              <input
+                matInput
+                type="number"
+                [(ngModel)]="itemSetItem.amount"
+                placeholder="Amount"
+              />
+            </mat-form-field>
+            <mat-form-field appearance="outline" style="flex: 1">
+              <input
+                matInput
+                [(ngModel)]="itemSetItem.unit"
+                placeholder="Unit"
+              />
+            </mat-form-field>
+            <button
+              mat-icon-button
+              color="warn"
+              (click)="removeIngredient(newRecipe, i)"
+            >
+              <mat-icon>remove_circle</mat-icon>
+            </button>
+          </div>
+          <button
+            mat-stroked-button
+            color="primary"
+            (click)="addIngredient(newRecipe)"
+          >
+            Add Ingredient
+          </button>
+        </div>
+        <div>
+          <h3>Instructions</h3>
+          <div
+            *ngFor="let instruction of newRecipe.instructions; let i = index; trackBy: trackByIndex"
+            style="display: flex; align-items: center; gap: 0.5rem"
+          >
+            <mat-form-field appearance="outline" style="flex: 1">
+              <input
+                matInput
+                [(ngModel)]="newRecipe.instructions[i]"
+                placeholder="Step {{ i + 1 }}"
+              />
+            </mat-form-field>
+            <button
+              mat-icon-button
+              color="warn"
+              (click)="removeInstruction(newRecipe,i)"
+            >
+              <mat-icon>remove_circle</mat-icon>
+            </button>
+          </div>
+          <button
+            mat-stroked-button
+            color="primary"
+            (click)="addInstruction(newRecipe)"
+          >
+            Add Instruction
+          </button>
+        </div>
+        <div style="margin-top: 1rem">
+          <button
+            mat-raised-button
+            color="primary"
+            (click)="saveRecipe(newRecipe)"
+          >
+            Save Recipe
+          </button>
+          <button mat-button (click)="isCreatingRecipe = false">Cancel</button>
+        </div>
+      </mat-card>
+    </ng-container>
+
+    <!-- EXISITING RECIPES -->
+
+    <ng-template #recipeView>
+      <ng-container *ngIf="selectedRecipe; else recipePrompt">
+        <div
+          style="
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+          "
+        >
+          <h2>{{ selectedRecipe.name }}</h2>
+          <button
+            *ngIf="selectedRecipe.creatorId === currentUserId"
+            mat-icon-button
+            (click)="startEdit(selectedRecipe)"
+          >
+            <mat-icon>edit</mat-icon>
+          </button>
+        </div>
+        <mat-card>
+          <!-- EDIT RECIPE -->
+          <ng-container *ngIf="isEditMode; else viewMode">
+            <mat-form-field appearance="outline" style="width: 100%">
+              <mat-label>Name</mat-label>
+              <input matInput [(ngModel)]="editableRecipe!.name" />
+            </mat-form-field>
+
+            <mat-form-field appearance="outline" style="width: 100%">
+              <mat-label>Description</mat-label>
+              <textarea
+                matInput
+                [(ngModel)]="editableRecipe!.description"
+              ></textarea>
+            </mat-form-field>
+
+            <div>
+              <h3>Categories</h3>
+              <div
+                *ngFor="let category of editableRecipe!.categories; let i = index; trackBy: trackByIndex"
+                style="display: flex; align-items: center; gap: 0.5rem"
+              >
+                <mat-form-field appearance="outline">
+                  <input
+                    matInput
+                    [(ngModel)]="editableRecipe!.categories[i]"
+                    placeholder="Category"
+                  />
+                </mat-form-field>
+                <button
+                  mat-icon-button
+                  color="warn"
+                  (click)="removeCategory(editableRecipe!,i)"
+                >
+                  <mat-icon>remove_circle</mat-icon>
+                </button>
+              </div>
+              <button
+                mat-stroked-button
+                color="primary"
+                (click)="addCategory(editableRecipe!)"
+              >
+                Add Category
+              </button>
+            </div>
+
+            <div>
+              <h3>Ingredients</h3>
+              <div
+                *ngFor="let itemSetItem of editableRecipe!.itemSet.itemList; let i = index"
+                style="display: flex; gap: 0.5rem; align-items: center"
+              >
+                <mat-form-field appearance="outline" style="flex: 2">
+                  <input
+                    matInput
+                    [(ngModel)]="itemSetItem.name"
+                    placeholder="Name"
+                  />
+                </mat-form-field>
+                <mat-form-field appearance="outline" style="flex: 1">
+                  <input
+                    matInput
+                    type="number"
+                    [(ngModel)]="itemSetItem.amount"
+                    placeholder="Amount"
+                  />
+                </mat-form-field>
+                <mat-form-field appearance="outline" style="flex: 1">
+                  <input
+                    matInput
+                    [(ngModel)]="itemSetItem.unit"
+                    placeholder="Unit"
+                  />
+                </mat-form-field>
+                <button
+                  mat-icon-button
+                  color="warn"
+                  (click)="removeIngredient(editableRecipe!, i)"
+                >
+                  <mat-icon>remove_circle</mat-icon>
+                </button>
+              </div>
+              <button
+                mat-stroked-button
+                color="primary"
+                (click)="addIngredient(editableRecipe!)"
+              >
+                Add Ingredient
+              </button>
+            </div>
+
+            <div>
+              <h3>Instructions</h3>
+              <div
+                *ngFor="let step of editableRecipe!.instructions; let i = index; trackBy: trackByIndex"
+                style="display: flex; align-items: center; gap: 0.5rem"
+              >
+                <mat-form-field appearance="outline" style="flex: 1">
+                  <input
+                    matInput
+                    [(ngModel)]="editableRecipe!.instructions[i]"
+                    placeholder="Step {{ i + 1 }}"
+                  />
+                </mat-form-field>
+                <button
+                  mat-icon-button
+                  color="warn"
+                  (click)="removeInstruction(editableRecipe!,i)"
+                >
+                  <mat-icon>remove_circle</mat-icon>
+                </button>
+              </div>
+              <button
+                mat-stroked-button
+                color="primary"
+                (click)="addInstruction(editableRecipe!)"
+              >
+                Add Instruction
+              </button>
+            </div>
+
+            <div style="margin-top: 1rem">
+              <button mat-raised-button color="primary" (click)="saveEdit()">
+                Save
+              </button>
+              <button mat-button (click)="cancelEdit()">Cancel</button>
+            </div>
+          </ng-container>
+          <!-- VIEW RECIPE -->
+          <ng-template #viewMode>
+            <p>{{ selectedRecipe.description }}</p>
+            <div *ngIf="selectedRecipe.categories?.length">
+              <h3>Categories</h3>
+              <ul>
+                <li *ngFor="let category of selectedRecipe.categories">
+                  {{ category }}
+                </li>
+              </ul>
+            </div>
+            <h3>Ingredients</h3>
+            <ul>
+              <li *ngFor="let ingredient of selectedRecipe.itemSet.itemList">
+                {{ ingredient.amount }} {{ ingredient.unit }} {{ ingredient.name
+                }}
+              </li>
+            </ul>
+            <h3>Instructions</h3>
+            <ul>
+              <li
+                *ngFor="let step of selectedRecipe.instructions; let i = index"
+              >
+                Step {{ i + 1 }}: {{ step }}
+              </li>
+            </ul>
+          </ng-template>
+        </mat-card>
+      </ng-container>
+      <ng-template #recipePrompt>
+        <h2>Select a recipe to view details</h2>
+      </ng-template>
+    </ng-template>
+  </div>
+</div>

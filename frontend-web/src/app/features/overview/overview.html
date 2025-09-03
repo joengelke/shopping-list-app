@@ -1,0 +1,20 @@
+<mat-toolbar color="primary" class="main-toolbar">
+  <button mat-button class="app-title" (click)="goToOverview()">ShopIt</button>
+  <span class="spacer"></span>
+  <button mat-button (click)="setSection('home')">Home</button>
+  <button mat-button (click)="setSection('lists')">Lists</button>
+  <button mat-button (click)="setSection('recipes')">Recipes</button>
+  <button mat-button (click)="setSection('analytics')">Analytics</button>
+  <button mat-button (click)="setSection('profile')">Profile</button>
+  <button mat-button (click)="logout()">Logout</button>
+</mat-toolbar>
+
+<div class="landing-content" *ngIf="activeSection === 'home'">
+  <mat-card class="landing-card">
+    <h1>Welcome to ShopIt</h1>
+    <p>Your smart shopping list manager.</p>
+    <p>Get started by creating or viewing your shopping lists, or check out your analytics!</p>
+  </mat-card>
+</div>
+<app-analytics *ngIf="activeSection === 'analytics'"></app-analytics>
+<app-recipes *ngIf="activeSection === 'recipes'"></app-recipes>

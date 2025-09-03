@@ -1,0 +1,78 @@
+<div class="analytics-content">
+  <div class="analytics-sidebar">
+    <mat-nav-list>
+      <mat-list-item
+        *ngFor="let list of shoppingLists"
+        (click)="selectList(list)"
+        [class.selected]="selectedList?.id === list.id"
+      >
+        <mat-icon matListIcon>list</mat-icon>
+        <span matLine>{{ list.name }}</span>
+      </mat-list-item>
+    </mat-nav-list>
+  </div>
+  <div class="analytics-main">
+    <ng-container *ngIf="selectedList; else selectPrompt">
+      <h2>{{ selectedList.name }}</h2>
+      <div class="analytics-filters">
+        <mat-form-field>
+          <mat-label>Activity Name</mat-label>
+          <mat-select [(ngModel)]="filterName" [compareWith]="compareStrings" >
+            <mat-option [value]="null">All activities</mat-option>
+            <mat-option *ngFor="let name of availableActivityNames" [value]="name">
+              {{ name }}
+            </mat-option>
+          </mat-select>
+        </mat-form-field>
+        <mat-form-field>
+          <mat-label>From</mat-label>
+          <input matInput [matDatepicker]="fromPicker" [(ngModel)]="filterFrom">
+          <mat-datepicker-toggle matSuffix [for]="fromPicker"></mat-datepicker-toggle>
+          <mat-datepicker #fromPicker></mat-datepicker>
+        </mat-form-field>
+        <mat-form-field>
+          <mat-label>To</mat-label>
+          <input matInput [matDatepicker]="toPicker" [(ngModel)]="filterTo">
+          <mat-datepicker-toggle matSuffix [for]="toPicker"></mat-datepicker-toggle>
+          <mat-datepicker #toPicker></mat-datepicker>
+        </mat-form-field>
+        <button mat-raised-button color="primary" (click)="loadFilteredActivities()">Load Activities</button>
+      </div>
+      <div *ngIf="activitiesLoading" class="analytics-loading">
+        <mat-spinner diameter="32"></mat-spinner>
+      </div>
+      <mat-table *ngIf="shoppingItemActivities?.length" [dataSource]="shoppingItemActivities" class="mat-elevation-z1">
+        <ng-container matColumnDef="timestamp">
+          <mat-header-cell *matHeaderCellDef> Date </mat-header-cell>
+          <mat-cell *matCellDef="let activity"> {{ activity.timestamp | date:'short' }} </mat-cell>
+        </ng-container>
+        <ng-container matColumnDef="name">
+          <mat-header-cell *matHeaderCellDef> Item </mat-header-cell>
+          <mat-cell *matCellDef="let activity"> {{ activity.name }} </mat-cell>
+        </ng-container>
+        <ng-container matColumnDef="amount">
+          <mat-header-cell *matHeaderCellDef> Amount </mat-header-cell>
+          <mat-cell *matCellDef="let activity"> {{ activity.amount }} {{ activity.unit }} </mat-cell>
+        </ng-container>
+        <mat-header-row *matHeaderRowDef="displayedColumns"></mat-header-row>
+        <mat-row *matRowDef="let row; columns: displayedColumns;"></mat-row>
+      </mat-table>
+      <p *ngIf="shoppingItemActivities && !shoppingItemActivities.length && !activitiesLoading">No activities found for this filter.</p>
+      <div class="analytics-activity-summary" *ngIf="filterName">
+        <h3>Average for "{{ filterName }}"</h3>
+        <div class="summary-buttons">
+          <button mat-stroked-button (click)="showAverage('week')">Per Week</button>
+          <button mat-stroked-button (click)="showAverage('month')">Per Month</button>
+          <button mat-stroked-button (click)="showAverage('year')">Per Year</button>
+        </div>
+        <div *ngIf="averageAmount !== null">
+          <p>Average amount per {{ averagePeriod }}: <strong>{{ averageAmount | number:'1.2-2' }}</strong></p>
+        </div>
+      </div>
+    
+    </ng-container>
+    <ng-template #selectPrompt>
+      <h2>Select a list to view analytics</h2>
+    </ng-template>
+  </div>
+</div>
