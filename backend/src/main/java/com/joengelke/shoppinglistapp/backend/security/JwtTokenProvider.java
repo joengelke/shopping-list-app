@@ -12,8 +12,8 @@ import org.springframework.stereotype.Component;
 
 import java.security.Key;
 import java.time.Instant;
+import java.util.Arrays;
 import java.util.Date;
-import java.util.List;
 import java.util.stream.Collectors;
 
 @Component
@@ -73,16 +73,17 @@ public class JwtTokenProvider {
                 .getBody().get("userId", String.class);
     }
 
-    @SuppressWarnings("unchecked")
+
     public boolean isAdmin(String token) {
-        List<String> roles = Jwts.parserBuilder()
+        String authorities = Jwts.parserBuilder()
                 .setSigningKey(getSignInKey())
                 .build()
                 .parseClaimsJws(token)
                 .getBody()
-                .get("roles", List.class);
+                .get("authorities", String.class);
 
-        return roles != null && roles.contains("ADMIN");
+        return authorities != null && Arrays.asList(authorities.split(","))
+                .contains("ROLE_ADMIN");
     }
 
     private Key getSignInKey() {

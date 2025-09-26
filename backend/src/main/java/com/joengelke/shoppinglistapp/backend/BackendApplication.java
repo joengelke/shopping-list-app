@@ -127,6 +127,13 @@ public class BackendApplication {
                         if (itemSet.getReceiptFileId() == null) itemSet.setReceiptFileId("");
                     }
 
+                    // Initialize recipeFileIds for all recipes
+                    for (Recipe recipe : backupData.getRecipes()) {
+                        if (recipe.getRecipeFileIds() == null) {
+                            recipe.setRecipeFileIds(new ArrayList<>());  // always empty list
+                        }
+                    }
+
                     // Restore the shopping lists and items into MongoDB
                     mongoTemplate.dropCollection(User.class);
                     mongoTemplate.dropCollection(ShoppingList.class);  // Optionally clear existing data before restoring

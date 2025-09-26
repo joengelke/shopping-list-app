@@ -15,7 +15,6 @@ import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
-import java.io.File;
 import java.io.IOException;
 import java.util.List;
 import java.util.NoSuchElementException;
@@ -37,15 +36,6 @@ public class ItemSetService {
 
     public ItemSet createItemSet(ItemSet itemSet) {
         return itemSetRepository.save(itemSet);
-    }
-
-    public void deleteItemSetById(String itemSetId) {
-        ItemSet itemSet = itemSetRepository.findById(itemSetId)
-                .orElseThrow(() -> new NoSuchElementException("Item set not found"));
-        if (itemSet.getReceiptFileId() != null) {
-           deleteReceiptFile(itemSet.getReceiptFileId());
-        }
-        itemSetRepository.deleteById(itemSetId);
     }
 
     public ItemSet updateItemSet(ItemSet newItemSet) {
@@ -117,5 +107,14 @@ public class ItemSetService {
                 contentType,
                 gridFSFile.getFilename()
         );
+    }
+
+    public void deleteItemSetById(String itemSetId) {
+        ItemSet itemSet = itemSetRepository.findById(itemSetId)
+                .orElseThrow(() -> new NoSuchElementException("Item set not found"));
+        if (itemSet.getReceiptFileId() != null) {
+            deleteReceiptFile(itemSet.getReceiptFileId());
+        }
+        itemSetRepository.deleteById(itemSetId);
     }
 }

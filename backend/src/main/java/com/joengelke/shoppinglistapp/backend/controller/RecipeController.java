@@ -1,15 +1,20 @@
 package com.joengelke.shoppinglistapp.backend.controller;
 
+import com.joengelke.shoppinglistapp.backend.dto.FileResourceDTO;
 import com.joengelke.shoppinglistapp.backend.model.ItemSet;
 import com.joengelke.shoppinglistapp.backend.model.Recipe;
 import com.joengelke.shoppinglistapp.backend.model.Visibility;
 import com.joengelke.shoppinglistapp.backend.service.RecipeService;
+import org.springframework.core.io.ByteArrayResource;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
 import java.util.Map;
@@ -86,11 +91,12 @@ public class RecipeController {
 
     @PutMapping("/update")
     public ResponseEntity<?> updateRecipe(
-            @RequestBody Recipe recipe,
+            @RequestPart Recipe recipe,
+            @RequestPart(value="recipeFiles", required = false) List<MultipartFile> recipeFiles,
             @RequestHeader("Authorization") String header
     ) {
         try {
-            Recipe updatedRecipe = recipeService.updateRecipe(header, recipe);
+            Recipe updatedRecipe = recipeService.updateRecipe(header, recipe, recipeFiles);
             return ResponseEntity.ok(updatedRecipe);
         } catch (AccessDeniedException e) {
             return ResponseEntity.status(HttpStatus.FORBIDDEN).body(e.getMessage());
@@ -106,6 +112,26 @@ public class RecipeController {
             List<Recipe> updatedRecipeList = recipeService.addRecipeToUser(header, recipeId, username);
             return ResponseEntity.ok(updatedRecipeList);
         } catch (UsernameNotFoundException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(e.getMessage());
+        }
+    }
+
+    @GetMapping("/{recipeId}/files/{recipeFileId}")
+    public ResponseEntity<?> getRecipeFiles(@PathVariable String recipeId, @PathVariable String recipeFileId) {
+        try {
+            FileResourceDTO fileResourceDTO = recipeService.getRecipeFile(recipeId, recipeFileId);
+
+            byte[] fileBytes = fileResourceDTO.getInputStreamResource().getInputStream().readAllBytes();
+            ByteArrayResource byteArrayResource = new ByteArrayResource(fileBytes);
+
+            return ResponseEntity.ok()
+                    .contentLength(fileBytes.length)
+                    .contentType(MediaType.parseMediaType(fileResourceDTO.getContentType()))
+                    .header(HttpHeaders.CONTENT_DISPOSITION,
+                            "attachment; filename=\"" + fileResourceDTO.getFilename() + "\"")
+                    .body(byteArrayResource);
+
+        } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body(e.getMessage());
         }
     }

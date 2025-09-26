@@ -16,8 +16,6 @@ import java.util.stream.Collectors;
 @Service
 public class ShoppingListService {
 
-    // TODO add WebSockets ?
-
     private final ShoppingListRepository shoppingListRepository;
     private final ShoppingItemService shoppingItemService;
     private final ItemSetService itemSetService;
