@@ -125,10 +125,9 @@ public class ShoppingListController {
     public ResponseEntity<?> createItemSet(
             @PathVariable String shoppingListId,
             @RequestPart("itemSet") ItemSet itemSet,
-            @RequestPart(value= "receiptFile", required = false) MultipartFile receiptFile,
             @RequestHeader("Authorization") String header) {
         try {
-            ItemSet newItemSet = shoppingListService.createItemSet(header, shoppingListId, itemSet, receiptFile);
+            ItemSet newItemSet = shoppingListService.createItemSet(header, shoppingListId, itemSet);
             return ResponseEntity.ok(newItemSet);
         } catch (ResponseStatusException e) {
             return ResponseEntity.status(e.getStatusCode()).body(e.getReason()); // code 409 if itemSet already exists
@@ -139,9 +138,8 @@ public class ShoppingListController {
     public ResponseEntity<?> updateItemSet(
             @PathVariable String shoppingListId,
             @RequestPart("itemSet") ItemSet itemSet,
-            @RequestPart(value= "receiptFile", required = false) MultipartFile receiptFile,
             @RequestHeader("Authorization") String header) {
-        ItemSet updatedItemSet = shoppingListService.updateItemSet(header, shoppingListId, itemSet, receiptFile);
+        ItemSet updatedItemSet = shoppingListService.updateItemSet(header, shoppingListId, itemSet);
         return ResponseEntity.ok(updatedItemSet);
     }
 

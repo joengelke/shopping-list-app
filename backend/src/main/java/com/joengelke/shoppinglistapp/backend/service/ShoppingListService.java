@@ -6,7 +6,6 @@ import com.joengelke.shoppinglistapp.backend.repository.ShoppingListRepository;
 import com.joengelke.shoppinglistapp.backend.security.JwtTokenProvider;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
-import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.time.Instant;
@@ -210,7 +209,7 @@ public class ShoppingListService {
         return itemSetService.getAllItemSetsByIds(shoppingList.getItemSetIds());
     }
 
-    public ItemSet createItemSet(String header, String listId, ItemSet itemSet, MultipartFile receiptFile) {
+    public ItemSet createItemSet(String header, String listId, ItemSet itemSet) {
         ShoppingList shoppingList = shoppingListRepository.findById(listId)
                 .orElseThrow(() -> new NoSuchElementException("Shopping list not found"));
 
@@ -243,17 +242,7 @@ public class ShoppingListService {
             }
         }
 
-        String receiptFileId = "";
-        if (receiptFile != null) {
-           receiptFileId = itemSetService.saveReceiptFile(receiptFile);
-        } else {
-            if (itemSet.getReceiptFileId() != null) {
-                // receipt file already exists so link the id from itemSet
-                receiptFileId = itemSet.getReceiptFileId();
-            }
-        }
-
-        ItemSet newItemSet = itemSetService.createItemSet(new ItemSet(itemSet.getName(), newItemSetItems, receiptFileId));
+        ItemSet newItemSet = itemSetService.createItemSet(new ItemSet(itemSet.getName(), newItemSetItems));
         if (shoppingList.getItemSetIds() == null) {
             shoppingList.setItemSetIds(new ArrayList<>());
         }
@@ -262,7 +251,7 @@ public class ShoppingListService {
         return newItemSet;
     }
 
-    public ItemSet updateItemSet(String header, String listId, ItemSet newItemSet, MultipartFile receiptFile) {
+    public ItemSet updateItemSet(String header, String listId, ItemSet newItemSet) {
         ShoppingList shoppingList = shoppingListRepository.findById(listId)
                 .orElseThrow(() -> new NoSuchElementException("Shopping list not found"));
 
@@ -293,14 +282,6 @@ public class ShoppingListService {
                     shoppingList.getItemIds().add(newShoppingItem.getId());
                 }
             }
-        }
-
-        // Update receipt file
-        if (receiptFile != null) {
-            if (newItemSet.getReceiptFileId() != null) {
-                itemSetService.deleteReceiptFile(newItemSet.getReceiptFileId());
-            }
-            newItemSet.setReceiptFileId(itemSetService.saveReceiptFile(receiptFile));
         }
 
         shoppingListRepository.save(shoppingList);

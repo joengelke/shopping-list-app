@@ -26,6 +26,7 @@ class RetrofitProvider @Inject constructor(
 ) {
 
     private var retrofit: Retrofit? = null
+    private var okHttpClient: OkHttpClient? = null
 
     suspend fun initialize() {
         val baseUrl = SettingsDataStore.serverUrlFlow(context).firstOrNull()
@@ -33,10 +34,11 @@ class RetrofitProvider @Inject constructor(
 
         val gson: Gson = GsonBuilder().create()
 
+        okHttpClient = getSafeOkHttpClient(context, baseUrl.split(":")[1].removePrefix("//"))
 
         retrofit = Retrofit.Builder()
             .baseUrl(baseUrl)
-            .client(getSafeOkHttpClient(context, baseUrl.split(":")[1].removePrefix("//")))
+            .client(okHttpClient!!)
             .addConverterFactory(GsonConverterFactory.create(gson))
             .build()
     }
@@ -97,5 +99,9 @@ class RetrofitProvider @Inject constructor(
 
     fun getRecipeApi(): RecipeApi{
         return retrofit!!.create(RecipeApi::class.java)
+    }
+
+    fun getOkHttpClient(): OkHttpClient {
+        return okHttpClient ?: throw IllegalStateException("OkHttpClient not initialized")
     }
 }

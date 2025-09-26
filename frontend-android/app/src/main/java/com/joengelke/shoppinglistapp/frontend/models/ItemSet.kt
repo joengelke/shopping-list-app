@@ -7,7 +7,6 @@ data class ItemSet (
     val id: String,
     val name: String,
     val itemList: List<ItemSetItem>,
-    val receiptFileId: String
 )
 
 @Serializable

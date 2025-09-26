@@ -4,9 +4,15 @@ import com.joengelke.shoppinglistapp.frontend.models.*
 import com.joengelke.shoppinglistapp.frontend.network.RetrofitProvider
 import com.joengelke.shoppinglistapp.frontend.network.SessionManager
 import com.joengelke.shoppinglistapp.frontend.network.TokenManager
+import com.joengelke.shoppinglistapp.frontend.utils.JsonHelper.json
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import okhttp3.MediaType.Companion.toMediaType
+import okhttp3.MultipartBody
+import okhttp3.RequestBody.Companion.asRequestBody
+import okhttp3.RequestBody.Companion.toRequestBody
 import org.jsoup.Jsoup
+import java.io.File
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -164,13 +170,24 @@ class RecipeRepository @Inject constructor(
         }
     }
 
-    suspend fun updateRecipe(recipe: Recipe): Result<Recipe> {
+    suspend fun updateRecipe(recipe: Recipe, recipeFiles: List<File>? = null): Result<Recipe> {
         return try {
             val token =
                 tokenManager.getToken() ?: return Result.failure(Exception("No token found"))
 
+
+            // Serialize Recipe to JSON RequestBody
+            val jsonString = json.encodeToString(Recipe.serializer(), recipe)
+            val recipeBody = jsonString.toRequestBody("application/json".toMediaType())
+
+            // Prepare optional file part list
+            val recipeParts: List<MultipartBody.Part>? = recipeFiles?.map { file ->
+                val requestBody = file.asRequestBody("application/octet-stream".toMediaType())
+                MultipartBody.Part.createFormData("recipeFiles", file.name, requestBody)
+            }
+
             val response =
-                retrofitProvider.getRecipeApi().updateRecipe("Bearer $token", recipe)
+                retrofitProvider.getRecipeApi().updateRecipe("Bearer $token", recipeBody, recipeParts)
 
             when {
                 response.isSuccessful -> response.body()?.let { Result.success(it) }
@@ -291,12 +308,13 @@ class RecipeRepository @Inject constructor(
         return withContext(Dispatchers.IO) {
             try {
                 val doc = Jsoup.connect(url).get()
-                val title = doc.selectFirst("article.recipe-header > div > h1")?.text()
-                    ?: doc.selectFirst("#__nuxt > main > div.ds-grid.ds-grid--rds > header > h1")
-                        ?.text().orEmpty()
+                val title = doc.selectFirst("article.recipe-header h1, #__nuxt header h1")
+                    ?.text()
+                    .orEmpty()
 
-                val ingredientsSection = doc.selectFirst("article.recipe-ingredients")
-                    ?: doc.selectFirst("#__nuxt > main > div.ds-grid.ds-grid--rds > section.grid--float-left.ds-d-mb-xs.ds-col-12.ds-col-m-8.or-1")
+                val ingredientsSection = doc.selectFirst(
+                    "article.recipe-ingredients, #__nuxt section.recipe-ingredients"
+                )
                 val ingredientTables = ingredientsSection?.select("table") ?: emptyList()
 
                 val itemSetItems = ingredientTables.flatMap { table ->
@@ -304,8 +322,7 @@ class RecipeRepository @Inject constructor(
                     table.select("tbody tr").mapNotNull { row ->
 
                         // Try multiple selectors for amount and unit, fallback to empty string
-                        val amountAndUnitRaw = row.selectFirst("td.td-left")?.text()?.trim()
-                            ?: row.selectFirst("td.ds-ingredients-table__td--first div")?.text()
+                        val amountAndUnitRaw = row.selectFirst("td.ds-ingredients-table__td--first div")?.text()
                                 ?.trim()
                             ?: ""
 
@@ -335,27 +352,18 @@ class RecipeRepository @Inject constructor(
                     }
                 }
 
-                val portionsInput =
-                    doc.selectFirst("article.recipe-ingredients input[name=portionen][type=number]")
-                        ?: doc.selectFirst("input.ds-quantity-control__input[name=quantity][type=number]")
-                val portions =
-                    portionsInput?.attr("value")?.trim()?.takeIf { it.isNotEmpty() } ?: "?"
+                val portionsInput = doc.selectFirst("input.ds-quantity-control__input[name=quantity][type=number]")
+                val portions = portionsInput?.attr("value")?.trim()?.takeIf { it.isNotEmpty() } ?: "?"
 
                 val description = if(url.contains(".de", ignoreCase = true))"Rezept für $portions Portionen" else "Recipe for $portions portions"
 
-                val instructions =
-                    doc.selectFirst("article.ds-box.ds-grid-float.ds-col-12.ds-col-m-8.ds-or-3 > div:nth-child(3)")
-                        ?.html()
-                        ?.split(Regex("<br\\s*/?>", RegexOption.IGNORE_CASE))
-                        ?.map { it.trim() }
-                        ?.filter { it.isNotBlank() }
-                        ?.map { it.replace(Regex("^\\s*\\d+[.)\\-:]\\s*"), "") } // Remove prefixes like "1. ", "2) ", "3 -", etc.
-                        ?: doc.selectFirst("section.or-3")
-                            ?.select("h3 + p > span.instruction__text")
-                            ?.map { it.text().trim() }
-                            ?.filter { it.isNotBlank() }
-                            ?.map { it.replace(Regex("^\\s*\\d+[.)\\-:]\\s*"), "") }
-                        ?: emptyList()
+                val instructions = doc.select(
+                            "section.or-4 span.instruction__text"
+                ).map { element ->
+                    element.text()
+                        .trim()
+                        .replace(Regex("^\\s*\\d+[.)\\-:]\\s*"), "") // strip "1.", "2)", etc.
+                }.filter { it.isNotBlank() }
 
                 createRecipe(
                     Recipe(
@@ -363,13 +371,13 @@ class RecipeRepository @Inject constructor(
                         name = title,
                         creatorId = "",
                         createdAt = "",
-                        itemSet = ItemSet("", title, itemSetItems, ""),
+                        itemSet = ItemSet("", title, itemSetItems),
                         description = description,
                         instructions = instructions,
-                        categories = emptyList(),
+                        categories = listOf("Chefkoch"),
                         visibility = Visibility.PRIVATE,
                         sharedWithUserIds = emptyList(),
-                        receiptFileId = ""
+                        recipeFileIds = emptyList()
                     )
                 )
             } catch (e: Exception) {
@@ -442,13 +450,13 @@ class RecipeRepository @Inject constructor(
                         name = title,
                         creatorId = "",
                         createdAt = "",
-                        itemSet = ItemSet("", title, itemSetItems, ""),
+                        itemSet = ItemSet("", title, itemSetItems),
                         description = description,
                         instructions = instructions,
                         categories = emptyList(),
                         visibility = Visibility.PRIVATE,
                         sharedWithUserIds = emptyList(),
-                        receiptFileId = ""
+                        recipeFileIds = emptyList()
                     )
                 )
 

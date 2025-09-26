@@ -1,13 +1,20 @@
 package com.joengelke.shoppinglistapp.frontend.ui.screens.recipes
 
+import android.content.Context
+import android.net.Uri
+import android.provider.OpenableColumns
 import android.widget.Toast
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.slideInHorizontally
 import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.*
+import androidx.compose.foundation.gestures.detectTransformGestures
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardActions
@@ -22,6 +29,11 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.res.painterResource
@@ -31,8 +43,12 @@ import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.window.Dialog
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavHostController
+import coil.ImageLoader
+import coil.compose.AsyncImage
+import coil.request.ImageRequest
 import com.joengelke.shoppinglistapp.frontend.R
 import com.joengelke.shoppinglistapp.frontend.models.RecipeSource
 import com.joengelke.shoppinglistapp.frontend.navigation.Routes
@@ -45,6 +61,7 @@ import com.joengelke.shoppinglistapp.frontend.viewmodel.ItemSetsViewModel
 import com.joengelke.shoppinglistapp.frontend.viewmodel.RecipeViewModel
 import com.joengelke.shoppinglistapp.frontend.viewmodel.ShoppingListViewModel
 import com.joengelke.shoppinglistapp.frontend.viewmodel.UserViewModel
+import java.io.File
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -66,6 +83,7 @@ fun RecipeViewScreen(
                 recipeViewModel.loadRecipes(
                     onSuccess = {
                         recipeViewModel.setCurrentRecipe(recipeId)
+                        recipeViewModel.clearSelectedRecipeFiles()
                     }
                 )
             }
@@ -84,6 +102,14 @@ fun RecipeViewScreen(
 
     val recipe by recipeViewModel.currentRecipe.collectAsState()
     val currentUserId by userViewModel.currentUserId.collectAsState()
+    val token by recipeViewModel.token.collectAsState()
+    val imageLoader = remember {
+        ImageLoader.Builder(context)
+            .okHttpClient(recipeViewModel.okHttpClient) // use injected client
+            .crossfade(true)
+            .build()
+    }
+    val selectedFiles by recipeViewModel.selectedRecipeFiles.collectAsState()
 
     var editMode by remember { mutableStateOf(false) }
 
@@ -114,6 +140,28 @@ fun RecipeViewScreen(
     var showInstructions by remember { mutableStateOf(true) }
     var editInstructions by remember { mutableStateOf(false) }
     var focusInstructionIndex by remember { mutableStateOf<Int?>(null) }
+
+    val launcher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.OpenMultipleDocuments(),
+        onResult = { uris ->
+            uris.let { uriList ->
+                val files = uriList.mapNotNull { uri ->
+                    try {
+                        val fileName = getFileNameFromUri(context, uri) ?: return@mapNotNull null
+                        val tempFile = File(context.cacheDir, fileName)
+                        context.contentResolver.openInputStream(uri)?.use { input ->
+                            tempFile.outputStream().use { output -> input.copyTo(output) }
+                        }
+                        tempFile
+                    } catch (e: Exception) {
+                        e.printStackTrace()
+                        null
+                    }
+                }
+                recipeViewModel.addSelectedRecipeFiles(files)
+            }
+        }
+    )
 
     var showDialog by remember { mutableStateOf(false) }
 
@@ -201,7 +249,7 @@ fun RecipeViewScreen(
                                                 "main" -> {
                                                     Column {
                                                         DropdownMenuItem(
-                                                            text = { Text("Add to shopping list") },
+                                                            text = { Text(stringResource(R.string.add_to_shopping_list)) },
                                                             onClick = {
                                                                 currentShareMenu =
                                                                     "addToShoppingList"
@@ -210,35 +258,33 @@ fun RecipeViewScreen(
                                                         DropdownMenuItem(
                                                             text = { Text("Download PDF") },
                                                             onClick = {
-                                                                val file = FileUtils.createRecipePdf(context, recipe,true)
-                                                                NotificationUtils.showDownloadNotification(context, file)
+                                                                val file =
+                                                                    FileUtils.createRecipePdf(
+                                                                        context,
+                                                                        recipe,
+                                                                        true
+                                                                    )
+                                                                NotificationUtils.showDownloadNotification(
+                                                                    context,
+                                                                    file
+                                                                )
                                                                 currentShareMenu = "main"
                                                                 openShareOptions = false
                                                             }
                                                         )
                                                         DropdownMenuItem(
-                                                            text = { Text("Share PDF") },
+                                                            text = { Text(stringResource(R.string.share)) },
                                                             onClick = {
-                                                                val file = FileUtils.createRecipePdf(context, recipe,false)
-                                                                FileUtils.sharePdf(context, file)
-                                                                currentShareMenu = "main"
-                                                                openShareOptions = false
-                                                            }
-                                                        )
-                                                        DropdownMenuItem(
-                                                            text = { Text("Share as Text") },
-                                                            onClick = {
-                                                                FileUtils.shareRecipeAsText(context, recipe)
-                                                                currentShareMenu = "main"
-                                                                openShareOptions = false
+                                                                currentShareMenu = "share"
                                                             }
                                                         )
                                                     }
                                                 }
+
                                                 "addToShoppingList" -> {
                                                     Column {
                                                         DropdownMenuItem(
-                                                            text = { Text("Back") },
+                                                            text = { Text(stringResource(R.string.back)) },
                                                             onClick = { currentShareMenu = "main" },
                                                             leadingIcon = {
                                                                 Icon(
@@ -296,6 +342,36 @@ fun RecipeViewScreen(
                                                                 }
                                                             )
                                                         }
+                                                    }
+                                                }
+
+                                                "share" -> {
+                                                    Column {
+                                                        DropdownMenuItem(
+                                                            text = { Text("PDF") },
+                                                            onClick = {
+                                                                val file =
+                                                                    FileUtils.createRecipePdf(
+                                                                        context,
+                                                                        recipe,
+                                                                        false
+                                                                    )
+                                                                FileUtils.sharePdf(context, file)
+                                                                currentShareMenu = "main"
+                                                                openShareOptions = false
+                                                            }
+                                                        )
+                                                        DropdownMenuItem(
+                                                            text = { Text("Text") },
+                                                            onClick = {
+                                                                FileUtils.shareRecipeAsText(
+                                                                    context,
+                                                                    recipe
+                                                                )
+                                                                currentShareMenu = "main"
+                                                                openShareOptions = false
+                                                            }
+                                                        )
                                                     }
                                                 }
                                             }
@@ -785,7 +861,7 @@ fun RecipeViewScreen(
 
                                             IconButton(
                                                 onClick = {
-                                                    recipeViewModel.deleteItemSetItem(item.id)
+                                                    recipeViewModel.deleteItemSetItem(item.tmpId)
                                                 },
                                                 modifier = Modifier.weight(0.1f)
                                             ) {
@@ -911,8 +987,7 @@ fun RecipeViewScreen(
                         } else {
                             Column(
                                 modifier = Modifier
-                                    .padding(horizontal = 16.dp)
-                                    .padding(bottom = 16.dp),
+                                    .padding(horizontal = 16.dp),
                             ) {
                                 recipe.instructions.forEachIndexed { index, instruction ->
                                     val focusRequesterInstructions = remember { FocusRequester() }
@@ -924,11 +999,24 @@ fun RecipeViewScreen(
                                                 newValue
                                             )
                                         },
-                                        label = { Text(stringResource(R.string.step, index + 1)) },
                                         modifier = Modifier
                                             .fillMaxWidth()
                                             .padding(vertical = 4.dp)
-                                            .focusRequester(focusRequesterInstructions)
+                                            .focusRequester(focusRequesterInstructions),
+                                        label = { Text(stringResource(R.string.step, index + 1)) },
+                                        trailingIcon = {
+                                            IconButton(
+                                                onClick = {
+                                                    recipeViewModel.deleteInstructionAtIndex(index)
+                                                }
+                                            ) {
+                                                Icon(
+                                                    painter = painterResource(id = R.drawable.baseline_delete_24),
+                                                    contentDescription = "Delete image",
+                                                    tint = MaterialTheme.colorScheme.primary
+                                                )
+                                            }
+                                        }
                                     )
                                     LaunchedEffect(focusInstructionIndex, index) {
                                         if (focusInstructionIndex == index && instruction.isEmpty()) {
@@ -954,6 +1042,48 @@ fun RecipeViewScreen(
                                     ),
                                 ) {
                                     Text(stringResource(R.string.new_step))
+                                }
+                            }
+                        }
+                        Column(
+                            modifier = Modifier
+                                .padding(horizontal = 16.dp)
+                                .padding(bottom = 16.dp),
+                        ) {
+                            recipe.recipeFileIds.forEach { fileId ->
+                                RecipeFileItem(
+                                    fileId = fileId,
+                                    recipeId = recipe.id,
+                                    token = token,
+                                    imageLoader = imageLoader,
+                                    editMode = editInstructions,
+                                    onDeleteConfirmed = { recipeFileId ->
+                                        recipeViewModel.deleteRecipeFile(recipeFileId as String)
+                                    }
+                                )
+                            }
+                            selectedFiles.forEach { file ->
+                                RecipeFileItem(
+                                    file = file,
+                                    editMode = editInstructions,
+                                    onDeleteConfirmed = {
+                                        recipeViewModel.removeSelectedRecipeFile(file)
+                                    }
+                                )
+                            }
+                            if (editInstructions) {
+                                Button(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(vertical = 4.dp),
+                                    onClick = {
+                                        launcher.launch(arrayOf("image/*"))
+                                    },
+                                    elevation = ButtonDefaults.buttonElevation(
+                                        defaultElevation = 6.dp
+                                    ),
+                                ) {
+                                    Text("Add image")
                                 }
                             }
                         }
@@ -1016,4 +1146,191 @@ fun RecipeViewScreen(
             }
         }
     )
+}
+
+@Composable
+fun RecipeFileItem(
+    fileId: String? = null,           // remote file ID
+    file: File? = null,               // local selected file
+    recipeId: String? = null,         // needed only if fileId != null
+    token: String? = null,            // needed only if fileId != null
+    imageLoader: ImageLoader? = null, // needed only if fileId != null
+    editMode: Boolean,
+    onDeleteConfirmed: (Any) -> Unit  // returns either String (fileId) or File
+) {
+    var confirmDelete by remember { mutableStateOf(false) }
+    var showPreview by remember { mutableStateOf(false) }
+
+    val context = LocalContext.current
+
+    val model = when {
+        file != null -> file
+        fileId != null && recipeId != null && token != null && imageLoader != null -> {
+            ImageRequest.Builder(context)
+                .data("https://shopit-oracle.mooo.com:8443/api/recipe/$recipeId/files/$fileId")
+                .addHeader("Authorization", "Bearer $token")
+                .build()
+        }
+
+        else -> null
+    }
+
+    if (model == null) return // nothing to show
+
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(bottom = 8.dp)
+    ) {
+        if (file != null) {
+            // Local file
+            AsyncImage(
+                model = file,
+                contentDescription = "Selected recipe image",
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(100.dp)
+                    .clickable {
+                        if (!editMode) {
+                            showPreview = true
+                        }
+                    },
+                contentScale = ContentScale.Fit
+            )
+        } else if (fileId != null && imageLoader != null) {
+            // Remote file
+            AsyncImage(
+                model = model,
+                imageLoader = imageLoader,
+                contentDescription = "Recipe image",
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(100.dp)
+                    .clickable {
+                        if (!editMode) {
+                            showPreview = true
+                        }
+                    },
+                contentScale = ContentScale.Fit
+            )
+        }
+
+        if (editMode) {
+            if (!confirmDelete) {
+                IconButton(
+                    onClick = { confirmDelete = true },
+                    modifier = Modifier
+                        .align(Alignment.Center)
+                        .size(36.dp)
+                        .background(Color.LightGray.copy(alpha = 0.7f), CircleShape)
+                ) {
+                    Icon(
+                        painter = painterResource(id = R.drawable.baseline_delete_24),
+                        contentDescription = "Delete image",
+                        tint = MaterialTheme.colorScheme.primary
+                    )
+                }
+            } else {
+                Row(
+                    modifier = Modifier.align(Alignment.Center),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    IconButton(
+                        onClick = {
+                            onDeleteConfirmed(file ?: fileId!!)
+                            confirmDelete = false
+                        },
+                        modifier = Modifier.background(
+                            color = Color.LightGray.copy(alpha = 0.7f),
+                            shape = CircleShape
+                        )
+                    ) {
+                        Icon(
+                            painter = painterResource(id = R.drawable.baseline_check_24),
+                            contentDescription = "confirm delete",
+                            tint = MaterialTheme.colorScheme.primary
+                        )
+                    }
+                    IconButton(
+                        onClick = { confirmDelete = false },
+                        modifier = Modifier.background(
+                            color = Color.LightGray.copy(alpha = 0.7f),
+                            shape = CircleShape
+                        )
+                    ) {
+                        Icon(
+                            painter = painterResource(id = R.drawable.baseline_close_24),
+                            contentDescription = "decline delete",
+                            tint = MaterialTheme.colorScheme.error
+                        )
+                    }
+                }
+            }
+        }
+    }
+    if (showPreview && imageLoader != null) {
+        Dialog(onDismissRequest = { showPreview = false }) {
+            Box(
+                modifier = Modifier
+                    .wrapContentSize(),
+                contentAlignment = Alignment.Center
+            ) {
+                var scale by remember { mutableStateOf(1f) }
+                var offset by remember { mutableStateOf(Offset.Zero) }
+
+                AsyncImage(
+                    model = model,
+                    imageLoader = imageLoader,
+                    contentDescription = "Preview image",
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .wrapContentHeight()
+                        .pointerInput(Unit) {
+                            detectTransformGestures { _, pan, zoom, _ ->
+                                scale = (scale * zoom).coerceIn(1f, 5f) // limit zoom
+                                offset = if (scale > 1f) offset + pan else Offset.Zero
+                            }
+                        }
+                        .graphicsLayer(
+                            scaleX = scale,
+                            scaleY = scale,
+                            translationX = offset.x,
+                            translationY = offset.y
+                        ),
+                    contentScale = ContentScale.Fit
+                )
+                IconButton(
+                    onClick = { showPreview = false },
+                    modifier = Modifier
+                        .align(Alignment.TopEnd)
+                        .padding(8.dp)
+                        .background(Color.White.copy(alpha = 0.8f), CircleShape)
+                ) {
+                    Icon(
+                        painter = painterResource(id = R.drawable.baseline_close_24),
+                        contentDescription = "Close preview",
+                        tint = Color.DarkGray
+                    )
+                }
+            }
+        }
+    }
+}
+
+private fun getFileNameFromUri(context: Context, uri: Uri): String? {
+    var result: String? = null
+    if (uri.scheme == "content") {
+        context.contentResolver.query(uri, null, null, null, null)?.use { cursor ->
+            if (cursor.moveToFirst()) {
+                val nameIndex = cursor.getColumnIndex(OpenableColumns.DISPLAY_NAME)
+                if (nameIndex != -1) {
+                    result = cursor.getString(nameIndex)
+                }
+            }
+        }
+    }
+    if (result == null) {
+        result = uri.path?.substringAfterLast('/')
+    }
+    return result
 }

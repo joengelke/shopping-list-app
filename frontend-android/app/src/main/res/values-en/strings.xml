@@ -21,4 +21,6 @@
     <string name="remember_login_data">Remember login data</string>
     <string name="loading">Loading…</string>
     <string name="search">Search…</string>
+    <string name="share">Share</string>
+    <string name="back">Back</string>
 </resources>

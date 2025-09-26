@@ -6,12 +6,16 @@ import com.joengelke.shoppinglistapp.frontend.models.ItemSet
 import com.joengelke.shoppinglistapp.frontend.models.ItemSetItem
 import com.joengelke.shoppinglistapp.frontend.models.Recipe
 import com.joengelke.shoppinglistapp.frontend.models.Visibility
+import com.joengelke.shoppinglistapp.frontend.network.RetrofitProvider
+import com.joengelke.shoppinglistapp.frontend.network.TokenManager
 import com.joengelke.shoppinglistapp.frontend.repository.RecipeRepository
 import com.joengelke.shoppinglistapp.frontend.repository.SettingsRepository
 import com.joengelke.shoppinglistapp.frontend.ui.common.SortDirection
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
+import okhttp3.OkHttpClient
+import java.io.File
 import java.text.Collator
 import java.util.Locale
 import java.util.UUID
@@ -20,7 +24,9 @@ import javax.inject.Inject
 @HiltViewModel
 class RecipeViewModel @Inject constructor(
     private val recipeRepository: RecipeRepository,
-    private val settingsRepository: SettingsRepository
+    private val settingsRepository: SettingsRepository,
+    private val tokenManager: TokenManager,
+    private val retrofitProvider: RetrofitProvider
 ) : ViewModel() {
 
     private val _recipes = MutableStateFlow<List<Recipe>>(emptyList())
@@ -111,6 +117,18 @@ class RecipeViewModel @Inject constructor(
             emptyList()
         )
 
+    private val _selectedRecipeFiles = MutableStateFlow<List<File>>(emptyList())
+    val selectedRecipeFiles: StateFlow<List<File>> = _selectedRecipeFiles.asStateFlow()
+
+    val okHttpClient: OkHttpClient
+        get() = retrofitProvider.getOkHttpClient()
+
+
+    val token: StateFlow<String?> = flow {
+        emit(tokenManager.getToken()) // suspend function if needed
+    }.stateIn(viewModelScope, SharingStarted.Lazily, null)
+
+
     // Admin settings
     private val _allRecipes = MutableStateFlow<List<Recipe>>(emptyList())
     val allRecipes: StateFlow<List<Recipe>> = _allRecipes.asStateFlow()
@@ -167,13 +185,13 @@ class RecipeViewModel @Inject constructor(
             name = recipeName,
             creatorId = "",
             createdAt = "",
-            itemSet = ItemSet("", recipeName, emptyList(), ""),
+            itemSet = ItemSet("", recipeName, emptyList()),
             description = "",
             instructions = emptyList(),
             categories = emptyList(),
             visibility = Visibility.PRIVATE,
             sharedWithUserIds = emptyList(),
-            receiptFileId = ""
+            recipeFileIds = emptyList()
         )
         viewModelScope.launch {
             val result = recipeRepository.createRecipe(newRecipe)
@@ -238,12 +256,13 @@ class RecipeViewModel @Inject constructor(
                     .map { it.trim() }
                     .filter { it.isNotBlank() }
             )
-            val result = recipeRepository.updateRecipe(cleanedRecipe)
+            val result = recipeRepository.updateRecipe(cleanedRecipe, selectedRecipeFiles.value)
             result.onSuccess { updatedRecipe ->
                 _recipes.update { currentList ->
                     currentList.map { if (it.id == recipe.id) updatedRecipe else it }
                 }
                 _currentRecipe.value = updatedRecipe
+                clearSelectedRecipeFiles()
             }
         }
     }
@@ -278,7 +297,7 @@ class RecipeViewModel @Inject constructor(
         viewModelScope.launch {
             val result = recipeRepository.addRecipeToUser(recipeId, username)
             result.onSuccess { updatedRecipeList ->
-                if(updateRecipes) {
+                if (updateRecipes) {
                     _recipes.value = updatedRecipeList
                 }
                 onSuccess()
@@ -343,6 +362,17 @@ class RecipeViewModel @Inject constructor(
         }
     }
 
+    fun addEmptyInstruction(
+        onSuccess: (Int) -> Unit
+    ) {
+        _currentRecipe.value = _currentRecipe.value?.let { recipe ->
+            val updatedInstructions = recipe.instructions.toMutableList()
+            updatedInstructions.add("") // Add an empty string as new instruction
+            onSuccess(updatedInstructions.lastIndex)
+            recipe.copy(instructions = updatedInstructions)
+        }
+    }
+
     fun updateInstructionAtIndex(index: Int, newValue: String) {
         _currentRecipe.value = _currentRecipe.value?.let { recipe ->
             val updatedInstruction = recipe.instructions.toMutableList()
@@ -356,14 +386,16 @@ class RecipeViewModel @Inject constructor(
         }
     }
 
-    fun addEmptyInstruction(
-        onSuccess: (Int) -> Unit
-    ) {
+    fun deleteInstructionAtIndex(index: Int) {
         _currentRecipe.value = _currentRecipe.value?.let { recipe ->
-            val updatedInstructions = recipe.instructions.toMutableList()
-            updatedInstructions.add("") // Add an empty string as new instruction
-            onSuccess(updatedInstructions.lastIndex)
-            recipe.copy(instructions = updatedInstructions)
+            val updatedInstruction = recipe.instructions.toMutableList()
+
+            if (index in updatedInstruction.indices) {
+                updatedInstruction.removeAt(index)
+                recipe.copy(instructions = updatedInstruction)
+            } else {
+                recipe
+            }
         }
     }
 
@@ -429,5 +461,29 @@ class RecipeViewModel @Inject constructor(
             }
             recipe.copy(itemSet = recipe.itemSet.copy(itemList = updatedList))
         }
+    }
+
+    fun deleteRecipeFile(recipeFileId: String) {
+        _currentRecipe.value = _currentRecipe.value?.let { recipe ->
+            recipe.copy(
+                recipeFileIds = recipe.recipeFileIds.filter { it != recipeFileId }
+            )
+        }
+    }
+
+    fun setSelectedRecipeFiles(files: List<File>) {
+        _selectedRecipeFiles.value = files
+    }
+
+    fun addSelectedRecipeFiles(files: List<File>) {
+        _selectedRecipeFiles.value = _selectedRecipeFiles.value + files
+    }
+
+    fun removeSelectedRecipeFile(file: File) {
+        _selectedRecipeFiles.value = _selectedRecipeFiles.value - file
+    }
+
+    fun clearSelectedRecipeFiles() {
+        _selectedRecipeFiles.value = emptyList()
     }
 }

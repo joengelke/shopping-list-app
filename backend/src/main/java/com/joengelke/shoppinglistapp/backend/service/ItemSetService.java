@@ -44,7 +44,6 @@ public class ItemSetService {
 
         itemSet.setName(newItemSet.getName());
         itemSet.setItemList(newItemSet.getItemList());
-        itemSet.setReceiptFileId(newItemSet.getReceiptFileId());
         return itemSetRepository.save(itemSet);
     }
 
@@ -52,23 +51,6 @@ public class ItemSetService {
         ItemSet itemSet = itemSetRepository.findById(itemSetId)
                 .orElseThrow(() -> new NoSuchElementException("Item set not found"));
         return itemSet.getItemList();
-    }
-
-    public String saveReceiptFile(MultipartFile receiptFile) {
-        String receiptFileId = "";
-        if(receiptFile != null && !receiptFile.isEmpty()) {
-            try{
-                ObjectId fileId = gridFsTemplate.store(
-                        receiptFile.getInputStream(),
-                        receiptFile.getOriginalFilename(),
-                        receiptFile.getContentType()
-                );
-                receiptFileId = fileId.toString();
-            } catch (IOException e) {
-                throw new RuntimeException("Failed to store receipt file", e);
-            }
-        }
-        return receiptFileId;
     }
 
     public void deleteReceiptFile(String fileId) {
@@ -79,42 +61,9 @@ public class ItemSetService {
         }
     }
 
-    public FileResourceDTO getReceiptFileResource(String itemSetId) throws IOException {
-        ItemSet itemSet = itemSetRepository.findById(itemSetId)
-                .orElseThrow(() -> new RuntimeException("ItemSet not found"));
-
-        String fileIdStr = itemSet.getReceiptFileId();
-        if (fileIdStr == null) {
-            throw new RuntimeException("No receipt file for this ItemSet");
-        }
-
-        ObjectId fileId = new ObjectId(fileIdStr);
-        GridFSFile gridFSFile = gridFsTemplate.findOne(Query.query(Criteria.where("_id").is(fileId)));
-
-        if (gridFSFile == null) {
-            throw new RuntimeException("File not found");
-        }
-
-        GridFsResource resource = gridFsTemplate.getResource(gridFSFile);
-
-        String contentType = MediaType.APPLICATION_OCTET_STREAM_VALUE;
-        if (gridFSFile.getMetadata() != null && gridFSFile.getMetadata().getString("_contentType") != null) {
-            contentType = gridFSFile.getMetadata().getString("_contentType");
-        }
-
-        return new FileResourceDTO(
-                new InputStreamResource(resource.getInputStream()),
-                contentType,
-                gridFSFile.getFilename()
-        );
-    }
-
     public void deleteItemSetById(String itemSetId) {
         ItemSet itemSet = itemSetRepository.findById(itemSetId)
                 .orElseThrow(() -> new NoSuchElementException("Item set not found"));
-        if (itemSet.getReceiptFileId() != null) {
-            deleteReceiptFile(itemSet.getReceiptFileId());
-        }
         itemSetRepository.deleteById(itemSetId);
     }
 }

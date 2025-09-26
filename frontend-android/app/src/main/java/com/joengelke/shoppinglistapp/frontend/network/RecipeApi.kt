@@ -4,6 +4,8 @@ import com.joengelke.shoppinglistapp.frontend.models.DeleteResponse
 import com.joengelke.shoppinglistapp.frontend.models.ItemSet
 import com.joengelke.shoppinglistapp.frontend.models.Recipe
 import com.joengelke.shoppinglistapp.frontend.models.Visibility
+import okhttp3.MultipartBody
+import okhttp3.RequestBody
 import retrofit2.Response
 import retrofit2.http.*
 
@@ -43,10 +45,12 @@ interface RecipeApi {
         @Body visibility: Visibility,
     ): Response<Recipe>
 
+    @Multipart
     @PUT("recipe/update")
     suspend fun updateRecipe(
         @Header("Authorization") token: String,
-        @Body recipe: Recipe
+        @Part("recipe") recipe: RequestBody,
+        @Part recipeFiles: List<MultipartBody.Part>? = null
     ): Response<Recipe>
 
     @PUT("recipe/{recipeId}/save")

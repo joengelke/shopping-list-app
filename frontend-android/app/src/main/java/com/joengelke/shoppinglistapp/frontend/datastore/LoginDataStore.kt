@@ -17,6 +17,7 @@ object LoginDataStore {
     private val PASSWORD_KEY = stringPreferencesKey("encrypted_password")
     private val SAVE_CREDENTIALS_KEY = booleanPreferencesKey("save_credentials")
     private val IS_LOGGED_IN_KEY = booleanPreferencesKey("is_logged_in")
+    private val BIOMETRIC_ENABLED_KEY = booleanPreferencesKey("biometric_enabled")
 
 
     val credentialsFlow: (Context) -> Flow<Pair<String, String>?> = { context ->

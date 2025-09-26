@@ -1,11 +1,6 @@
 package com.joengelke.shoppinglistapp.frontend.ui.screens.itemsets
 
-import android.content.Context
-import android.net.Uri
-import android.provider.OpenableColumns
 import android.widget.Toast
-import androidx.activity.compose.rememberLauncherForActivityResult
-import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -36,11 +31,9 @@ import com.joengelke.shoppinglistapp.frontend.models.ItemSet
 import com.joengelke.shoppinglistapp.frontend.models.ItemSetItem
 import com.joengelke.shoppinglistapp.frontend.models.RecipeSource
 import com.joengelke.shoppinglistapp.frontend.navigation.Routes
-import com.joengelke.shoppinglistapp.frontend.ui.components.ConfirmationDialog
 import com.joengelke.shoppinglistapp.frontend.ui.components.UnitDropdown
 import com.joengelke.shoppinglistapp.frontend.viewmodel.ItemSetsViewModel
 import com.joengelke.shoppinglistapp.frontend.viewmodel.RecipeViewModel
-import java.io.File
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -62,33 +55,8 @@ fun ItemSetCreateScreen(
     val keyboardController = LocalSoftwareKeyboardController.current
     var focusItemSetItemId by remember { mutableStateOf<String?>(null) }
 
-    var addReceiptConfirm by remember { mutableStateOf(false) }
-
-    val launcher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.OpenDocument(),
-        onResult = { uri ->
-            uri?.let {
-                try {
-                    val fileName = getFileNameFromUri(context, uri)
-                    val tempFile = File(context.cacheDir, fileName!!)
-                    context.contentResolver.openInputStream(uri)?.use { input ->
-                        tempFile.outputStream().use { output -> input.copyTo(output) }
-
-                        itemSetsViewModel.setSelectedReceiptFile(tempFile)
-                    }
-                } catch (e: Exception) {
-                    e.printStackTrace()
-                }
-            }
-        }
-    )
-
     LaunchedEffect(shoppingListId) {
         itemSetsViewModel.loadItemSets(shoppingListId, onSuccess = {})
-    }
-
-    LaunchedEffect(itemSetId) {
-        itemSetsViewModel.clearSelectedReceiptFile()
     }
 
     Scaffold(
@@ -133,7 +101,7 @@ fun ItemSetCreateScreen(
                             onClick = {
                                 itemSetsViewModel.updateItemSet(
                                     shoppingListId,
-                                    itemSet ?: ItemSet("", "", emptyList(), ""),
+                                    itemSet ?: ItemSet("", "", emptyList()),
                                     onSuccess = { itemSetName ->
                                         keyboardController?.hide()
                                         Toast.makeText(
@@ -151,18 +119,6 @@ fun ItemSetCreateScreen(
                                 tint = MaterialTheme.colorScheme.onPrimary
                             )
                         }
-                    }
-
-                    IconButton(
-                        onClick = {
-                            addReceiptConfirm = true
-                        }
-                    ) {
-                        Icon(
-                            painter = painterResource(id = R.drawable.baseline_insert_photo_24),
-                            contentDescription = "add receipt file",
-                            tint = MaterialTheme.colorScheme.onPrimary
-                        )
                     }
                     Box {
                         IconButton(
@@ -309,7 +265,7 @@ fun ItemSetCreateScreen(
                                 onClick = {
                                     itemSetsViewModel.updateItemSet(
                                         shoppingListId,
-                                        itemSet ?: ItemSet("", "", emptyList(), ""),
+                                        itemSet ?: ItemSet("", "", emptyList()),
                                         onSuccess = { itemSetName ->
                                             Toast.makeText(
                                                 context,
@@ -330,22 +286,6 @@ fun ItemSetCreateScreen(
                         }
                     }
                 }
-            }
-        )
-    }
-    if (addReceiptConfirm) {
-        ConfirmationDialog(
-            text = if (itemSet?.receiptFileId?.isNotBlank() == true) stringResource(R.string.change_current_recipe_image) else stringResource(
-                R.string.add_a_new_recipe_image
-            ),
-            acceptText = if (itemSet?.receiptFileId?.isNotBlank() == true) stringResource(R.string.change_image) else stringResource(
-                R.string.new_image
-            ),
-            onDismiss = { addReceiptConfirm = false },
-            onCancel = { addReceiptConfirm = false },
-            onAccept = {
-                launcher.launch(arrayOf("image/*", "application/pdf"))
-                addReceiptConfirm = false
             }
         )
     }
@@ -468,23 +408,4 @@ fun ItemSetItemContainer(
         thickness = 1.dp,
         color = MaterialTheme.colorScheme.primary.copy(alpha = 0.3f)
     )
-}
-
-
-private fun getFileNameFromUri(context: Context, uri: Uri): String? {
-    var result: String? = null
-    if (uri.scheme == "content") {
-        context.contentResolver.query(uri, null, null, null, null)?.use { cursor ->
-            if (cursor.moveToFirst()) {
-                val nameIndex = cursor.getColumnIndex(OpenableColumns.DISPLAY_NAME)
-                if (nameIndex != -1) {
-                    result = cursor.getString(nameIndex)
-                }
-            }
-        }
-    }
-    if (result == null) {
-        result = uri.path?.substringAfterLast('/')
-    }
-    return result
 }

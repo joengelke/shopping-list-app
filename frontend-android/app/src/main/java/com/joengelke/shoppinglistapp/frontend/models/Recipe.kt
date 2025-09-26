@@ -1,5 +1,8 @@
 package com.joengelke.shoppinglistapp.frontend.models
 
+import kotlinx.serialization.Serializable
+
+@Serializable
 data class Recipe(
     val id: String,
     val name: String,
@@ -11,7 +14,7 @@ data class Recipe(
     val categories: List<String>,
     val visibility: Visibility,
     val sharedWithUserIds: List<String>,
-    val receiptFileId: String
+    val recipeFileIds: List<String>
 )
 
 enum class Visibility {

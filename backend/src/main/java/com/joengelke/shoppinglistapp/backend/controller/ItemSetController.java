@@ -21,24 +21,4 @@ public class ItemSetController {
     public ItemSetController(ItemSetService itemSetService) {
         this.itemSetService = itemSetService;
     }
-
-    @GetMapping("/{itemSetId}/receiptfile")
-    public ResponseEntity<?> getReceiptFile(@PathVariable String itemSetId) {
-        try {
-           FileResourceDTO fileResourceDTO = itemSetService.getReceiptFileResource(itemSetId);
-
-            byte[] fileBytes = fileResourceDTO.getInputStreamResource().getInputStream().readAllBytes();
-            ByteArrayResource byteArrayResource = new ByteArrayResource(fileBytes);
-
-            // You could fetch metadata here again or add method in service for content type, length, filename
-            return ResponseEntity.ok()
-                    .contentLength(fileBytes.length)
-                    .contentType(MediaType.parseMediaType(fileResourceDTO.getContentType()))
-                    .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + fileResourceDTO.getFilename() + "\"")
-                    .body(byteArrayResource);
-
-        } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(e.getMessage());
-        }
-    }
 }

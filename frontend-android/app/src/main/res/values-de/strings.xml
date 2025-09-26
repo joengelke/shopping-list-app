@@ -22,4 +22,6 @@
     <string name="remember_login_data">Anmeldedaten merken</string>
     <string name="loading">Lädt…</string>
     <string name="search">Suche…</string>
+    <string name="share">Teilen</string>
+    <string name="back">Zurück</string>
 </resources>

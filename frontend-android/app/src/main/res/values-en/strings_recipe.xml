@@ -22,4 +22,5 @@
     <string name="recipe_name">Recipe name</string>
     <string name="private_word">Private</string>
     <string name="public_word">Public</string>
+    <string name="add_to_shopping_list">Add to shopping list</string>
 </resources>

@@ -494,7 +494,7 @@ fun ShoppingItemContainer(
                     .wrapContentSize()
                     .padding(16.dp),
                 colors = CardDefaults.cardColors(
-                    containerColor = MaterialTheme.colorScheme.primaryContainer,
+                    containerColor = MaterialTheme.colorScheme.surfaceVariant,
                     contentColor = MaterialTheme.colorScheme.onPrimaryContainer
                 )
             ) {

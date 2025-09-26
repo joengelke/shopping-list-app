@@ -16,12 +16,10 @@ public class ItemSet {
     private String id;
     private String name;
     private List<ItemSetItem> itemList;
-    private String receiptFileId = ""; //TODO delete this one here
 
-    public ItemSet(String name, List<ItemSetItem> itemList, String receiptFileId) {
+    public ItemSet(String name, List<ItemSetItem> itemList) {
         this.name = name;
         this.itemList = itemList;
-        this.receiptFileId = receiptFileId;
     }
 
     public ItemSet(){}
