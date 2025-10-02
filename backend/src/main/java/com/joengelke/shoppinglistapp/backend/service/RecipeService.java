@@ -22,10 +22,9 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-import java.util.NoSuchElementException;
+import java.util.*;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 @Service
 public class RecipeService {
@@ -82,10 +81,12 @@ public class RecipeService {
 
     public Recipe createRecipe(String header, Recipe recipe) {
         String userId = jwtTokenProvider.getUserIdFromToken(header.replace("Bearer ", ""));
+        String username = jwtTokenProvider.getUsernameFromToken(header.replace("Bearer ", ""));
         Recipe newRecipe = recipeRepository.save(
                 new Recipe(
                         recipe.getName(),
                         userId,
+                        username,
                         recipe.getItemSet(),
                         recipe.getDescription(),
                         recipe.getInstructions(),
@@ -101,11 +102,12 @@ public class RecipeService {
 
     public Recipe convertItemSetToRecipe(String header, ItemSet itemSet) {
         String userId = jwtTokenProvider.getUserIdFromToken(header.replace("Bearer ", ""));
+        String username = jwtTokenProvider.getUsernameFromToken(header.replace("Bearer ", ""));
         boolean alreadyExists = recipeRepository.existsByCreatorIdAndItemSetId(userId, itemSet.getId());
         if (alreadyExists) {
             throw new IllegalStateException("This itemSet is already saved as a recipe.");
         }
-        Recipe recipe = new Recipe(itemSet.getName(), userId, itemSet, "", new ArrayList<>(), new ArrayList<>(), Visibility.PRIVATE, new ArrayList<>(), new ArrayList<>());
+        Recipe recipe = new Recipe(itemSet.getName(), userId, username, itemSet, "", new ArrayList<>(), new ArrayList<>(), Visibility.PRIVATE, new ArrayList<>(), new ArrayList<>());
         Recipe savedRecipe = recipeRepository.save(recipe);
         userService.addRecipeToUser(userId, savedRecipe.getId());
         return savedRecipe;
@@ -218,6 +220,19 @@ public class RecipeService {
                 contentType,
                 gridFSFile.getFilename()
         );
+    }
+
+    public List<String> getRecipeCategoriesByPopularity() {
+        // first category is most popular by number, last is the least popular
+        List<Recipe> allRecipes = recipeRepository.findAll();
+        return allRecipes.stream()
+                .flatMap(recipe -> recipe.getCategories().stream())
+                .collect(Collectors.groupingBy(Function.identity(), Collectors.counting()))
+                .entrySet()
+                .stream()
+                .sorted(Map.Entry.<String, Long>comparingByValue().reversed())
+                .map(Map.Entry::getKey)
+                .collect(Collectors.toList());
     }
 
     public void removeRecipeFromUser(String header, String recipeId, String userId) {

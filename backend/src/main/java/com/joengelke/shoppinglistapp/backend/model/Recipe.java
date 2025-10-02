@@ -20,6 +20,7 @@ public class Recipe {
     private String id;
     private String name; //default is itemSetName
     private String creatorId;
+    private String creatorUsername;
     private Instant createdAt;
     private ItemSet itemSet;
     private String description;
@@ -31,9 +32,10 @@ public class Recipe {
 
     public Recipe() {}
 
-    public Recipe(String name, String creatorId, ItemSet itemSet, String description, List<String> instructions, List<String> categories, Visibility visibility, List<String> sharedWithUserIds, List<String> recipeFileIds) {
+    public Recipe(String name, String creatorId, String creatorUsername, ItemSet itemSet, String description, List<String> instructions, List<String> categories, Visibility visibility, List<String> sharedWithUserIds, List<String> recipeFileIds) {
         this.name = name != null ? name : itemSet.getName();
         this.creatorId = creatorId;
+        this.creatorUsername = creatorUsername;
         this.createdAt = Instant.now();
         this.itemSet = itemSet;
         this.description = description != null ? description : "";

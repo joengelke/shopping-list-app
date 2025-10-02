@@ -73,7 +73,7 @@ class RetrofitProvider @Inject constructor(
                 }
             })
             .sslSocketFactory(sslContext.socketFactory, trustManager)
-            .hostnameVerifier { hostname, _ -> hostname == ip }
+            .hostnameVerifier { hostname, _ -> hostname == ip } // TODO change for DEV
             .build()
     }
 

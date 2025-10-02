@@ -141,8 +141,8 @@ public class BackendApplication {
 
                     // Initialize recipeFileIds for all recipes
                     for (Recipe recipe : backupData.getRecipes()) {
-                        if (recipe.getRecipeFileIds() == null) {
-                            recipe.setRecipeFileIds(new ArrayList<>());  // always empty list
+                        if (recipe.getCreatorUsername() == null) {
+                            recipe.setCreatorUsername("");  // always empty list
                         }
                     }
 

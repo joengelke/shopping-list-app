@@ -136,6 +136,14 @@ public class RecipeController {
         }
     }
 
+    @GetMapping("/categories-popularity")
+    public ResponseEntity<?> getRecipeCategoriesByPopularity(
+            @RequestHeader("Authorization") String header
+    ) {
+        List<String> categoriesByPopularity = recipeService.getRecipeCategoriesByPopularity();
+        return ResponseEntity.ok(categoriesByPopularity);
+    }
+
     @DeleteMapping("/{recipeId}/remove")
     public ResponseEntity<?> removeRecipeFromUser(
             @PathVariable String recipeId,

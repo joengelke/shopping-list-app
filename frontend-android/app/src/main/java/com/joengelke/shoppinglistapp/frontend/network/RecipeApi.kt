@@ -26,6 +26,11 @@ interface RecipeApi {
         @Header("Authorization") token: String
     ): Response<List<Recipe>>
 
+    @GET("recipe/categories-popularity")
+    suspend fun getRecipeCategoriesByPopularity(
+        @Header("Authorization") token: String
+    ): Response<List<String>>
+
     @POST("recipe")
     suspend fun createRecipe(
         @Header("Authorization") token: String,

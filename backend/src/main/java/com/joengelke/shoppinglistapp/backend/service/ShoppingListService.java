@@ -167,7 +167,7 @@ public class ShoppingListService {
         ShoppingItem createdOrUpdatedItem;
         ShoppingList shoppingList = shoppingListRepository.findById(listId)
                 .orElseThrow(() -> new NoSuchElementException("Shopping list not found"));
-
+        String username = jwtTokenProvider.getUsernameFromToken(header.replace("Bearer ", ""));
 
         if (!shoppingList.getItemIds().contains(shoppingItem.getId())) {
             // create new item
@@ -228,21 +228,35 @@ public class ShoppingListService {
             }
         }
 
-        List<ItemSetItem> newItemSetItems = new ArrayList<>(); // final itemSetItem list to use for
-        for (ItemSetItem setItem : itemSet.getItemList()) {
-            // in my frontend not used since itemSetItems will be created later manually
-            if (!shoppingList.getItemIds().contains(setItem.getId())) {
-                //create new shoppingItem, add new ItemSetItem with new shoppingItem id
-                ShoppingItem shoppingItem = shoppingItemService.createItem(header, new ShoppingItem(setItem.getName(), Collections.emptyList(), 0.0, "", "", ""), true);
-                shoppingList.getItemIds().add(shoppingItem.getId());
-                newItemSetItems.add(new ItemSetItem(shoppingItem.getId(), setItem.getTmpId(), setItem.getName(), setItem.getAmount(), setItem.getUnit()));
+        // creates or matches new shoppingItems from itemSetItems
+        for (ItemSetItem itemSetItem : itemSet.getItemList()) {
+            Optional<ShoppingItem> matchingItem = getItemsByShoppingList(listId).stream()
+                    .filter(item -> item.getName().equals(itemSetItem.getName()))
+                    .findFirst();
+            if (matchingItem.isPresent()) {
+                // found shoppingItem with matching name -> update id of itemSetItem
+                itemSetItem.setId(matchingItem.get().getId());
             } else {
-                //shoppingItem already exists, add new ItemSetItem
-                newItemSetItems.add(new ItemSetItem(setItem.getId(), setItem.getTmpId(), setItem.getName(), setItem.getAmount(), setItem.getUnit()));
+                // no shoppingItem with matching name exists -> create new item and update id of itemSetItem
+                ShoppingItem newShoppingItem = shoppingItemService.createItem(
+                        header,
+                        new ShoppingItem(
+                                itemSetItem.getName(),
+                                Collections.emptyList(),
+                                itemSetItem.getAmount(),
+                                itemSetItem.getUnit(),
+                                "",
+                                ""),
+                        true
+                );
+                itemSetItem.setId(newShoppingItem.getId());
+
+                shoppingList.getItemIds().add(newShoppingItem.getId());
             }
         }
 
-        ItemSet newItemSet = itemSetService.createItemSet(new ItemSet(itemSet.getName(), newItemSetItems));
+        // creates new ItemSet
+        ItemSet newItemSet = itemSetService.createItemSet(new ItemSet(itemSet.getName(), itemSet.getItemList()));
         if (shoppingList.getItemSetIds() == null) {
             shoppingList.setItemSetIds(new ArrayList<>());
         }

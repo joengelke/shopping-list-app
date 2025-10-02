@@ -7,6 +7,7 @@ data class Recipe(
     val id: String,
     val name: String,
     val creatorId: String,
+    val creatorUsername: String,
     val createdAt: String,
     val itemSet: ItemSet,
     val description: String,

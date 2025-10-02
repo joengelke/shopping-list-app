@@ -12,8 +12,11 @@ import androidx.compose.animation.slideInHorizontally
 import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.*
-import androidx.compose.foundation.gestures.detectTransformGestures
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.pager.HorizontalPager
+import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
@@ -29,10 +32,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
-import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.graphicsLayer
-import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
@@ -44,6 +44,7 @@ import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
+import androidx.compose.ui.window.DialogProperties
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavHostController
 import coil.ImageLoader
@@ -103,13 +104,6 @@ fun RecipeViewScreen(
     val recipe by recipeViewModel.currentRecipe.collectAsState()
     val currentUserId by userViewModel.currentUserId.collectAsState()
     val token by recipeViewModel.token.collectAsState()
-    val imageLoader = remember {
-        ImageLoader.Builder(context)
-            .okHttpClient(recipeViewModel.okHttpClient) // use injected client
-            .crossfade(true)
-            .build()
-    }
-    val selectedFiles by recipeViewModel.selectedRecipeFiles.collectAsState()
 
     var editMode by remember { mutableStateOf(false) }
 
@@ -124,6 +118,10 @@ fun RecipeViewScreen(
     var editCategories by remember { mutableStateOf(false) }
     var openAddCategoryField by remember { mutableStateOf(false) }
     var categoryInput by remember { mutableStateOf("") }
+    val categoriesByPopularity by recipeViewModel.recipeCategoriesByPopularity.collectAsState()
+    val filteredCategories =
+        categoriesByPopularity.filter { it.contains(categoryInput, ignoreCase = true) }
+    var expandedCategoriesDropdown by remember { mutableStateOf(false) }
     val focusRequesterCategory = remember { FocusRequester() }
     val keyboardController = LocalSoftwareKeyboardController.current
     LaunchedEffect(openAddCategoryField) {
@@ -131,6 +129,9 @@ fun RecipeViewScreen(
             focusRequesterCategory.requestFocus()
             keyboardController?.show()
         }
+    }
+    LaunchedEffect(Unit) {
+        recipeViewModel.loadRecipeCategoriesByPopularity()
     }
 
     var showIngredients by remember { mutableStateOf(true) }
@@ -162,6 +163,17 @@ fun RecipeViewScreen(
             }
         }
     )
+    val imageLoader = remember {
+        ImageLoader.Builder(context)
+            .okHttpClient(recipeViewModel.okHttpClient) // use injected client
+            .crossfade(true)
+            .build()
+    }
+    val selectedFiles by recipeViewModel.selectedRecipeFiles.collectAsState()
+    val allFiles = (recipe?.recipeFileIds?.map { id -> id to null } ?: emptyList()) +
+            selectedFiles.map { file -> null to file }
+    var previewStartIndex by remember { mutableStateOf(0) }
+    var showFilePreview by remember { mutableStateOf(false) }
 
     var showDialog by remember { mutableStateOf(false) }
 
@@ -607,76 +619,129 @@ fun RecipeViewScreen(
                                         },
                                         modifier = Modifier.padding(horizontal = 8.dp)
                                     )
-                                } else {
-                                    BasicTextField(
-                                        value = categoryInput,
-                                        onValueChange = { categoryInput = it },
-                                        modifier = Modifier
-                                            .focusRequester(focusRequesterCategory),
-                                        keyboardOptions = KeyboardOptions.Default.copy(imeAction = ImeAction.Done),
-                                        keyboardActions = KeyboardActions(
-                                            onDone = {
-                                                if (categoryInput.isNotBlank()) {
-                                                    recipeViewModel.addCategory(categoryInput.trim())
-                                                }
-                                                categoryInput = ""
-                                                openAddCategoryField = false
-                                                keyboardController?.hide()
-                                            }
-                                        ),
-                                        decorationBox = { innerTextField ->
-                                            Surface(
-                                                shape = RoundedCornerShape(8.dp),
-                                                border = BorderStroke(
-                                                    1.dp,
-                                                    MaterialTheme.colorScheme.outline
-                                                ),
-                                                tonalElevation = 1.dp,
-                                                modifier = Modifier
-                                                    .defaultMinSize(minHeight = 32.dp)
-                                                    .padding(horizontal = 8.dp, vertical = 8.dp)
-                                            ) {
-                                                Row(
-                                                    verticalAlignment = Alignment.CenterVertically,
-                                                    modifier = Modifier.padding(
-                                                        start = 16.dp,
-                                                        end = 8.dp,
-                                                        top = 4.dp,
-                                                        bottom = 4.dp
+                                    categoriesByPopularity
+                                        .filterNot { recipe.categories.contains(it) }
+                                        .take(5).forEach { category ->
+                                            AssistChip(
+                                                onClick = {},
+                                                label = {
+                                                    Text(
+                                                        text = category,
+                                                        style = MaterialTheme.typography.bodyLarge
                                                     )
-                                                ) {
-                                                    Box {
-                                                        if (categoryInput.isEmpty()) {
-                                                            Text(
-                                                                text = stringResource(R.string.category),
-                                                                style = MaterialTheme.typography.bodyMedium,
-                                                                color = MaterialTheme.colorScheme.outline
-                                                            )
-                                                        }
-                                                        innerTextField()
-                                                    }
-                                                    Spacer(Modifier.width(4.dp))
+                                                },
+                                                trailingIcon = {
                                                     Icon(
-                                                        painter = painterResource(R.drawable.baseline_check_24),
-                                                        contentDescription = "Add category",
+                                                        painter = painterResource(id = R.drawable.baseline_add_24),
+                                                        contentDescription = "add category",
+                                                        tint = MaterialTheme.colorScheme.primary,
                                                         modifier = Modifier
-                                                            .size(24.dp)
                                                             .clickable {
-                                                                if (categoryInput.isNotBlank()) {
-                                                                    recipeViewModel.addCategory(
-                                                                        categoryInput
-                                                                    )
-                                                                }
-                                                                categoryInput = ""
-                                                                openAddCategoryField = false
-                                                                keyboardController?.hide()
-                                                            },
-                                                        tint = MaterialTheme.colorScheme.primary
+                                                                recipeViewModel.addCategory(category)
+                                                            }
                                                     )
+                                                },
+                                                modifier = Modifier.padding(start = 8.dp)
+                                            )
+                                        }
+                                } else {
+                                    ExposedDropdownMenuBox(
+                                        expanded = expandedCategoriesDropdown,
+                                        onExpandedChange = { expandedCategoriesDropdown = it}
+                                    ) {
+                                        BasicTextField(
+                                            value = categoryInput,
+                                            onValueChange = {
+                                                categoryInput = it
+                                                expandedCategoriesDropdown = it.isNotEmpty()
+                                            },
+                                            modifier = Modifier
+                                                .menuAnchor(MenuAnchorType.PrimaryEditable, enabled = true)
+                                                .focusRequester(focusRequesterCategory),
+                                            keyboardOptions = KeyboardOptions.Default.copy(imeAction = ImeAction.Done),
+                                            keyboardActions = KeyboardActions(
+                                                onDone = {
+                                                    if (categoryInput.isNotBlank()) {
+                                                        recipeViewModel.addCategory(categoryInput.trim())
+                                                    }
+                                                    categoryInput = ""
+                                                    openAddCategoryField = false
+                                                    keyboardController?.hide()
+                                                    expandedCategoriesDropdown = false
                                                 }
+                                            ),
+                                            decorationBox = { innerTextField ->
+                                                Surface(
+                                                    shape = RoundedCornerShape(8.dp),
+                                                    border = BorderStroke(
+                                                        1.dp,
+                                                        MaterialTheme.colorScheme.outline
+                                                    ),
+                                                    tonalElevation = 1.dp,
+                                                    modifier = Modifier
+                                                        .defaultMinSize(minHeight = 32.dp)
+                                                        .padding(horizontal = 8.dp, vertical = 8.dp)
+                                                ) {
+                                                    Row(
+                                                        verticalAlignment = Alignment.CenterVertically,
+                                                        modifier = Modifier.padding(
+                                                            start = 16.dp,
+                                                            end = 8.dp,
+                                                            top = 4.dp,
+                                                            bottom = 4.dp
+                                                        )
+                                                    ) {
+                                                        Box {
+                                                            if (categoryInput.isEmpty()) {
+                                                                Text(
+                                                                    text = stringResource(R.string.category),
+                                                                    style = MaterialTheme.typography.bodyMedium,
+                                                                    color = MaterialTheme.colorScheme.outline
+                                                                )
+                                                            }
+                                                            innerTextField()
+                                                        }
+                                                        Spacer(Modifier.width(4.dp))
+                                                        Icon(
+                                                            painter = painterResource(R.drawable.baseline_check_24),
+                                                            contentDescription = "Add category",
+                                                            modifier = Modifier
+                                                                .size(24.dp)
+                                                                .clickable {
+                                                                    if (categoryInput.isNotBlank()) {
+                                                                        recipeViewModel.addCategory(
+                                                                            categoryInput
+                                                                        )
+                                                                    }
+                                                                    categoryInput = ""
+                                                                    openAddCategoryField = false
+                                                                    keyboardController?.hide()
+                                                                    expandedCategoriesDropdown =
+                                                                        false
+                                                                },
+                                                            tint = MaterialTheme.colorScheme.primary
+                                                        )
+                                                    }
+                                                }
+                                            }
+                                        )
+                                        ExposedDropdownMenu(
+                                            expanded = expandedCategoriesDropdown && filteredCategories.isNotEmpty(),
+                                            onDismissRequest = {
+                                                expandedCategoriesDropdown = false
+                                            }
+                                        ) {
+                                            filteredCategories.forEach { category ->
+                                                DropdownMenuItem(
+                                                    text = { Text(category) },
+                                                    onClick = {
+                                                        categoryInput = category
+                                                        expandedCategoriesDropdown = false
+                                                    }
+                                                )
                                             }
                                         }
-                                    )
+                                    }
                                 }
                             }
                         }
@@ -1050,26 +1115,175 @@ fun RecipeViewScreen(
                                 .padding(horizontal = 16.dp)
                                 .padding(bottom = 16.dp),
                         ) {
-                            recipe.recipeFileIds.forEach { fileId ->
-                                RecipeFileItem(
-                                    fileId = fileId,
-                                    recipeId = recipe.id,
-                                    token = token,
-                                    imageLoader = imageLoader,
-                                    editMode = editInstructions,
-                                    onDeleteConfirmed = { recipeFileId ->
-                                        recipeViewModel.deleteRecipeFile(recipeFileId as String)
+                            LazyRow(
+                                horizontalArrangement = Arrangement.spacedBy(4.dp),
+                                contentPadding = PaddingValues(horizontal = 8.dp)
+                            ) {
+                                // Backend loaded files
+                                itemsIndexed(recipe.recipeFileIds) { index, fileId ->
+                                    val model = ImageRequest.Builder(context)
+                                        .data("https://shopit-oracle.mooo.com:8443/api/recipe/$recipeId/files/$fileId") // TODO ONLY DEV "https://192.168.1.38:8443/api/recipe/$recipeId/files/$fileId"
+                                        .addHeader("Authorization", "Bearer $token")
+                                        .build()
+                                    var confirmDelete by remember { mutableStateOf(false) }
+                                    Box(
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .padding(bottom = 8.dp)
+                                    ) {
+                                        AsyncImage(
+                                            model = model,
+                                            imageLoader = imageLoader,
+                                            contentDescription = "Recipe image",
+                                            modifier = Modifier
+                                                .fillMaxWidth()
+                                                .height(100.dp)
+                                                .clickable {
+                                                    if (!editMode) {
+                                                        previewStartIndex = index
+                                                        showFilePreview = true
+                                                    }
+                                                },
+                                            contentScale = ContentScale.Fit
+                                        )
+                                        if (editInstructions) {
+                                            if (!confirmDelete) {
+                                                IconButton(
+                                                    onClick = { confirmDelete = true },
+                                                    modifier = Modifier
+                                                        .align(Alignment.Center)
+                                                        .size(36.dp)
+                                                        .background(
+                                                            Color.LightGray.copy(alpha = 0.7f),
+                                                            CircleShape
+                                                        )
+                                                ) {
+                                                    Icon(
+                                                        painter = painterResource(id = R.drawable.baseline_delete_24),
+                                                        contentDescription = "Delete image",
+                                                        tint = MaterialTheme.colorScheme.primary
+                                                    )
+                                                }
+                                            } else {
+                                                Row(
+                                                    modifier = Modifier.align(Alignment.Center),
+                                                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                                                ) {
+                                                    IconButton(
+                                                        onClick = {
+                                                            recipeViewModel.deleteRecipeFile(fileId)
+                                                            confirmDelete = false
+                                                        },
+                                                        modifier = Modifier.background(
+                                                            color = Color.LightGray.copy(alpha = 0.7f),
+                                                            shape = CircleShape
+                                                        )
+                                                    ) {
+                                                        Icon(
+                                                            painter = painterResource(id = R.drawable.baseline_check_24),
+                                                            contentDescription = "confirm delete",
+                                                            tint = MaterialTheme.colorScheme.primary
+                                                        )
+                                                    }
+                                                    IconButton(
+                                                        onClick = { confirmDelete = false },
+                                                        modifier = Modifier.background(
+                                                            color = Color.LightGray.copy(alpha = 0.7f),
+                                                            shape = CircleShape
+                                                        )
+                                                    ) {
+                                                        Icon(
+                                                            painter = painterResource(id = R.drawable.baseline_close_24),
+                                                            contentDescription = "decline delete",
+                                                            tint = MaterialTheme.colorScheme.error
+                                                        )
+                                                    }
+                                                }
+                                            }
+                                        }
                                     }
-                                )
-                            }
-                            selectedFiles.forEach { file ->
-                                RecipeFileItem(
-                                    file = file,
-                                    editMode = editInstructions,
-                                    onDeleteConfirmed = {
-                                        recipeViewModel.removeSelectedRecipeFile(file)
+                                }
+                                itemsIndexed(selectedFiles) { index, file ->
+                                    var confirmDelete by remember { mutableStateOf(false) }
+                                    Box(
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .padding(bottom = 8.dp)
+                                    ) {
+                                        AsyncImage(
+                                            model = file,
+                                            contentDescription = "Selected recipe image",
+                                            modifier = Modifier
+                                                .fillMaxWidth()
+                                                .height(100.dp)
+                                                .clickable {
+                                                    if (!editMode) {
+                                                        previewStartIndex =
+                                                            recipe.recipeFileIds.size + index // shift index
+                                                        showFilePreview = true
+                                                    }
+                                                },
+                                            contentScale = ContentScale.Fit
+                                        )
+                                        if (editInstructions) {
+                                            if (!confirmDelete) {
+                                                IconButton(
+                                                    onClick = { confirmDelete = true },
+                                                    modifier = Modifier
+                                                        .align(Alignment.Center)
+                                                        .size(36.dp)
+                                                        .background(
+                                                            Color.LightGray.copy(alpha = 0.7f),
+                                                            CircleShape
+                                                        )
+                                                ) {
+                                                    Icon(
+                                                        painter = painterResource(id = R.drawable.baseline_delete_24),
+                                                        contentDescription = "Delete image",
+                                                        tint = MaterialTheme.colorScheme.primary
+                                                    )
+                                                }
+                                            } else {
+                                                Row(
+                                                    modifier = Modifier.align(Alignment.Center),
+                                                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                                                ) {
+                                                    IconButton(
+                                                        onClick = {
+                                                            recipeViewModel.removeSelectedRecipeFile(
+                                                                file
+                                                            )
+                                                            confirmDelete = false
+                                                        },
+                                                        modifier = Modifier.background(
+                                                            color = Color.LightGray.copy(alpha = 0.7f),
+                                                            shape = CircleShape
+                                                        )
+                                                    ) {
+                                                        Icon(
+                                                            painter = painterResource(id = R.drawable.baseline_check_24),
+                                                            contentDescription = "confirm delete",
+                                                            tint = MaterialTheme.colorScheme.primary
+                                                        )
+                                                    }
+                                                    IconButton(
+                                                        onClick = { confirmDelete = false },
+                                                        modifier = Modifier.background(
+                                                            color = Color.LightGray.copy(alpha = 0.7f),
+                                                            shape = CircleShape
+                                                        )
+                                                    ) {
+                                                        Icon(
+                                                            painter = painterResource(id = R.drawable.baseline_close_24),
+                                                            contentDescription = "decline delete",
+                                                            tint = MaterialTheme.colorScheme.error
+                                                        )
+                                                    }
+                                                }
+                                            }
+                                        }
                                     }
-                                )
+                                }
                             }
                             if (editInstructions) {
                                 Button(
@@ -1143,178 +1357,64 @@ fun RecipeViewScreen(
                         }
                     )
                 }
+                if (showFilePreview) {
+                    val pagerState = rememberPagerState(
+                        initialPage = previewStartIndex,
+                        pageCount = { allFiles.size }
+                    )
+                    Dialog(
+                        onDismissRequest = { showFilePreview = false },
+                        properties = DialogProperties(
+                            usePlatformDefaultWidth = false // make it fullscreen
+                        )
+                    ) {
+                        HorizontalPager(
+                            state = pagerState,
+                            modifier = Modifier.fillMaxSize()
+                        ) { page ->
+                            val (fileId, file) = allFiles[page]
+
+                            val model = if (fileId != null) {
+                                ImageRequest.Builder(context)
+                                    .data("https://shopit-oracle.mooo.com:8443/api/recipe/$recipeId/files/$fileId") // TODO ONLY DEV "https://192.168.1.38:8443/api/recipe/$recipeId/files/$fileId"
+                                    .addHeader("Authorization", "Bearer $token")
+                                    .build()
+                            } else file
+
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxSize()
+                                    .padding(16.dp),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                AsyncImage(
+                                    model = model,
+                                    imageLoader = imageLoader,
+                                    contentDescription = "Preview image",
+                                    modifier = Modifier
+                                        .fillMaxSize(),
+                                    contentScale = ContentScale.Fit
+                                )
+                                IconButton(
+                                    onClick = { showFilePreview = false },
+                                    modifier = Modifier
+                                        .align(Alignment.TopEnd)
+                                        .padding(8.dp)
+                                        .background(Color.White.copy(alpha = 0.8f), CircleShape)
+                                ) {
+                                    Icon(
+                                        painter = painterResource(id = R.drawable.baseline_close_24),
+                                        contentDescription = "Close preview",
+                                        tint = Color.DarkGray
+                                    )
+                                }
+                            }
+                        }
+                    }
+                }
             }
         }
     )
-}
-
-@Composable
-fun RecipeFileItem(
-    fileId: String? = null,           // remote file ID
-    file: File? = null,               // local selected file
-    recipeId: String? = null,         // needed only if fileId != null
-    token: String? = null,            // needed only if fileId != null
-    imageLoader: ImageLoader? = null, // needed only if fileId != null
-    editMode: Boolean,
-    onDeleteConfirmed: (Any) -> Unit  // returns either String (fileId) or File
-) {
-    var confirmDelete by remember { mutableStateOf(false) }
-    var showPreview by remember { mutableStateOf(false) }
-
-    val context = LocalContext.current
-
-    val model = when {
-        file != null -> file
-        fileId != null && recipeId != null && token != null && imageLoader != null -> {
-            ImageRequest.Builder(context)
-                .data("https://shopit-oracle.mooo.com:8443/api/recipe/$recipeId/files/$fileId")
-                .addHeader("Authorization", "Bearer $token")
-                .build()
-        }
-
-        else -> null
-    }
-
-    if (model == null) return // nothing to show
-
-    Box(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(bottom = 8.dp)
-    ) {
-        if (file != null) {
-            // Local file
-            AsyncImage(
-                model = file,
-                contentDescription = "Selected recipe image",
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(100.dp)
-                    .clickable {
-                        if (!editMode) {
-                            showPreview = true
-                        }
-                    },
-                contentScale = ContentScale.Fit
-            )
-        } else if (fileId != null && imageLoader != null) {
-            // Remote file
-            AsyncImage(
-                model = model,
-                imageLoader = imageLoader,
-                contentDescription = "Recipe image",
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(100.dp)
-                    .clickable {
-                        if (!editMode) {
-                            showPreview = true
-                        }
-                    },
-                contentScale = ContentScale.Fit
-            )
-        }
-
-        if (editMode) {
-            if (!confirmDelete) {
-                IconButton(
-                    onClick = { confirmDelete = true },
-                    modifier = Modifier
-                        .align(Alignment.Center)
-                        .size(36.dp)
-                        .background(Color.LightGray.copy(alpha = 0.7f), CircleShape)
-                ) {
-                    Icon(
-                        painter = painterResource(id = R.drawable.baseline_delete_24),
-                        contentDescription = "Delete image",
-                        tint = MaterialTheme.colorScheme.primary
-                    )
-                }
-            } else {
-                Row(
-                    modifier = Modifier.align(Alignment.Center),
-                    horizontalArrangement = Arrangement.spacedBy(12.dp)
-                ) {
-                    IconButton(
-                        onClick = {
-                            onDeleteConfirmed(file ?: fileId!!)
-                            confirmDelete = false
-                        },
-                        modifier = Modifier.background(
-                            color = Color.LightGray.copy(alpha = 0.7f),
-                            shape = CircleShape
-                        )
-                    ) {
-                        Icon(
-                            painter = painterResource(id = R.drawable.baseline_check_24),
-                            contentDescription = "confirm delete",
-                            tint = MaterialTheme.colorScheme.primary
-                        )
-                    }
-                    IconButton(
-                        onClick = { confirmDelete = false },
-                        modifier = Modifier.background(
-                            color = Color.LightGray.copy(alpha = 0.7f),
-                            shape = CircleShape
-                        )
-                    ) {
-                        Icon(
-                            painter = painterResource(id = R.drawable.baseline_close_24),
-                            contentDescription = "decline delete",
-                            tint = MaterialTheme.colorScheme.error
-                        )
-                    }
-                }
-            }
-        }
-    }
-    if (showPreview && imageLoader != null) {
-        Dialog(onDismissRequest = { showPreview = false }) {
-            Box(
-                modifier = Modifier
-                    .wrapContentSize(),
-                contentAlignment = Alignment.Center
-            ) {
-                var scale by remember { mutableStateOf(1f) }
-                var offset by remember { mutableStateOf(Offset.Zero) }
-
-                AsyncImage(
-                    model = model,
-                    imageLoader = imageLoader,
-                    contentDescription = "Preview image",
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .wrapContentHeight()
-                        .pointerInput(Unit) {
-                            detectTransformGestures { _, pan, zoom, _ ->
-                                scale = (scale * zoom).coerceIn(1f, 5f) // limit zoom
-                                offset = if (scale > 1f) offset + pan else Offset.Zero
-                            }
-                        }
-                        .graphicsLayer(
-                            scaleX = scale,
-                            scaleY = scale,
-                            translationX = offset.x,
-                            translationY = offset.y
-                        ),
-                    contentScale = ContentScale.Fit
-                )
-                IconButton(
-                    onClick = { showPreview = false },
-                    modifier = Modifier
-                        .align(Alignment.TopEnd)
-                        .padding(8.dp)
-                        .background(Color.White.copy(alpha = 0.8f), CircleShape)
-                ) {
-                    Icon(
-                        painter = painterResource(id = R.drawable.baseline_close_24),
-                        contentDescription = "Close preview",
-                        tint = Color.DarkGray
-                    )
-                }
-            }
-        }
-    }
 }
 
 private fun getFileNameFromUri(context: Context, uri: Uri): String? {

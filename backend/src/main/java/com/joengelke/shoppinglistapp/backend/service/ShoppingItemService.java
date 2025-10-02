@@ -84,6 +84,12 @@ public class ShoppingItemService {
 
         String username = jwtTokenProvider.getUsernameFromToken(header.replace("Bearer ", ""));
 
+        // if the amount or checked status changed then the editedBy and checked at will be changed
+        if((!Objects.equals(newShoppingItem.getAmount(), shoppingItem.getAmount())) || (!newShoppingItem.isChecked() && shoppingItem.isChecked())) {
+            shoppingItem.setEditedBy(username);
+            shoppingItem.setCheckedAt(Instant.now());
+        }
+
         // checked status and createdBy cant be updated
         if (newShoppingItem.getName() != null) {
             shoppingItem.setName(newShoppingItem.getName());
@@ -103,11 +109,7 @@ public class ShoppingItemService {
 
         shoppingItem.setChecked(newShoppingItem.isChecked());
 
-        shoppingItem.setCheckedAt(Instant.now());
-
         shoppingItem.setEditedAt(Instant.now());
-
-        shoppingItem.setEditedBy(username);
 
         return shoppingItemRepository.save(shoppingItem);
     }

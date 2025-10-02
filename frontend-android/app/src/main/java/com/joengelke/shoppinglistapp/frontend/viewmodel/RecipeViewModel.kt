@@ -48,6 +48,9 @@ class RecipeViewModel @Inject constructor(
             }
             .stateIn(viewModelScope, SharingStarted.Lazily, emptyList())
 
+    private val _recipeCategoriesByPopularity = MutableStateFlow<List<String>>(emptyList())
+    val recipeCategoriesByPopularity: StateFlow<List<String>> = _recipeCategoriesByPopularity
+
     private val recipesSortOption = settingsRepository.recipesSortOptionFLow
 
     val alphabeticSortedRecipes: StateFlow<List<Pair<String, List<Recipe>>>> =
@@ -176,6 +179,15 @@ class RecipeViewModel @Inject constructor(
         }
     }
 
+    fun loadRecipeCategoriesByPopularity() {
+        viewModelScope.launch {
+            val result = recipeRepository.getRecipeCategoriesByPopularity()
+            result.onSuccess { categories ->
+                _recipeCategoriesByPopularity.value = categories
+            }
+        }
+    }
+
     fun createEmptyRecipe(
         recipeName: String,
         onSuccess: (String) -> Unit
@@ -184,6 +196,7 @@ class RecipeViewModel @Inject constructor(
             id = "",
             name = recipeName,
             creatorId = "",
+            creatorUsername = "",
             createdAt = "",
             itemSet = ItemSet("", recipeName, emptyList()),
             description = "",

@@ -86,6 +86,28 @@ class RecipeRepository @Inject constructor(
         }
     }
 
+    suspend fun getRecipeCategoriesByPopularity(): Result<List<String>> {
+        return try {
+            val token =
+                tokenManager.getToken() ?: return Result.failure(Exception("No token found"))
+
+            val response =
+                retrofitProvider.getRecipeApi().getRecipeCategoriesByPopularity("Bearer $token")
+            when {
+                response.isSuccessful -> Result.success(response.body() ?: emptyList())
+                response.code() == 401 -> {
+                    sessionManager.logout("Unauthorized: try to login again ")
+                    Result.failure(Exception("Unauthorized"))
+                }
+
+                else -> Result.failure(Exception("Error: ${response.code()}"))
+            }
+        } catch (e: Exception) {
+            sessionManager.disconnected("No connection to the Server")
+            Result.failure(Exception("Network error: ${e.message}"))
+        }
+    }
+
     suspend fun createRecipe(recipe: Recipe): Result<Recipe> {
         return try {
             val token =
@@ -370,6 +392,7 @@ class RecipeRepository @Inject constructor(
                         id = "",
                         name = title,
                         creatorId = "",
+                        creatorUsername = "",
                         createdAt = "",
                         itemSet = ItemSet("", title, itemSetItems),
                         description = description,
@@ -449,6 +472,7 @@ class RecipeRepository @Inject constructor(
                         id = "",
                         name = title,
                         creatorId = "",
+                        creatorUsername = "",
                         createdAt = "",
                         itemSet = ItemSet("", title, itemSetItems),
                         description = description,
