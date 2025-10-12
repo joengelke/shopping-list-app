@@ -2,9 +2,9 @@
 
 ShopIt is a full-stack shopping management platform for creating, organizing, and syncing shopping lists and recipes across devices.
 
-## 📂 Project Structure
+---
 
-Use the following to display the structure correctly on GitHub — include the triple backticks exactly as shown:
+## 📦 Project Structure
 
 ```plaintext
 .
@@ -12,6 +12,8 @@ Use the following to display the structure correctly on GitHub — include the t
 ├── frontend-android/     # Android app (Kotlin, Jetpack Compose)
 └── frontend-web/         # Web app (Angular)
 ```
+
+---
 
 ## 🛠️ Tech Stack
 
@@ -31,8 +33,31 @@ Use the following to display the structure correctly on GitHub — include the t
 - TypeScript, SCSS
 - Modular architecture
 
+---
+
 ## 🚀 Features
+
 - Secure user authentication (JWT)
 - Shopping list & item management
+- Recipe storage and organization
 - Cross-platform sync (Android + Web)
 - Cloud-hosted backend (Oracle Cloud)
+
+---
+
+## 📸 Screenshots (Android)
+
+<div align="center">
+  <img src="frontend-android/screenshots/shopping-list-overview.png" alt="Shopping List Overview" width="220"/>
+  <img src="frontend-android/screenshots/items-overview.png" alt="Items Overview" width="220"/>
+  <img src="frontend-android/screenshots/recipes-overview.png" alt="Recipe Overview" width="220"/>
+  <img src="frontend-android/screenshots/marketplace.png" alt="Marketplace Overview" width="220"/>
+</div>
+
+---
+
+## 👤 Author
+
+Developed by [joengelke](https://github.com/joengelke)
+
+---
