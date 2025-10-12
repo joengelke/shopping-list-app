@@ -111,10 +111,10 @@ fun RecipeViewScreen(
     var currentShareMenu by remember { mutableStateOf("main") }
     val shoppingLists by shoppingListViewModel.shoppingLists.collectAsState()
 
-    var showDescription by remember { mutableStateOf(true) }
+    var showDescription by remember { mutableStateOf(false) }
     var editDescription by remember { mutableStateOf(false) }
 
-    var showCategories by remember { mutableStateOf(true) }
+    var showCategories by remember { mutableStateOf(false) }
     var editCategories by remember { mutableStateOf(false) }
     var openAddCategoryField by remember { mutableStateOf(false) }
     var categoryInput by remember { mutableStateOf("") }

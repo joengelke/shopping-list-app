@@ -150,7 +150,7 @@ fun LoginScreen(
                         keyboardController?.hide()
                         loading = true
                         authViewModel.login(
-                            username, password,
+                            username.trim(), password,
                             onSuccess = {
                                 navController.navigate("shoppingListOverview") {
                                     popUpTo("login") { // Remove login screen from backstack

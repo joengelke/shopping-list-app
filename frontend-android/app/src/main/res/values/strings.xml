@@ -29,4 +29,9 @@
     <string name="app_widget_description">This is an app widget description</string>
     <string name="share">Share</string>
     <string name="back">Back</string>
+    <string name="by">"by "</string>
+    <string name="password_must_be_at_least_8_characters">Password must be at least 8 characters</string>
+    <string name="must_contain_an_uppercase_letter">Must contain an uppercase letter</string>
+    <string name="must_contain_a_lowercase_letter">Must contain a lowercase letter</string>
+    <string name="must_contain_a_number">Must contain a number</string>
 </resources>

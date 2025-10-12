@@ -93,8 +93,20 @@ fun RegisterScreen(
             // Password TextField
             OutlinedTextField(
                 value = password,
-                onValueChange = { password = it },
+                onValueChange = {
+                    password = it
+                    
+                    errorMessage = when {
+                        password.isEmpty() -> null
+                        password.length < 8 -> context.getString(R.string.password_must_be_at_least_8_characters)
+                        !password.any { c -> c.isUpperCase() } -> context.getString(R.string.must_contain_an_uppercase_letter)
+                        !password.any { c -> c.isLowerCase() } -> context.getString(R.string.must_contain_a_lowercase_letter)
+                        !password.any { c -> c.isDigit() } -> context.getString(R.string.must_contain_a_number)
+                        else -> null // valid
+                    }
+                                },
                 label = { Text(stringResource(R.string.password)) },
+                isError = errorMessage != null,
                 visualTransformation = if (passwordVisible) VisualTransformation.None else PasswordVisualTransformation(),
                 trailingIcon = {
                     if (password != "") {
@@ -126,7 +138,7 @@ fun RegisterScreen(
                         // Perform registration logic
                         loading = true
                         viewModel.register(
-                            username, password,
+                            username.trim(), password,
                             onSuccess = { message ->
                                 loading = false
                                 Toast.makeText(context, message, Toast.LENGTH_SHORT).show()

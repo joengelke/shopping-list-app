@@ -75,7 +75,15 @@ class AuthRepository @Inject constructor(
                     Result.success("User $message registered")
                 }
 
-                else -> Result.failure(Exception("Username already taken"))
+                response.code() == 403 -> {
+                    Result.failure(Exception("Password requirements missing"))
+                }
+
+                response.code() == 409 -> {
+                    Result.failure(Exception("Username already taken"))
+                }
+
+                else -> Result.failure(Exception("Unknown error: code ${response.code()}"))
             }
         } catch (e: Exception) {
             Result.failure(Exception(context.getString(R.string.network_error_maybe_try_another_server_bottom_left)))

@@ -78,12 +78,12 @@ fun ShoppingItemsCreateScreen(
 
     // Filter items that start with the entered name
     val filteredShoppingItems =
-        shoppingItems.filter { it.name.contains(filterName, ignoreCase = true) }
+        shoppingItems.filter { it.name.contains(filterName.trim(), ignoreCase = true) }
 
     // own item name always first item (if it doesn't exists), then all suggestions are added
     val allItems =
         if (filterName.isNotEmpty()) {
-            if (!filteredShoppingItems.any { it.name == filterName }) {
+            if (!filteredShoppingItems.any { it.name == filterName.trim() }) {
                 newShoppingItem + filteredShoppingItems
             } else {
                 filteredShoppingItems

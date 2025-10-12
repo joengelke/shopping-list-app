@@ -857,8 +857,8 @@ fun RecipeContainer(
                 .padding(
                     start = 16.dp,
                     end = 6.dp,
-                    top = if (!editMode) 20.dp else if (editRecipeName) 4.dp else 8.dp,
-                    bottom = if (!editMode) 20.dp else if (editRecipeName) 4.dp else 8.dp
+                    top = if (editRecipeName) 4.dp else 8.dp,
+                    bottom = if (editRecipeName) 4.dp else 8.dp
                 ),
             verticalAlignment = Alignment.CenterVertically
         ) {
@@ -906,6 +906,7 @@ fun RecipeContainer(
                             recipe.copy(name = newRecipeName),
                         )
                         editRecipeName = false
+                        editMode = false
                     }
                 ) {
                     Icon(
@@ -929,21 +930,30 @@ fun RecipeContainer(
                     verticalAlignment = Alignment.CenterVertically,
                     modifier = Modifier.weight(1f)
                 ) {
-                    Text(
-                        text = recipe.name,
-                        style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
-                        color = MaterialTheme.colorScheme.onSurface,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
-                        modifier = Modifier.padding(end = 4.dp)
-                    )
-                    if (currentUserId == recipe.creatorId) {
-                        Icon(
-                            painter = painterResource(id = R.drawable.baseline_person_24),
-                            contentDescription = "Own recipe",
-                            tint = MaterialTheme.colorScheme.primary,
-                            modifier = Modifier.size(16.dp)
-                        )
+                    Column {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Text(
+                                text = recipe.name,
+                                style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
+                                color = MaterialTheme.colorScheme.onSurface,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis,
+                                modifier = Modifier.padding(end = 4.dp)
+                            )
+                            if (currentUserId == recipe.creatorId) {
+                                Icon(
+                                    painter = painterResource(id = R.drawable.baseline_person_24),
+                                    contentDescription = "Own recipe",
+                                    tint = MaterialTheme.colorScheme.primary,
+                                    modifier = Modifier.size(16.dp)
+                                )
+                            }
+                        }
+                        if (recipe.creatorUsername.isNotEmpty()) {
+                            Text(
+                                text = stringResource(R.string.by) + recipe.creatorUsername
+                            )
+                        }
                     }
                 }
                 if (editMode) {
@@ -959,7 +969,10 @@ fun RecipeContainer(
                         VisibilityDropdown(
                             recipeId = recipe.id,
                             visibility = recipe.visibility,
-                            iconColor = MaterialTheme.colorScheme.primary
+                            iconColor = MaterialTheme.colorScheme.primary,
+                            onChange = {
+                                editMode = false
+                            }
                         )
                     }
 

@@ -29,6 +29,7 @@ class RecipeViewModel @Inject constructor(
     private val retrofitProvider: RetrofitProvider
 ) : ViewModel() {
 
+    // either consists of use recipes or marketplace recipes depending on which are loaded from the backend
     private val _recipes = MutableStateFlow<List<Recipe>>(emptyList())
     val recipes: StateFlow<List<Recipe>> = _recipes.asStateFlow()
 
@@ -38,18 +39,23 @@ class RecipeViewModel @Inject constructor(
     //private val _marketplaceRecipes = MutableStateFlow<List<Recipe>>(emptyList())
     //val marketplaceRecipes: StateFlow<List<Recipe>> = _marketplaceRecipes.asStateFlow()
 
-    val marketplaceRecipesCategories: StateFlow<List<String>> =
-        recipes
-            .map { recipes ->
-                recipes
-                    .flatMap { it.categories }
-                    .distinct()
-                    .sorted()
-            }
-            .stateIn(viewModelScope, SharingStarted.Lazily, emptyList())
 
     private val _recipeCategoriesByPopularity = MutableStateFlow<List<String>>(emptyList())
     val recipeCategoriesByPopularity: StateFlow<List<String>> = _recipeCategoriesByPopularity
+
+    val marketplaceRecipeCategoriesByPopularity: StateFlow<List<String>> =
+        combine(
+            recipeCategoriesByPopularity,
+            recipes
+        ) { popularCategories, currentRecipes ->
+            // Collect all categories that appear in the current marketplace
+            val currentCategories = currentRecipes
+                .flatMap { it.categories }
+                .toSet()
+
+            // Keep only categories that exist in the current marketplace
+            popularCategories.filter { it in currentCategories }
+        }.stateIn(viewModelScope, SharingStarted.Lazily, emptyList())
 
     private val recipesSortOption = settingsRepository.recipesSortOptionFLow
 

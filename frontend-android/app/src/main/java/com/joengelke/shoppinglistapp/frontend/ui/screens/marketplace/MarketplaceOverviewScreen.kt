@@ -55,6 +55,8 @@ fun MarketplaceOverviewScreen(
 
     LaunchedEffect(Unit) {
         recipeViewModel.loadMarketplaceRecipes()
+        userViewModel.updateCurrentUserId()
+        recipeViewModel.loadRecipeCategoriesByPopularity()
     }
 
     val focusRequester = remember { FocusRequester() }
@@ -70,11 +72,11 @@ fun MarketplaceOverviewScreen(
     }
 
     val marketplaceRecipes by recipeViewModel.recipes.collectAsState()
-    val marketplaceRecipesCategories by recipeViewModel.marketplaceRecipesCategories.collectAsState()
 
+    val marketplaceCategoriesByPopularity by recipeViewModel.marketplaceRecipeCategoriesByPopularity.collectAsState()
     var selectedCategories by remember { mutableStateOf(setOf<String>()) }
-    val sortedCategories = remember(marketplaceRecipesCategories, selectedCategories) {
-        marketplaceRecipesCategories.sortedBy { category ->
+    val sortedCategories = remember(marketplaceCategoriesByPopularity, selectedCategories) {
+        marketplaceCategoriesByPopularity.sortedBy { category ->
             category !in selectedCategories
         }
     }
@@ -84,7 +86,8 @@ fun MarketplaceOverviewScreen(
             .filter { recipe ->
                 // Filter by search text
                 val matchesSearch = recipeSearchValue.isEmpty() ||
-                        recipe.name.contains(recipeSearchValue, ignoreCase = true)
+                        recipe.name.contains(recipeSearchValue.trim(), ignoreCase = true) ||
+                        recipe.creatorUsername.contains(recipeSearchValue.trim(), ignoreCase = true)
 
                 // Filter by category selection
                 val matchesCategory = selectedCategories.isEmpty() ||
@@ -336,21 +339,32 @@ fun MarketplaceRecipeContainer(
                 modifier = Modifier
                     .weight(1f)
             ) {
-                Text(
-                    text = recipe.name,
-                    style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
-                    color = MaterialTheme.colorScheme.onSurface,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                    modifier = Modifier.padding(end = 4.dp)
-                )
-                if (currentUserId == recipe.creatorId) {
-                    Icon(
-                        painter = painterResource(id = R.drawable.baseline_person_24),
-                        contentDescription = "Own recipe",
-                        tint = MaterialTheme.colorScheme.primary,
-                        modifier = Modifier.size(16.dp)
-                    )
+                Column {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        Text(
+                            text = recipe.name,
+                            style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
+                            color = MaterialTheme.colorScheme.onSurface,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                            modifier = Modifier.padding(end = 4.dp)
+                        )
+                        if (currentUserId == recipe.creatorId) {
+                            Icon(
+                                painter = painterResource(id = R.drawable.baseline_person_24),
+                                contentDescription = "Own recipe",
+                                tint = MaterialTheme.colorScheme.primary,
+                                modifier = Modifier.size(16.dp)
+                            )
+                        }
+                    }
+                    if (recipe.creatorUsername.isNotEmpty()) {
+                        Text(
+                            text = stringResource(R.string.by) + recipe.creatorUsername
+                        )
+                    }
                 }
             }
             IconButton(

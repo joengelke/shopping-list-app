@@ -24,4 +24,9 @@
     <string name="search">Suche…</string>
     <string name="share">Teilen</string>
     <string name="back">Zurück</string>
+    <string name="by">"von "</string>
+    <string name="password_must_be_at_least_8_characters">Muss aus mindestens 8 Zeichen bestehen</string>
+    <string name="must_contain_an_uppercase_letter">Muss einen Großbuchstaben beinhalten</string>
+    <string name="must_contain_a_lowercase_letter">Muss einen Kleinbuchstaben beinhalten</string>
+    <string name="must_contain_a_number">Muss eine Nummer beinhalten</string>
 </resources>

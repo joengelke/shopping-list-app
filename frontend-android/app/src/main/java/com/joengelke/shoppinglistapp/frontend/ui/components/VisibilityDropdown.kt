@@ -19,7 +19,8 @@ fun VisibilityDropdown(
     recipeId: String,
     visibility: Visibility,
     iconColor: Color,
-    recipeViewModel: RecipeViewModel = hiltViewModel()
+    recipeViewModel: RecipeViewModel = hiltViewModel(),
+    onChange: () -> Unit
 ) {
     var expanded by remember { mutableStateOf(false) }
     var loading by remember { mutableStateOf(false) }
@@ -83,6 +84,7 @@ fun VisibilityDropdown(
                             onSuccess = {
                                 loading = false
                                 expanded = false
+                                onChange()
                             }
                         )
                     }
