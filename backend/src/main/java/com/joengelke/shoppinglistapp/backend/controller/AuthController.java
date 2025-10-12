@@ -1,10 +1,13 @@
 package com.joengelke.shoppinglistapp.backend.controller;
 
+import com.joengelke.shoppinglistapp.backend.dto.RegisterRequest;
 import com.joengelke.shoppinglistapp.backend.model.User;
 import com.joengelke.shoppinglistapp.backend.repository.UserRepository;
 import com.joengelke.shoppinglistapp.backend.security.JwtTokenProvider;
 import com.joengelke.shoppinglistapp.backend.service.UserService;
+import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -37,11 +40,11 @@ public class AuthController {
     }
 
     @PostMapping("/register")
-    public ResponseEntity<?> registerUser(@RequestBody User user) {
-        if (userRepository.existsByUsername(user.getUsername())) {
-            return ResponseEntity.badRequest().body(Map.of("error", "Username already taken!"));
+    public ResponseEntity<?> registerUser(@Valid @RequestBody RegisterRequest request) {
+        if (userRepository.existsByUsername(request.getUsername())) {
+            return ResponseEntity.status(HttpStatus.CONFLICT).body(Map.of("error", "Username already taken!")); // error code = 409
         }
-        User newUser = userService.createUser(user.getUsername(), passwordEncoder.encode(user.getPassword()));
+        User newUser = userService.createUser(request.getUsername(), passwordEncoder.encode(request.getPassword()));
         return ResponseEntity.ok(Map.of("username", newUser.getUsername())); // return JSON object with username
     }
 
