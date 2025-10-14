@@ -23,4 +23,6 @@
     <string name="private_word">Private</string>
     <string name="public_word">Public</string>
     <string name="add_to_shopping_list">Add to shopping list</string>
+    <string name="add_image">Add image</string>
+    <string name="you_are_the_recipe_creator">You are the recipe creator</string>
 </resources>

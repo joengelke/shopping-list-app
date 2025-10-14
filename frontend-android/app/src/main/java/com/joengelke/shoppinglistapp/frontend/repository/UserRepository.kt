@@ -71,6 +71,30 @@ class UserRepository @Inject constructor(
         }
     }
 
+    suspend fun getCurrentUserRecipeIds(): Result<List<String>> {
+        return try {
+            val token =
+                tokenManager.getToken() ?: return Result.failure(Exception("No token found"))
+
+            val response = retrofitProvider.getUserApi().getCurrentUserRecipeIds("Bearer $token")
+
+            when {
+                response.isSuccessful -> response.body()?.let { Result.success(it) }
+                    ?: Result.failure(Exception("Unexpected empty response"))
+
+                response.code() == 401 -> {
+                    sessionManager.logout("Unauthorized: try to login again ")
+                    Result.failure(Exception("Unauthorized"))
+                }
+
+                else -> Result.failure(Exception("Error: ${response.code()}"))
+            }
+        } catch (e: Exception) {
+            sessionManager.disconnected("No connection to the Server")
+            Result.failure(Exception("Network error: ${e.message}"))
+        }
+    }
+
     suspend fun addUserToShoppingList(
         shoppingListId: String,
         username: String
@@ -218,7 +242,8 @@ class UserRepository @Inject constructor(
             val token =
                 tokenManager.getToken() ?: return Result.failure(Exception("No token found"))
 
-            val response =              retrofitProvider.getUserApi().addRoleToUser("Bearer $token", userId, role)
+            val response =
+                retrofitProvider.getUserApi().addRoleToUser("Bearer $token", userId, role)
             when {
                 response.isSuccessful -> response.body()?.let { Result.success(it) }
                     ?: Result.failure(Exception("Unexpected empty response"))

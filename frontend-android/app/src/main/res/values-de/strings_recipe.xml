@@ -23,4 +23,6 @@
     <string name="private_word">Privat</string>
     <string name="public_word">Öffentlich</string>
     <string name="add_to_shopping_list">Einkaufsliste hinzufügen</string>
+    <string name="add_image">Bild hinzufügen</string>
+    <string name="you_are_the_recipe_creator">Du bist der Rezeptersteller</string>
 </resources>

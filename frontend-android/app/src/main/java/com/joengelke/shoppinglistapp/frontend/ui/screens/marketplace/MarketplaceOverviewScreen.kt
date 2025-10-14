@@ -1,6 +1,5 @@
 package com.joengelke.shoppinglistapp.frontend.ui.screens.marketplace
 
-import android.widget.Toast
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -21,7 +20,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
@@ -39,7 +37,6 @@ import com.joengelke.shoppinglistapp.frontend.models.RecipeSource
 import com.joengelke.shoppinglistapp.frontend.navigation.Routes
 import com.joengelke.shoppinglistapp.frontend.ui.components.BottomNavigationBar
 import com.joengelke.shoppinglistapp.frontend.viewmodel.RecipeViewModel
-import com.joengelke.shoppinglistapp.frontend.viewmodel.SettingsViewModel
 import com.joengelke.shoppinglistapp.frontend.viewmodel.UserViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -47,10 +44,8 @@ import com.joengelke.shoppinglistapp.frontend.viewmodel.UserViewModel
 fun MarketplaceOverviewScreen(
     navController: NavHostController,
     recipeViewModel: RecipeViewModel = hiltViewModel(),
-    userViewModel: UserViewModel = hiltViewModel(),
-    settingsViewModel: SettingsViewModel = hiltViewModel()
+    userViewModel: UserViewModel = hiltViewModel()
 ) {
-    val context = LocalContext.current
     val currentUserId by userViewModel.currentUserId.collectAsState()
 
     LaunchedEffect(Unit) {
@@ -272,27 +267,6 @@ fun MarketplaceOverviewScreen(
                                         RecipeSource.MARKETPLACE
                                     )
                                 )
-                            },
-                            onAddRecipeToUser = { recipeId ->
-                                recipeViewModel.addRecipeToUser(
-                                    recipeId,
-                                    null,
-                                    updateRecipes = false,
-                                    onSuccess = {
-                                        Toast.makeText(
-                                            context,
-                                            "${recipe.name} added to to your recipes",
-                                            Toast.LENGTH_SHORT
-                                        ).show()
-                                    },
-                                    onFailure = {
-                                        Toast.makeText(
-                                            context,
-                                            "${recipe.name} could not be added",
-                                            Toast.LENGTH_SHORT
-                                        ).show()
-                                    }
-                                )
                             }
                         )
                     }
@@ -310,7 +284,6 @@ fun MarketplaceRecipeContainer(
     recipe: Recipe,
     currentUserId: String,
     onOpenRecipe: (String) -> Unit,
-    onAddRecipeToUser: (String) -> Unit
 ) {
 
     Card(
@@ -366,19 +339,6 @@ fun MarketplaceRecipeContainer(
                         )
                     }
                 }
-            }
-            IconButton(
-                onClick = {
-                    onAddRecipeToUser(recipe.id)
-                }
-            ) {
-                Icon(
-                    painter = painterResource(id = R.drawable.baseline_library_add_24),
-                    contentDescription = "add recipe to user",
-                    tint = MaterialTheme.colorScheme.primary,
-                    modifier = Modifier
-                        .padding(end = 10.dp)
-                )
             }
         }
     }

@@ -1,4 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="marketplace">Marktplatz</string>
+    <string name="added_to_my_recipes">%1$s zu meinen Rezepten hinzugefügt</string>
+    <string name="could_not_be_added">%1$s konnte nicht hinzugefügt werden</string>
+    <string name="removed_from_my_recipes">%1$s aus meinen Rezpten entfernt</string>
 </resources>

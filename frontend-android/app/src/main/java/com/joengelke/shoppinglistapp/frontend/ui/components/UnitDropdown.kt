@@ -19,6 +19,7 @@ fun UnitDropdown(
         "", "ml", "l", "g", "kg",
         stringResource(R.string.teaspoon),
         stringResource(R.string.tablespoon),
+        stringResource(R.string.pinch),
         stringResource(R.string.pieces_short),
         stringResource(R.string.cup),
         stringResource(R.string.cube),

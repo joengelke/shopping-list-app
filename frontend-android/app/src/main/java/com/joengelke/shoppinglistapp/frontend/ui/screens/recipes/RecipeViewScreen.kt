@@ -98,12 +98,15 @@ fun RecipeViewScreen(
             }
         }
         userViewModel.updateCurrentUserId()
+        userViewModel.getCurrentUserRecipeIds()
         shoppingListViewModel.loadShoppingLists()
+        recipeViewModel.loadRecipeCategoriesByPopularity()
     }
 
     val recipe by recipeViewModel.currentRecipe.collectAsState()
     val currentUserId by userViewModel.currentUserId.collectAsState()
     val token by recipeViewModel.token.collectAsState()
+    val currentUserRecipeIds by userViewModel.currentUserRecipeIds.collectAsState()
 
     var editMode by remember { mutableStateOf(false) }
 
@@ -113,26 +116,6 @@ fun RecipeViewScreen(
 
     var showDescription by remember { mutableStateOf(false) }
     var editDescription by remember { mutableStateOf(false) }
-
-    var showCategories by remember { mutableStateOf(false) }
-    var editCategories by remember { mutableStateOf(false) }
-    var openAddCategoryField by remember { mutableStateOf(false) }
-    var categoryInput by remember { mutableStateOf("") }
-    val categoriesByPopularity by recipeViewModel.recipeCategoriesByPopularity.collectAsState()
-    val filteredCategories =
-        categoriesByPopularity.filter { it.contains(categoryInput, ignoreCase = true) }
-    var expandedCategoriesDropdown by remember { mutableStateOf(false) }
-    val focusRequesterCategory = remember { FocusRequester() }
-    val keyboardController = LocalSoftwareKeyboardController.current
-    LaunchedEffect(openAddCategoryField) {
-        if (openAddCategoryField) {
-            focusRequesterCategory.requestFocus()
-            keyboardController?.show()
-        }
-    }
-    LaunchedEffect(Unit) {
-        recipeViewModel.loadRecipeCategoriesByPopularity()
-    }
 
     var showIngredients by remember { mutableStateOf(true) }
     var editIngredients by remember { mutableStateOf(false) }
@@ -174,6 +157,23 @@ fun RecipeViewScreen(
             selectedFiles.map { file -> null to file }
     var previewStartIndex by remember { mutableStateOf(0) }
     var showFilePreview by remember { mutableStateOf(false) }
+
+    var showCategories by remember { mutableStateOf(false) }
+    var editCategories by remember { mutableStateOf(false) }
+    var openAddCategoryField by remember { mutableStateOf(false) }
+    var categoryInput by remember { mutableStateOf("") }
+    val categoriesByPopularity by recipeViewModel.recipeCategoriesByPopularity.collectAsState()
+    val filteredCategories =
+        categoriesByPopularity.filter { it.contains(categoryInput, ignoreCase = true) }
+    var expandedCategoriesDropdown by remember { mutableStateOf(false) }
+    val focusRequesterCategory = remember { FocusRequester() }
+    val keyboardController = LocalSoftwareKeyboardController.current
+    LaunchedEffect(openAddCategoryField) {
+        if (openAddCategoryField) {
+            focusRequesterCategory.requestFocus()
+            keyboardController?.show()
+        }
+    }
 
     var showDialog by remember { mutableStateOf(false) }
 
@@ -224,6 +224,79 @@ fun RecipeViewScreen(
                                 }
                             }
                             if (!editMode) {
+                                IconButton(
+                                    onClick = {
+                                        if (currentUserRecipeIds.contains(recipeId) && recipe.creatorId != currentUserId) {
+                                            // removes recipe from "my recipes"
+                                            recipeViewModel.removeRecipeFromUser(
+                                                recipeId,
+                                                null,
+                                                onSuccess = {
+                                                    userViewModel.getCurrentUserRecipeIds()
+                                                    Toast.makeText(
+                                                        context,
+                                                        context.getString(
+                                                            R.string.removed_from_my_recipes,
+                                                            recipe.name
+                                                        ),
+                                                        Toast.LENGTH_SHORT
+                                                    ).show()
+                                                }
+                                            )
+                                        } else if (recipe.creatorId == currentUserId) {
+                                            Toast.makeText(
+                                                context,
+                                                context.getString(R.string.you_are_the_recipe_creator),
+                                                Toast.LENGTH_SHORT
+                                            ).show()
+                                        } else {
+                                            recipeViewModel.addRecipeToUser(
+                                                recipeId,
+                                                null,
+                                                updateRecipes = true,
+                                                onSuccess = {
+                                                    // success even if recipe was already part of user recipes
+                                                    userViewModel.getCurrentUserRecipeIds()
+                                                    Toast.makeText(
+                                                        context,
+                                                        context.getString(
+                                                            R.string.added_to_my_recipes,
+                                                            recipe.name
+                                                        ),
+                                                        Toast.LENGTH_SHORT
+                                                    ).show()
+                                                },
+                                                onFailure = {
+                                                    Toast.makeText(
+                                                        context,
+                                                        context.getString(
+                                                            R.string.could_not_be_added,
+                                                            recipe.name
+                                                        ),
+                                                        Toast.LENGTH_SHORT
+                                                    ).show()
+                                                }
+                                            )
+                                        }
+                                    }
+                                ) {
+                                    Icon(
+                                        painter = if (currentUserRecipeIds.contains(recipeId) && recipe.creatorId != currentUserId) painterResource(
+                                            id = R.drawable.outline_heart_minus_24
+                                        ) else if (recipe.creatorId == currentUserId) painterResource(
+                                            id = R.drawable.baseline_person_24
+                                        ) else painterResource(
+                                            id = R.drawable.outline_heart_plus_24
+                                        ),
+                                        contentDescription = "add recipe to user",
+                                        tint = if (currentUserRecipeIds.contains(recipeId) && recipe.creatorId != currentUserId)
+                                            MaterialTheme.colorScheme.error
+                                        else if (recipe.creatorId == currentUserId)
+                                            MaterialTheme.colorScheme.onPrimary
+                                        else
+                                            MaterialTheme.colorScheme.onPrimary
+                                    )
+                                }
                                 Box {
                                     IconButton(
                                         onClick = {
@@ -479,274 +552,6 @@ fun RecipeViewScreen(
                         }
                     }
 
-                    // === Categories Section ===
-                    Column(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .clickable { showCategories = !showCategories }
-                            .padding(horizontal = 16.dp, vertical = 8.dp)
-                    ) {
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            modifier = Modifier.fillMaxWidth()
-                        ) {
-                            Text(
-                                text = stringResource(R.string.categories),
-                                style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.SemiBold),
-                                color = MaterialTheme.colorScheme.primary,
-                            )
-                            if (editMode) {
-                                IconButton(
-                                    onClick = {
-                                        if (!editCategories) {
-                                            editCategories = true
-                                            showCategories = true
-                                        } else {
-                                            recipeViewModel.updateRecipe(recipe)
-                                            editCategories = false
-                                        }
-                                    },
-                                    modifier = Modifier.size(20.dp)
-                                ) {
-                                    Icon(
-                                        painter = painterResource(id = if (!editCategories) R.drawable.baseline_edit_24 else R.drawable.baseline_save_24),
-                                        contentDescription = "Edit categories",
-                                        tint = MaterialTheme.colorScheme.primary,
-                                        modifier = Modifier.size(16.dp)
-                                    )
-                                }
-                            }
-                            Spacer(modifier = Modifier.weight(1f))
-                            Icon(
-                                imageVector = if (showCategories) Icons.Default.KeyboardArrowDown else Icons.AutoMirrored.Filled.KeyboardArrowRight,
-                                contentDescription = "Toggle categories",
-                                tint = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                        }
-
-                        Spacer(modifier = Modifier.height(4.dp))
-
-                        HorizontalDivider(
-                            color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.6f),
-                            thickness = 1.dp
-                        )
-                    }
-                    if (showCategories) {
-                        FlowRow(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(horizontal = 16.dp)
-                                .then(
-                                    if (editCategories) {
-                                        Modifier.border(
-                                            width = 1.dp,
-                                            color = MaterialTheme.colorScheme.primary,
-                                            shape = RoundedCornerShape(4.dp)
-                                        )
-                                    } else Modifier
-                                )
-                        ) {
-                            recipe.categories.forEachIndexed { index, category ->
-                                var confirmDelete by remember { mutableStateOf(false) }
-                                AssistChip(
-                                    onClick = {},
-                                    label = {
-                                        if (!confirmDelete) {
-                                            Text(
-                                                text = category,
-                                                style = MaterialTheme.typography.bodyLarge
-                                            )
-                                        }
-                                    },
-                                    leadingIcon = {
-                                        if (confirmDelete && editCategories) {
-                                            Icon(
-                                                painter = painterResource(id = R.drawable.baseline_check_24),
-                                                contentDescription = "delete category",
-                                                tint = MaterialTheme.colorScheme.primary,
-                                                modifier = Modifier
-                                                    .clickable {
-                                                        recipeViewModel.removeCategory(index)
-                                                        confirmDelete = false
-                                                    }
-                                                    .weight(1f)
-                                            )
-                                        }
-                                    },
-                                    trailingIcon = {
-                                        if (editCategories) {
-                                            if (!confirmDelete) {
-                                                Icon(
-                                                    painter = painterResource(id = R.drawable.baseline_delete_24),
-                                                    contentDescription = "delete category",
-                                                    tint = MaterialTheme.colorScheme.primary,
-                                                    modifier = Modifier.clickable {
-                                                        confirmDelete = true
-                                                    }
-                                                )
-                                            } else {
-                                                Icon(
-                                                    painter = painterResource(id = R.drawable.baseline_close_24),
-                                                    contentDescription = "confirm delete category",
-                                                    tint = MaterialTheme.colorScheme.error,
-                                                    modifier = Modifier
-                                                        .clickable {
-                                                            confirmDelete = false
-                                                        }
-                                                        .weight(1f)
-                                                )
-                                            }
-                                        }
-                                    },
-                                    modifier = Modifier.padding(
-                                        start = if (editCategories) 8.dp else 0.dp,
-                                        end = if (editCategories) 0.dp else 8.dp
-                                    )
-                                )
-                            }
-                            if (editCategories) {
-                                if (!openAddCategoryField) {
-                                    AssistChip(
-                                        onClick = {
-                                            openAddCategoryField = true
-                                        },
-                                        label = {
-                                            Icon(
-                                                painter = painterResource(id = R.drawable.baseline_add_24),
-                                                contentDescription = "add category",
-                                                tint = MaterialTheme.colorScheme.primary
-                                            )
-                                        },
-                                        modifier = Modifier.padding(horizontal = 8.dp)
-                                    )
-                                    categoriesByPopularity
-                                        .filterNot { recipe.categories.contains(it) }
-                                        .take(5).forEach { category ->
-                                            AssistChip(
-                                                onClick = {},
-                                                label = {
-                                                    Text(
-                                                        text = category,
-                                                        style = MaterialTheme.typography.bodyLarge
-                                                    )
-                                                },
-                                                trailingIcon = {
-                                                    Icon(
-                                                        painter = painterResource(id = R.drawable.baseline_add_24),
-                                                        contentDescription = "add category",
-                                                        tint = MaterialTheme.colorScheme.primary,
-                                                        modifier = Modifier
-                                                            .clickable {
-                                                                recipeViewModel.addCategory(category)
-                                                            }
-                                                    )
-                                                },
-                                                modifier = Modifier.padding(start = 8.dp)
-                                            )
-                                        }
-                                } else {
-                                    ExposedDropdownMenuBox(
-                                        expanded = expandedCategoriesDropdown,
-                                        onExpandedChange = { expandedCategoriesDropdown = it}
-                                    ) {
-                                        BasicTextField(
-                                            value = categoryInput,
-                                            onValueChange = {
-                                                categoryInput = it
-                                                expandedCategoriesDropdown = it.isNotEmpty()
-                                            },
-                                            modifier = Modifier
-                                                .menuAnchor(MenuAnchorType.PrimaryEditable, enabled = true)
-                                                .focusRequester(focusRequesterCategory),
-                                            keyboardOptions = KeyboardOptions.Default.copy(imeAction = ImeAction.Done),
-                                            keyboardActions = KeyboardActions(
-                                                onDone = {
-                                                    if (categoryInput.isNotBlank()) {
-                                                        recipeViewModel.addCategory(categoryInput.trim())
-                                                    }
-                                                    categoryInput = ""
-                                                    openAddCategoryField = false
-                                                    keyboardController?.hide()
-                                                    expandedCategoriesDropdown = false
-                                                }
-                                            ),
-                                            decorationBox = { innerTextField ->
-                                                Surface(
-                                                    shape = RoundedCornerShape(8.dp),
-                                                    border = BorderStroke(
-                                                        1.dp,
-                                                        MaterialTheme.colorScheme.outline
-                                                    ),
-                                                    tonalElevation = 1.dp,
-                                                    modifier = Modifier
-                                                        .defaultMinSize(minHeight = 32.dp)
-                                                        .padding(horizontal = 8.dp, vertical = 8.dp)
-                                                ) {
-                                                    Row(
-                                                        verticalAlignment = Alignment.CenterVertically,
-                                                        modifier = Modifier.padding(
-                                                            start = 16.dp,
-                                                            end = 8.dp,
-                                                            top = 4.dp,
-                                                            bottom = 4.dp
-                                                        )
-                                                    ) {
-                                                        Box {
-                                                            if (categoryInput.isEmpty()) {
-                                                                Text(
-                                                                    text = stringResource(R.string.category),
-                                                                    style = MaterialTheme.typography.bodyMedium,
-                                                                    color = MaterialTheme.colorScheme.outline
-                                                                )
-                                                            }
-                                                            innerTextField()
-                                                        }
-                                                        Spacer(Modifier.width(4.dp))
-                                                        Icon(
-                                                            painter = painterResource(R.drawable.baseline_check_24),
-                                                            contentDescription = "Add category",
-                                                            modifier = Modifier
-                                                                .size(24.dp)
-                                                                .clickable {
-                                                                    if (categoryInput.isNotBlank()) {
-                                                                        recipeViewModel.addCategory(
-                                                                            categoryInput
-                                                                        )
-                                                                    }
-                                                                    categoryInput = ""
-                                                                    openAddCategoryField = false
-                                                                    keyboardController?.hide()
-                                                                    expandedCategoriesDropdown =
-                                                                        false
-                                                                },
-                                                            tint = MaterialTheme.colorScheme.primary
-                                                        )
-                                                    }
-                                                }
-                                            }
-                                        )
-                                        ExposedDropdownMenu(
-                                            expanded = expandedCategoriesDropdown && filteredCategories.isNotEmpty(),
-                                            onDismissRequest = {
-                                                expandedCategoriesDropdown = false
-                                            }
-                                        ) {
-                                            filteredCategories.forEach { category ->
-                                                DropdownMenuItem(
-                                                    text = { Text(category) },
-                                                    onClick = {
-                                                        categoryInput = category
-                                                        expandedCategoriesDropdown = false
-                                                    }
-                                                )
-                                            }
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    }
-
                     // === Ingredients Section ===
                     Column(
                         modifier = Modifier
@@ -888,10 +693,15 @@ fun RecipeViewScreen(
                                                 }
                                             }
 
+                                            var amountText by remember {
+                                                mutableStateOf(
+                                                    item.amount.toString().replace(".0", "")
+                                                )
+                                            }
                                             OutlinedTextField(
-                                                value = if (item.amount == 0.0) "" else item.amount.toString()
-                                                    .replace(".0", ""),
+                                                value = amountText,
                                                 onValueChange = { newValue ->
+                                                    amountText = newValue.replace(",", ".")
                                                     recipeViewModel.updateItemSetItemAmount(
                                                         item.tmpId,
                                                         newValue
@@ -1014,8 +824,7 @@ fun RecipeViewScreen(
                         if (!editInstructions) {
                             Column(
                                 modifier = Modifier
-                                    .padding(horizontal = 16.dp)
-                                    .padding(bottom = 16.dp),
+                                    .padding(horizontal = 16.dp),
                             ) {
                                 recipe.instructions.forEachIndexed { index, instruction ->
                                     Row(
@@ -1110,11 +919,21 @@ fun RecipeViewScreen(
                                 }
                             }
                         }
+
+                        // Image section
                         Column(
                             modifier = Modifier
-                                .padding(horizontal = 16.dp)
-                                .padding(bottom = 16.dp),
+                                .padding(horizontal = 16.dp),
                         ) {
+                            if (recipe.recipeFileIds.isNotEmpty()) {
+                                HorizontalDivider(
+                                    modifier = Modifier.padding(vertical = 8.dp),
+                                    color = MaterialTheme.colorScheme.outlineVariant.copy(
+                                        alpha = 0.4f
+                                    ),
+                                    thickness = 1.dp
+                                )
+                            }
                             LazyRow(
                                 horizontalArrangement = Arrangement.spacedBy(4.dp),
                                 contentPadding = PaddingValues(horizontal = 8.dp)
@@ -1297,7 +1116,289 @@ fun RecipeViewScreen(
                                         defaultElevation = 6.dp
                                     ),
                                 ) {
-                                    Text("Add image")
+                                    Text(stringResource(R.string.add_image))
+                                }
+                            }
+                        }
+                    }
+                    // === Categories Section ===
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable { showCategories = !showCategories }
+                            .padding(horizontal = 16.dp, vertical = 8.dp)
+                    ) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Text(
+                                text = stringResource(R.string.categories),
+                                style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.SemiBold),
+                                color = MaterialTheme.colorScheme.primary,
+                            )
+                            if (editMode) {
+                                IconButton(
+                                    onClick = {
+                                        if (!editCategories) {
+                                            editCategories = true
+                                            showCategories = true
+                                        } else {
+                                            recipeViewModel.updateRecipe(recipe)
+                                            editCategories = false
+                                        }
+                                    },
+                                    modifier = Modifier.size(20.dp)
+                                ) {
+                                    Icon(
+                                        painter = painterResource(id = if (!editCategories) R.drawable.baseline_edit_24 else R.drawable.baseline_save_24),
+                                        contentDescription = "Edit categories",
+                                        tint = MaterialTheme.colorScheme.primary,
+                                        modifier = Modifier.size(16.dp)
+                                    )
+                                }
+                            }
+                            Spacer(modifier = Modifier.weight(1f))
+                            Icon(
+                                imageVector = if (showCategories) Icons.Default.KeyboardArrowDown else Icons.AutoMirrored.Filled.KeyboardArrowRight,
+                                contentDescription = "Toggle categories",
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+
+                        Spacer(modifier = Modifier.height(4.dp))
+
+                        HorizontalDivider(
+                            color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.6f),
+                            thickness = 1.dp
+                        )
+                    }
+                    if (showCategories) {
+                        FlowRow(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = 16.dp)
+                                .then(
+                                    if (editCategories) {
+                                        Modifier.border(
+                                            width = 1.dp,
+                                            color = MaterialTheme.colorScheme.primary,
+                                            shape = RoundedCornerShape(4.dp)
+                                        )
+                                    } else Modifier
+                                )
+                        ) {
+                            recipe.categories.forEachIndexed { index, category ->
+                                var confirmDelete by remember { mutableStateOf(false) }
+                                AssistChip(
+                                    onClick = {},
+                                    label = {
+                                        if (!confirmDelete) {
+                                            Text(
+                                                text = category,
+                                                style = MaterialTheme.typography.bodyLarge
+                                            )
+                                        }
+                                    },
+                                    leadingIcon = {
+                                        if (confirmDelete && editCategories) {
+                                            Icon(
+                                                painter = painterResource(id = R.drawable.baseline_check_24),
+                                                contentDescription = "delete category",
+                                                tint = MaterialTheme.colorScheme.primary,
+                                                modifier = Modifier
+                                                    .clickable {
+                                                        recipeViewModel.removeCategory(index)
+                                                        confirmDelete = false
+                                                    }
+                                                    .weight(1f)
+                                            )
+                                        }
+                                    },
+                                    trailingIcon = {
+                                        if (editCategories) {
+                                            if (!confirmDelete) {
+                                                Icon(
+                                                    painter = painterResource(id = R.drawable.baseline_delete_24),
+                                                    contentDescription = "delete category",
+                                                    tint = MaterialTheme.colorScheme.primary,
+                                                    modifier = Modifier.clickable {
+                                                        confirmDelete = true
+                                                    }
+                                                )
+                                            } else {
+                                                Icon(
+                                                    painter = painterResource(id = R.drawable.baseline_close_24),
+                                                    contentDescription = "confirm delete category",
+                                                    tint = MaterialTheme.colorScheme.error,
+                                                    modifier = Modifier
+                                                        .clickable {
+                                                            confirmDelete = false
+                                                        }
+                                                        .weight(1f)
+                                                )
+                                            }
+                                        }
+                                    },
+                                    modifier = Modifier.padding(
+                                        start = if (editCategories) 8.dp else 0.dp,
+                                        end = if (editCategories) 0.dp else 8.dp
+                                    )
+                                )
+                            }
+                            if (editCategories) {
+                                if (!openAddCategoryField) {
+                                    AssistChip(
+                                        onClick = {
+                                            openAddCategoryField = true
+                                        },
+                                        label = {
+                                            Icon(
+                                                painter = painterResource(id = R.drawable.baseline_add_24),
+                                                contentDescription = "add category",
+                                                tint = MaterialTheme.colorScheme.primary
+                                            )
+                                        },
+                                        modifier = Modifier.padding(horizontal = 8.dp)
+                                    )
+                                    categoriesByPopularity
+                                        .filterNot { recipe.categories.contains(it) }
+                                        .take(5).forEach { category ->
+                                            AssistChip(
+                                                onClick = {},
+                                                label = {
+                                                    Text(
+                                                        text = category,
+                                                        style = MaterialTheme.typography.bodyLarge
+                                                    )
+                                                },
+                                                trailingIcon = {
+                                                    Icon(
+                                                        painter = painterResource(id = R.drawable.baseline_add_24),
+                                                        contentDescription = "add category",
+                                                        tint = MaterialTheme.colorScheme.primary,
+                                                        modifier = Modifier
+                                                            .clickable {
+                                                                recipeViewModel.addCategory(
+                                                                    category
+                                                                )
+                                                            }
+                                                    )
+                                                },
+                                                modifier = Modifier.padding(start = 8.dp)
+                                            )
+                                        }
+                                } else {
+                                    ExposedDropdownMenuBox(
+                                        expanded = expandedCategoriesDropdown,
+                                        onExpandedChange = {
+                                            expandedCategoriesDropdown = it
+                                        }
+                                    ) {
+                                        BasicTextField(
+                                            value = categoryInput,
+                                            onValueChange = {
+                                                categoryInput = it
+                                                expandedCategoriesDropdown = it.isNotEmpty()
+                                            },
+                                            modifier = Modifier
+                                                .menuAnchor(
+                                                    MenuAnchorType.PrimaryEditable,
+                                                    enabled = true
+                                                )
+                                                .focusRequester(focusRequesterCategory),
+                                            keyboardOptions = KeyboardOptions.Default.copy(
+                                                imeAction = ImeAction.Done
+                                            ),
+                                            keyboardActions = KeyboardActions(
+                                                onDone = {
+                                                    if (categoryInput.isNotBlank()) {
+                                                        recipeViewModel.addCategory(
+                                                            categoryInput.trim()
+                                                        )
+                                                    }
+                                                    categoryInput = ""
+                                                    openAddCategoryField = false
+                                                    keyboardController?.hide()
+                                                    expandedCategoriesDropdown = false
+                                                }
+                                            ),
+                                            decorationBox = { innerTextField ->
+                                                Surface(
+                                                    shape = RoundedCornerShape(8.dp),
+                                                    border = BorderStroke(
+                                                        1.dp,
+                                                        MaterialTheme.colorScheme.outline
+                                                    ),
+                                                    tonalElevation = 1.dp,
+                                                    modifier = Modifier
+                                                        .defaultMinSize(minHeight = 32.dp)
+                                                        .padding(
+                                                            horizontal = 8.dp,
+                                                            vertical = 8.dp
+                                                        )
+                                                ) {
+                                                    Row(
+                                                        verticalAlignment = Alignment.CenterVertically,
+                                                        modifier = Modifier.padding(
+                                                            start = 16.dp,
+                                                            end = 8.dp,
+                                                            top = 4.dp,
+                                                            bottom = 4.dp
+                                                        )
+                                                    ) {
+                                                        Box {
+                                                            if (categoryInput.isEmpty()) {
+                                                                Text(
+                                                                    text = stringResource(R.string.category),
+                                                                    style = MaterialTheme.typography.bodyMedium,
+                                                                    color = MaterialTheme.colorScheme.outline
+                                                                )
+                                                            }
+                                                            innerTextField()
+                                                        }
+                                                        Spacer(Modifier.width(4.dp))
+                                                        Icon(
+                                                            painter = painterResource(R.drawable.baseline_check_24),
+                                                            contentDescription = "Add category",
+                                                            modifier = Modifier
+                                                                .size(24.dp)
+                                                                .clickable {
+                                                                    if (categoryInput.isNotBlank()) {
+                                                                        recipeViewModel.addCategory(
+                                                                            categoryInput
+                                                                        )
+                                                                    }
+                                                                    categoryInput = ""
+                                                                    openAddCategoryField =
+                                                                        false
+                                                                    keyboardController?.hide()
+                                                                    expandedCategoriesDropdown =
+                                                                        false
+                                                                },
+                                                            tint = MaterialTheme.colorScheme.primary
+                                                        )
+                                                    }
+                                                }
+                                            }
+                                        )
+                                        ExposedDropdownMenu(
+                                            expanded = expandedCategoriesDropdown && filteredCategories.isNotEmpty(),
+                                            onDismissRequest = {
+                                                expandedCategoriesDropdown = false
+                                            }
+                                        ) {
+                                            filteredCategories.forEach { category ->
+                                                DropdownMenuItem(
+                                                    text = { Text(category) },
+                                                    onClick = {
+                                                        categoryInput = category
+                                                        expandedCategoriesDropdown = false
+                                                    }
+                                                )
+                                            }
+                                        }
+                                    }
                                 }
                             }
                         }

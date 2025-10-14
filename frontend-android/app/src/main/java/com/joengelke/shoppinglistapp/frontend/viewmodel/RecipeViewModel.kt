@@ -329,12 +329,14 @@ class RecipeViewModel @Inject constructor(
 
     fun removeRecipeFromUser(
         recipeId: String,
-        userId: String?
+        userId: String?,
+        onSuccess: () -> Unit = {}
     ) {
         viewModelScope.launch {
             val result = recipeRepository.removeRecipeFromUser(recipeId, userId)
             result.onSuccess {
                 _recipes.value = _recipes.value.filter { it.id != recipeId }
+                onSuccess()
             }
             result.onFailure {
                 //TODO

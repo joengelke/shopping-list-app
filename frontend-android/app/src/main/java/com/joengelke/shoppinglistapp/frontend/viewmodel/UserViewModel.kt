@@ -38,6 +38,9 @@ class UserViewModel @Inject constructor(
     private val _currentUsername = MutableStateFlow<String>("")
     val currentUsername: StateFlow<String> = _currentUsername.asStateFlow()
 
+    private val _currentUserRecipeIds = MutableStateFlow<List<String>>(emptyList())
+    val currentUserRecipeIds: StateFlow<List<String>> = _currentUserRecipeIds.asStateFlow()
+
     fun updateCurrentUserId() {
         viewModelScope.launch {
             val token = tokenManager.getToken()
@@ -96,6 +99,15 @@ class UserViewModel @Inject constructor(
             val result = userRepository.getShoppingListUser(shoppingListId)
             result.onSuccess { users ->
                 _listUser.value = users
+            }
+        }
+    }
+
+    fun getCurrentUserRecipeIds() {
+        viewModelScope.launch {
+            val result = userRepository.getCurrentUserRecipeIds()
+            result.onSuccess { recipeIds ->
+                _currentUserRecipeIds.value = recipeIds
             }
         }
     }

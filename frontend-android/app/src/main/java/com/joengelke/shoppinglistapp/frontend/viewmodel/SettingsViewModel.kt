@@ -24,9 +24,6 @@ class SettingsViewModel @Inject constructor(
     private val _darkMode = MutableStateFlow(false)
     val darkMode: StateFlow<Boolean> = _darkMode.asStateFlow()
 
-    private val _language = MutableStateFlow("en")
-    val language: StateFlow<String> = _language.asStateFlow()
-
     private val _fontScale = MutableStateFlow(1.0f)
     val fontScale: StateFlow<Float> = _fontScale.asStateFlow()
 
@@ -56,9 +53,6 @@ class SettingsViewModel @Inject constructor(
             settingsRepository.darkModeFlow.collect { _darkMode.value = it }
         }
         viewModelScope.launch {
-            settingsRepository.languageFlow.collect { _language.value = it }
-        }
-        viewModelScope.launch {
             settingsRepository.fontScaleFlow.collect { _fontScale.value = it }
         }
         viewModelScope.launch {
@@ -80,12 +74,6 @@ class SettingsViewModel @Inject constructor(
         viewModelScope.launch {
             val newValue = !_darkMode.value
             settingsRepository.setDarkMode(newValue)
-        }
-    }
-
-    fun setLanguage(language: String) {
-        viewModelScope.launch {
-            settingsRepository.setLanguage(language)
         }
     }
 

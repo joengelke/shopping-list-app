@@ -73,6 +73,13 @@ public class UserService implements UserDetailsService {
                 .collect(Collectors.toList());
     }
 
+    public List<String> getCurrentUserRecipeIds(String header) {
+        String userId = jwtTokenProvider.getUserIdFromToken(header.replace("Bearer ", ""));
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new NoSuchElementException("User not found"));
+        return user.getRecipeIds();
+    }
+
     public UserResponse addRoleToUser(String userId, String role) {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new NoSuchElementException("User not found"));

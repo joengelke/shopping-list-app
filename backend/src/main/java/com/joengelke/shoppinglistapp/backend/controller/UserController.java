@@ -33,6 +33,12 @@ public class UserController {
         return ResponseEntity.ok(userList);
     }
 
+    @GetMapping("/recipe-ids")
+    public ResponseEntity<?> getCurrentUserRecipeIds(@RequestHeader("Authorization") String header) {
+        List<String> recipeIds = userService.getCurrentUserRecipeIds(header);
+        return ResponseEntity.ok(recipeIds);
+    }
+
     @PutMapping("/{userId}/add-role")
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<?> addRoleToUser(@PathVariable String userId, @RequestParam String role) {

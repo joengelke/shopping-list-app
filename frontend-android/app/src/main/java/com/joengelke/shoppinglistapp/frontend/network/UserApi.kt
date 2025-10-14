@@ -17,6 +17,11 @@ interface UserApi {
         @Path("shoppingListId") shoppingListId: String
     ): Response<List<User>>
 
+    @GET("user/recipe-ids")
+    suspend fun getCurrentUserRecipeIds(
+        @Header("Authorization") token: String
+    ): Response<List<String>>
+
     @POST("shoppinglist/{shoppingListId}/user")
     suspend fun addUserToShoppingList(
         @Header("Authorization") token: String,

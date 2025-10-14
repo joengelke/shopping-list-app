@@ -11,9 +11,11 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
-import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
@@ -25,6 +27,7 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavHostController
 import com.joengelke.shoppinglistapp.frontend.R
+import com.joengelke.shoppinglistapp.frontend.ui.components.BuyMeACoffeeButton
 import com.joengelke.shoppinglistapp.frontend.viewmodel.SettingsViewModel
 import com.joengelke.shoppinglistapp.frontend.viewmodel.UserViewModel
 import kotlin.math.roundToInt
@@ -36,7 +39,6 @@ fun SettingsOverviewScreen(
     settingsViewModel: SettingsViewModel,
     userViewModel: UserViewModel = hiltViewModel(),
 ) {
-    val currentUserId by userViewModel.currentUserId.collectAsState()
     val currentRoles by userViewModel.currentRoles.collectAsState()
     val currentUsername by userViewModel.currentUsername.collectAsState()
 
@@ -45,7 +47,6 @@ fun SettingsOverviewScreen(
 
     // Settings:
     val darkMode by settingsViewModel.darkMode.collectAsState()
-    val language by settingsViewModel.language.collectAsState()
     val fontScale by settingsViewModel.fontScale.collectAsState()
 
     val fontScales = listOf(0.8f, 0.9f, 1.0f, 1.1f, 1.2f)
@@ -235,6 +236,16 @@ fun SettingsOverviewScreen(
                     }
                 }
                 item {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.Center
+                    ) {
+                        BuyMeACoffeeButton(context)
+                    }
+                }
+                item {
                     val versionName =
                         context.packageManager
                             .getPackageInfo(context.packageName, 0).versionName
@@ -255,38 +266,3 @@ fun SettingsOverviewScreen(
         }
     )
 }
-
-@Composable
-fun LanguageDropdown(
-    selectedLanguage: String,
-    onLanguageSelected: (String) -> Unit
-) {
-    val context = LocalContext.current
-    val options = listOf("en", "de")
-    var expanded by remember { mutableStateOf(false) }
-
-    Box {
-        TextButton(onClick = { expanded = true }) {
-            Text(selectedLanguage.uppercase())
-            Icon(
-                imageVector = Icons.Default.ArrowDropDown,
-                contentDescription = "Select language"
-            )
-        }
-        DropdownMenu(
-            expanded = expanded,
-            onDismissRequest = { expanded = false }
-        ) {
-            options.forEach { lang ->
-                DropdownMenuItem(
-                    text = { Text(lang.uppercase()) },
-                    onClick = {
-                        onLanguageSelected(lang)
-                        expanded = false
-                    }
-                )
-            }
-        }
-    }
-}
-
